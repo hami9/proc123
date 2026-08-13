@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+package-lock.json
+packages/*/test/fixtures/
+CHANGELOG.md
+
+# Authored project documents — kept as written, not reflowed by a formatter.
+CLAUDE.md
+ROADMAP.md
