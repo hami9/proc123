@@ -1,0 +1,22 @@
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Local tooling / editor state
+.claude/
+.vscode/
+.idea/
+.DS_Store
+
+# Runtime + secrets. AI provider keys are user-supplied and must never be committed.
+.env
+.env.*
+!.env.example
+*.log
+
+# Extension build artefacts
+*.zip
+*.crx
+*.xpi
