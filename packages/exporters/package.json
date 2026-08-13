@@ -1,0 +1,17 @@
+{
+  "name": "@proc123/exporters",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CanonicalProduct exporters: WooCommerce CSV, Shopify CSV, JSON",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@proc123/core": "*"
+  }
+}
