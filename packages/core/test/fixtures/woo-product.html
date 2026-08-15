@@ -1,0 +1,121 @@
+<!doctype html>
+<!--
+  A Persian WooCommerce product page as Yoast/RankMath emits it: one @graph
+  holding WebPage + BreadcrumbList + Product, plus OpenGraph tags that repeat a
+  subset of the same facts.
+
+  Deliberate details under test:
+  - breadcrumb positions are serialized out of order (3 before 2)
+  - the last breadcrumb is the product itself and must be trimmed
+  - the product is on sale, expressed as a ListPrice priceSpecification
+  - og:url carries a tracking parameter the JSON-LD url does not
+  - the OpenGraph price is the sale price, and must not overrule the JSON-LD pair
+-->
+<html lang="fa-IR" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>گردو با پوست ۵۰۰ گرم - آجیل نمونه</title>
+
+    <meta property="og:type" content="product" />
+    <meta property="og:title" content="گردو با پوست ۵۰۰ گرم" />
+    <meta
+      property="og:description"
+      content="گردوی تازه با پوست، برداشت امسال، بسته‌بندی وکیوم."
+    />
+    <meta
+      property="og:url"
+      content="https://ajil.example/product/walnut-500/?utm_source=telegram"
+    />
+    <meta property="og:image" content="https://cdn.ajil.example/walnut-og.jpg" />
+    <meta property="product:price:amount" content="1350000" />
+    <meta property="product:price:currency" content="IRR" />
+    <meta property="product:availability" content="instock" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org/",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "@id": "https://ajil.example/product/walnut-500/#webpage",
+            "url": "https://ajil.example/product/walnut-500/",
+            "name": "گردو با پوست ۵۰۰ گرم"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://ajil.example/product/walnut-500/#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "خانه",
+                "item": "https://ajil.example/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "گردو",
+                "item": "https://ajil.example/product-category/nuts/walnut/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "آجیل",
+                "item": "https://ajil.example/product-category/nuts/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 4,
+                "name": "گردو با پوست ۵۰۰ گرم"
+              }
+            ]
+          },
+          {
+            "@type": "Product",
+            "@id": "https://ajil.example/product/walnut-500/#product",
+            "name": "گردو با پوست ۵۰۰ گرم",
+            "sku": "AJ-WAL-500",
+            "url": "https://ajil.example/product/walnut-500/",
+            "description": "گردوی تازه با پوست از باغ‌های تویسرکان.\nبسته‌بندی وکیوم ۵۰۰ گرمی.",
+            "image": [
+              "https://cdn.ajil.example/walnut-1.jpg",
+              "https://cdn.ajil.example/walnut-2.jpg",
+              "https://cdn.ajil.example/walnut-1.jpg"
+            ],
+            "brand": { "@type": "Brand", "name": "آجیل نمونه" },
+            "gtin13": "6260000000017",
+            "weight": { "@type": "QuantitativeValue", "value": 500, "unitCode": "GRM" },
+            "keywords": "گردو, آجیل, خشکبار",
+            "additionalProperty": [
+              { "@type": "PropertyValue", "name": "نوع بسته‌بندی", "value": "وکیوم" },
+              { "@type": "PropertyValue", "name": "استان", "value": "همدان" }
+            ],
+            "offers": {
+              "@type": "Offer",
+              "url": "https://ajil.example/product/walnut-500/",
+              "priceCurrency": "IRR",
+              "price": "1350000",
+              "priceSpecification": [
+                {
+                  "@type": "UnitPriceSpecification",
+                  "priceType": "https://schema.org/ListPrice",
+                  "price": "1500000",
+                  "priceCurrency": "IRR"
+                }
+              ],
+              "availability": "https://schema.org/InStock",
+              "sku": "AJ-WAL-500"
+            }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <h1>گردو با پوست ۵۰۰ گرم</h1>
+    <p class="price">
+      <del>۱٬۵۰۰٬۰۰۰ تومان</del>
+      <ins>۱٬۳۵۰٬۰۰۰ تومان</ins>
+    </p>
+  </body>
+</html>

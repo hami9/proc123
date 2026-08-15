@@ -1,0 +1,39 @@
+<!doctype html>
+<!--
+  The floor of Layer B: no JSON-LD, no Microdata, only OpenGraph and the
+  `product:*` extension. Typical of hand-rolled and headless storefronts that
+  added social sharing but never added schema.org.
+
+  The page states both a current and an original price, which is the only way
+  OpenGraph can express a sale.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Copper Moka Pot 6 Cup — Example Coffee</title>
+
+    <meta property="og:type" content="product" />
+    <meta property="og:title" content="Copper Moka Pot 6 Cup" />
+    <meta
+      property="og:description"
+      content="Hand-hammered copper stovetop espresso maker."
+    />
+    <meta property="og:url" content="https://coffee.example/shop/moka-pot-6" />
+    <meta property="og:image" content="http://coffee.example/img/moka-1.jpg" />
+    <meta property="og:image:secure_url" content="https://coffee.example/img/moka-1.jpg" />
+    <meta property="og:image" content="https://coffee.example/img/moka-2.jpg" />
+
+    <meta property="product:price:amount" content="49.00" />
+    <meta property="product:price:currency" content="EUR" />
+    <meta property="product:original_price:amount" content="65.00" />
+    <meta property="product:availability" content="in stock" />
+    <meta property="product:retailer_item_id" content="MOKA-6" />
+    <meta property="product:brand" content="Example Coffee" />
+    <meta property="product:weight:value" content="0.9" />
+    <meta property="product:weight:units" content="kg" />
+    <meta property="product:category" content="2901" />
+  </head>
+  <body>
+    <h1>Copper Moka Pot 6 Cup</h1>
+  </body>
+</html>

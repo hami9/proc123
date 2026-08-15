@@ -1,0 +1,84 @@
+<!doctype html>
+<!--
+  A category listing page. The ItemList mixes the two shapes stores publish:
+  full Product nodes for the products above the fold, and bare links for the
+  rest. The second product is variable, so its offer is an AggregateOffer range
+  rather than a price.
+
+  The OpenGraph block describes the *category*, not a product, and must not
+  produce a row.
+-->
+<html lang="fa-IR" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>آجیل - فروشگاه نمونه</title>
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="آجیل - فروشگاه نمونه" />
+    <meta property="og:url" content="https://ajil.example/product-category/nuts/" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "خانه", "item": "https://ajil.example/" },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "آجیل",
+            "item": "https://ajil.example/product-category/nuts/"
+          }
+        ]
+      }
+    </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "item": {
+              "@type": "Product",
+              "name": "بادام درختی شور",
+              "url": "/product/almond/",
+              "image": "/wp-content/uploads/almond.jpg",
+              "offers": {
+                "@type": "Offer",
+                "price": "920000",
+                "priceCurrency": "IRR",
+                "availability": "https://schema.org/InStock"
+              }
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "item": {
+              "@type": "Product",
+              "name": "پسته اکبری",
+              "url": "/product/pistachio/",
+              "image": "/wp-content/uploads/pistachio.jpg",
+              "offers": {
+                "@type": "AggregateOffer",
+                "lowPrice": "1800000",
+                "highPrice": "3400000",
+                "priceCurrency": "IRR",
+                "offerCount": 3,
+                "availability": "https://schema.org/InStock"
+              }
+            }
+          },
+          { "@type": "ListItem", "position": 4, "url": "/product/cashew/" },
+          { "@type": "ListItem", "position": 3, "item": "/product/hazelnut/" }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <h1>آجیل</h1>
+  </body>
+</html>

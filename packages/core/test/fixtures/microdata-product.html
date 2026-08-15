@@ -1,0 +1,64 @@
+<!doctype html>
+<!--
+  A theme that publishes Microdata and nothing else — no JSON-LD, no product
+  meta tags. Common on older OpenCart and PrestaShop builds.
+
+  Under test:
+  - `content` on a non-<meta> element wins over the displayed text, which is
+    how a Persian price survives at all
+  - a lazy-loading <img> parks a data: placeholder in src and the real URL in
+    data-src
+  - <link itemprop="availability"> carries its value in href
+  - itemref pulls a property in from outside the item's subtree
+  - a nested Offer itemscope becomes a nested node, not a flat string
+-->
+<html lang="fa-IR" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>زعفران سرگل ۵ گرم</title>
+  </head>
+  <body>
+    <nav itemscope itemtype="https://schema.org/BreadcrumbList">
+      <span itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="/"><span itemprop="name">خانه</span></a>
+        <meta itemprop="position" content="1" />
+      </span>
+      <span itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="/category/spices/"><span itemprop="name">ادویه</span></a>
+        <meta itemprop="position" content="2" />
+      </span>
+      <span itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="/category/spices/saffron/"><span itemprop="name">زعفران</span></a>
+        <meta itemprop="position" content="3" />
+      </span>
+    </nav>
+
+    <div itemscope itemtype="http://schema.org/Product" itemref="product-weight">
+      <h1 itemprop="name">زعفران سرگل ۵ گرم</h1>
+      <link itemprop="url" href="/product/saffron-5g/" />
+      <span itemprop="sku">SAF-5</span>
+      <img
+        itemprop="image"
+        src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+        data-src="/img/saffron-5g.jpg"
+        alt="زعفران سرگل"
+      />
+      <div itemprop="description">زعفران سرگل درجه یک، بسته‌بندی شیشه‌ای.</div>
+      <span itemprop="brand" itemscope itemtype="https://schema.org/Brand">
+        <span itemprop="name">زعفران نمونه</span>
+      </span>
+
+      <div itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+        <meta itemprop="priceCurrency" content="IRR" />
+        <span itemprop="price" content="4200000">۴٬۲۰۰٬۰۰۰ تومان</span>
+        <link itemprop="availability" href="https://schema.org/InStock" />
+      </div>
+    </div>
+
+    <!-- Lives outside the product, pulled in by itemref. -->
+    <div id="product-weight" itemprop="weight" itemscope itemtype="https://schema.org/QuantitativeValue">
+      <meta itemprop="value" content="5" />
+      <meta itemprop="unitCode" content="GRM" />
+    </div>
+  </body>
+</html>
