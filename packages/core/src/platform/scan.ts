@@ -19,7 +19,7 @@ import { isSiteBlockedError } from './blocking.js';
 import { detectPlatforms } from './detect.js';
 import { embeddedStateAdapter } from './embedded.js';
 import type { HttpClient } from './http.js';
-import { createPoliteClient } from './polite.js';
+import { type PoliteClient, createPoliteClient } from './polite.js';
 import { shopifyAdapter } from './shopify.js';
 import type { PlatformAdapter, PlatformDetection, ScanOptions, ScanResult } from './types.js';
 import { wooCommerceAdapter } from './woocommerce.js';
@@ -43,6 +43,14 @@ export interface ScanPageOptions extends ScanOptions {
   http?: HttpClient;
   /** Override the adapter list, for tests and for a targeted re-scan. */
   adapters?: readonly PlatformAdapter[];
+  /**
+   * An already-paced client to use instead of building one.
+   *
+   * A multi-page crawl needs a single pacer and a single block latch across
+   * every page it reads; wrapping a wrapped client would delay twice and count
+   * requests twice.
+   */
+  client?: PoliteClient;
 }
 
 interface Candidate {
@@ -80,9 +88,10 @@ export async function scanCategory(
 
   const adapters = options.adapters ?? ADAPTERS;
   const polite =
-    options.http === undefined
+    options.client ??
+    (options.http === undefined
       ? undefined
-      : createPoliteClient(options.http, options.politeness ?? {});
+      : createPoliteClient(options.http, options.politeness ?? {}));
 
   const fallback = (
     layerB: ReturnType<typeof extractStructured>,

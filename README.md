@@ -23,8 +23,8 @@ problem first, the browser UI last.
 | 1     | Canonical model + WooCommerce CSV exporter                    | ✅ done |
 | 2     | Layer B — structured markup (JSON-LD → Microdata → OpenGraph) | ✅ done |
 | 3     | Layer A — WooCommerce Store API, then Shopify                 | ✅ done |
-| 4     | Category traversal / pagination                               | next    |
-| 5     | Variable products & variations                                |         |
+| 4     | Category traversal / pagination                               | ✅ done |
+| 5     | Variable products & variations                                | next    |
 | 6     | Layer C — Selector Learning Mode                              |         |
 | 7     | Filtering & field selection                                   |         |
 | 8     | Layer D — pluggable AI providers                              |         |
@@ -37,14 +37,14 @@ There is no browser extension yet. `core` still makes no requests of its own —
 you supply the HTML and, for Layer A, an HTTP client; the extension and the
 companion own the network. What exists is the part everything else is validated
 against: the canonical product model, the normalizers, both extraction layers,
-and a WooCommerce CSV exporter, with 470 tests behind them.
+and a WooCommerce CSV exporter, with 508 tests behind them.
 
 ## Packages
 
-| Package              | What it is                                                               |
-| -------------------- | ------------------------------------------------------------------------ |
-| `packages/core`      | `CanonicalProduct`, normalizers, deterministic SKUs, Layer A and Layer B |
-| `packages/exporters` | WooCommerce CSV exporter (Shopify CSV and JSON to follow)                |
+| Package              | What it is                                                                  |
+| -------------------- | --------------------------------------------------------------------------- |
+| `packages/core`      | `CanonicalProduct`, normalizers, SKUs, Layer A + Layer B, category crawling |
+| `packages/exporters` | WooCommerce CSV exporter (Shopify CSV and JSON to follow)                   |
 
 `packages/extension`, `packages/companion` and `packages/profiles` arrive with
 the phases that need them.
@@ -107,6 +107,41 @@ latches, every later request throws without being sent, and the result carries a
 `site-blocked` error naming what happened. There is no retry, no backoff, and no
 fallback that reads the same site by another route. See
 [what proc123 will not do](#what-proc123-will-not-do).
+
+## Crawling a whole category
+
+`scanCategory` reads one page. `crawlCategory` follows the pagination:
+
+```ts
+import { crawlCategory, createMemoryCrawlStore } from '@proc123/core';
+
+const crawl = await crawlCategory({ url, html }, { http, store, maxPages: 20 });
+
+crawl.products; // deduplicated across every page
+crawl.duplicates; // sightings folded into an earlier one
+crawl.state.status; // complete | budget-reached | needs-browser | blocked
+```
+
+Four pagination strategies are detected rather than assumed, because assuming
+one is how a scanner returns the first twenty-four products of a
+two-hundred-product category and calls it done: `rel="next"`, numbered navs,
+"load more" buttons, and infinite scroll. Next pages are followed link by link
+rather than by guessing a URL template — a template built from
+`/category/2024/page/2/` has two numbers to choose between.
+
+Two of those four are interactions, not URLs. When a "load more" button or an
+infinite scroller publishes no URL to follow, the crawl says
+`status: 'needs-browser'` instead of pretending the category ended.
+
+**Progress is persisted after every page.** An MV3 service worker is killed when
+idle, and a twenty-page scan at 800ms a page will outlive one — so `store` (any
+`CrawlStore`; `chrome.storage` in the extension) lets the next run resume rather
+than start again. Starting again would double the load on the store being read.
+
+Products are deduplicated by canonical URL _and_ SKU, because pagination and
+infinite scroll overlap constantly. When the same product is seen twice, the two
+sightings are merged field by field, keeping whichever was recorded with more
+confidence.
 
 ### Layer B — structured markup
 
