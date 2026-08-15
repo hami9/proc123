@@ -1,0 +1,42 @@
+<!doctype html>
+<!--
+  Three JSON-LD blocks from three plugins, of which one is broken outright and
+  one has the trailing comma a template loop leaves behind. Neither may take out
+  the block that actually describes the product.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cast Iron Skillet 26cm</title>
+
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "Organization", "name": "Example Kitchen",, }
+    </script>
+
+    <script type="application/ld+json">
+      //<![CDATA[
+      {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "Cast Iron Skillet 26cm",
+        "sku": "CI-26",
+        "url": "https://kitchen.example/p/cast-iron-26",
+        "depth": { "@type": "QuantitativeValue", "value": "26", "unitText": "cm" },
+        "width": "26 cm",
+        "height": "5cm",
+        "offers": {
+          "@type": "Offer",
+          "price": "1,250",
+          "priceCurrency": "TRY",
+          "availability": "InStock",
+        },
+      }
+      //]]>
+    </script>
+
+    <script type="application/ld+json"></script>
+  </head>
+  <body>
+    <h1>Cast Iron Skillet 26cm</h1>
+  </body>
+</html>

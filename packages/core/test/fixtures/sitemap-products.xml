@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+>
+  <url>
+    <loc>https://ajil.example/product/walnut-500/</loc>
+    <lastmod>2026-08-10T08:00:00+03:30</lastmod>
+    <image:image>
+      <image:loc>https://cdn.ajil.example/walnut-1.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ajil.example/product/almond/</loc>
+    <lastmod>2026-08-11T08:00:00+03:30</lastmod>
+  </url>
+  <url>
+    <loc>https://ajil.example/product-category/nuts/</loc>
+  </url>
+  <url>
+    <loc>https://ajil.example/product/almond/</loc>
+  </url>
+  <url>
+    <loc>mailto:shop@ajil.example</loc>
+  </url>
+</urlset>

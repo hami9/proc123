@@ -1,0 +1,77 @@
+<!doctype html>
+<!--
+  A variable product published the modern schema.org way: a ProductGroup whose
+  `variesBy` names the axes and whose `hasVariant` holds one Product per
+  combination.
+
+  The parent's option list has to be assembled from the variants' own values so
+  the two match character for character (CLAUDE.md §7.6). Note that the size
+  values here are Persian and carry a ZWNJ, which survives cleaning but is
+  ignored when comparing — exactly the case that silently drops variations.
+-->
+<html lang="fa-IR" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>تی‌شرت نخی</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ProductGroup",
+        "name": "تی‌شرت نخی",
+        "url": "https://poshak.example/product/tshirt/",
+        "productGroupID": "TSHIRT",
+        "sku": "TSHIRT",
+        "description": "تی‌شرت نخی با یقه گرد.",
+        "image": "https://cdn.poshak.example/tshirt.jpg",
+        "brand": { "@type": "Brand", "name": "پوشاک نمونه" },
+        "variesBy": ["https://schema.org/color", "https://schema.org/size"],
+        "additionalProperty": [
+          { "@type": "PropertyValue", "name": "جنس", "value": "نخ پنبه" }
+        ],
+        "hasVariant": [
+          {
+            "@type": "Product",
+            "sku": "TSHIRT-RED-S",
+            "color": "قرمز",
+            "size": "کوچک",
+            "image": "https://cdn.poshak.example/tshirt-red.jpg",
+            "offers": {
+              "@type": "Offer",
+              "price": "480000",
+              "priceCurrency": "IRR",
+              "availability": "https://schema.org/InStock",
+              "inventoryLevel": { "@type": "QuantitativeValue", "value": 12 }
+            }
+          },
+          {
+            "@type": "Product",
+            "sku": "TSHIRT-RED-L",
+            "color": "قرمز",
+            "size": "بزرگ",
+            "offers": {
+              "@type": "Offer",
+              "price": "520000",
+              "priceCurrency": "IRR",
+              "availability": "https://schema.org/OutOfStock"
+            }
+          },
+          {
+            "@type": "Product",
+            "sku": "TSHIRT-BLUE-S",
+            "color": "آبی",
+            "size": "کوچک",
+            "offers": {
+              "@type": "Offer",
+              "price": "480000",
+              "priceCurrency": "IRR",
+              "availability": "https://schema.org/InStock"
+            }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <h1>تی‌شرت نخی</h1>
+  </body>
+</html>
