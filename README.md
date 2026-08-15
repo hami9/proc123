@@ -22,8 +22,8 @@ problem first, the browser UI last.
 | 0     | Monorepo scaffold + CI                                        | ✅ done |
 | 1     | Canonical model + WooCommerce CSV exporter                    | ✅ done |
 | 2     | Layer B — structured markup (JSON-LD → Microdata → OpenGraph) | ✅ done |
-| 3     | Layer A — WooCommerce Store API, then Shopify                 | next    |
-| 4     | Category traversal / pagination                               |         |
+| 3     | Layer A — WooCommerce Store API, then Shopify                 | ✅ done |
+| 4     | Category traversal / pagination                               | next    |
 | 5     | Variable products & variations                                |         |
 | 6     | Layer C — Selector Learning Mode                              |         |
 | 7     | Filtering & field selection                                   |         |
@@ -33,18 +33,18 @@ problem first, the browser UI last.
 | 11    | Release automation                                            |         |
 | 12    | Additional exporters                                          |         |
 
-There is no browser extension yet, and nothing here talks to the network — you
-supply the HTML, the pipeline turns it into a CSV. What exists is the part
-everything else is validated against: the canonical product model, the
-normalizers, the platform-independent extraction layer, and a WooCommerce CSV
-exporter, with 401 tests behind them.
+There is no browser extension yet. `core` still makes no requests of its own —
+you supply the HTML and, for Layer A, an HTTP client; the extension and the
+companion own the network. What exists is the part everything else is validated
+against: the canonical product model, the normalizers, both extraction layers,
+and a WooCommerce CSV exporter, with 470 tests behind them.
 
 ## Packages
 
-| Package              | What it is                                                                  |
-| -------------------- | --------------------------------------------------------------------------- |
-| `packages/core`      | `CanonicalProduct`, normalizers, deterministic SKUs, the Layer B extractors |
-| `packages/exporters` | WooCommerce CSV exporter (Shopify CSV and JSON to follow)                   |
+| Package              | What it is                                                               |
+| -------------------- | ------------------------------------------------------------------------ |
+| `packages/core`      | `CanonicalProduct`, normalizers, deterministic SKUs, Layer A and Layer B |
+| `packages/exporters` | WooCommerce CSV exporter (Shopify CSV and JSON to follow)                |
 
 `packages/extension`, `packages/companion` and `packages/profiles` arrive with
 the phases that need them.
@@ -63,12 +63,58 @@ from source when Phase 10 packaging lands.
 
 ## Scanning a page
 
-Layer B reads the structured markup SEO obliges stores to publish, so it works
-on any platform without knowing which one it is:
+`scanCategory` runs the whole pipeline: detect the platform, try its own
+catalogue endpoint, and fall back to reading the page's markup.
+
+```ts
+import { scanCategory } from '@proc123/core';
+import { exportWooCommerceCsv } from '@proc123/exporters';
+
+const scan = await scanCategory({ url: pageUrl, html }, { http });
+
+scan.layer; // 'A' when the store's own API answered, 'B' when the page did
+scan.platform; // 'woocommerce' | 'shopify' | 'nextjs' | … | 'unknown'
+scan.detections; // every platform signal that fired, and how confident it was
+scan.incomplete; // the scan knows it did not see the whole category
+
+const { csv } = exportWooCommerceCsv(scan.products);
+```
+
+`http` is a one-function client the caller supplies — the extension backs it with
+its background service worker, the companion with Node, tests with canned
+responses. Without one, only the layers needing no network run.
+
+### Layer A — the store's own catalogue
+
+| Platform       | Endpoint                                                                                                                            |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| WooCommerce    | `/wp-json/wc/store/v1/products` — paginated and category-filtered, plus one call per variable product for real per-variation prices |
+| Shopify        | `/collections/{handle}/products.json` — **unofficial**, so the result is cross-checked against the collection's declared count      |
+| Next.js / Nuxt | `__NEXT_DATA__`, `__NUXT__`, Apollo caches — read straight out of the page, no request at all                                       |
+
+Where it exists, Layer A beats markup on every axis: complete variations, real
+stock, and the store's own currency settings — which is how a Store API scan
+tells toman from rial without having to ask.
+
+Magento, PrestaShop and OpenCart are detected but have no adapter yet. The scan
+says so and reads the page instead, rather than falling through in silence.
+
+### When a site says no
+
+Scans are paced and low-concurrency by default (800ms apart, two at a time). If
+a site answers with a CAPTCHA, a 403 or a 429, the scan **stops**: the client
+latches, every later request throws without being sent, and the result carries a
+`site-blocked` error naming what happened. There is no retry, no backoff, and no
+fallback that reads the same site by another route. See
+[what proc123 will not do](#what-proc123-will-not-do).
+
+### Layer B — structured markup
+
+Reads what SEO obliges stores to publish, so it works on any platform without
+knowing which one it is:
 
 ```ts
 import { extractStructured } from '@proc123/core';
-import { exportWooCommerceCsv } from '@proc123/exporters';
 
 const result = extractStructured({ url: pageUrl, html });
 
@@ -211,6 +257,9 @@ logs it, and tells you. This is permanent and applies to every phase.
 - [`docs/woocommerce-csv-notes.md`](docs/woocommerce-csv-notes.md) — WooCommerce
   importer behaviour verified against its source, with references. Worth reading
   before changing the exporter.
+- [`docs/store-api-notes.md`](docs/store-api-notes.md) — the WooCommerce Store
+  API verified the same way: minor-unit prices, the variation slug trap, and the
+  category parameter that guesses what you meant.
 - [`docs/structured-markup-notes.md`](docs/structured-markup-notes.md) — what
   storefronts actually publish as JSON-LD, Microdata and OpenGraph, and the
   decisions Layer B makes about it.
