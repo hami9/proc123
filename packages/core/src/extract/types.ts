@@ -91,6 +91,8 @@ export type ExtractedFields = {
  * reserved for Layer A, where the store's own API answered.
  */
 export const CONFIDENCE = {
+  /** Layer A: the store's own catalogue API answered. Nothing beats this. */
+  platformApi: 1,
   /** A property stated directly on a schema.org Product node. */
   jsonLd: 0.95,
   /** Read from schema.org markup, but inferred rather than stated. */

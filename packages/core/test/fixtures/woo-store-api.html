@@ -1,0 +1,35 @@
+<!doctype html>
+<!--
+  A Persian WooCommerce category page with the Store API available.
+
+  The page itself carries almost no product data — that is the point. Layer B
+  would get two names and nothing else; Layer A gets the whole catalogue with
+  variations, stock and the store's own currency settings.
+
+  The `<link rel="https://api.w.org/">` element is what tells the adapter where
+  the REST root is; this store runs in a subdirectory, so assuming `/wp-json/`
+  would miss it.
+-->
+<html lang="fa-IR" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>آجیل - فروشگاه نمونه</title>
+    <link rel="https://api.w.org/" href="https://ajil.example/shop/wp-json/" />
+    <link
+      rel="stylesheet"
+      href="https://ajil.example/shop/wp-content/plugins/woocommerce/assets/css/woocommerce.css"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="آجیل - فروشگاه نمونه" />
+  </head>
+  <body class="archive tax-product_cat woocommerce woocommerce-page">
+    <h1>آجیل</h1>
+    <ul class="products">
+      <li class="product"><a href="/shop/product/almond/">بادام درختی شور</a></li>
+      <li class="product"><a href="/shop/product/pistachio/">پسته اکبری</a></li>
+    </ul>
+    <script>
+      var wc_add_to_cart_params = { ajax_url: '/shop/wp-admin/admin-ajax.php' };
+    </script>
+  </body>
+</html>

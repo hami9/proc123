@@ -1,0 +1,93 @@
+<!doctype html>
+<!--
+  A headless Next.js storefront rendering a Shopify catalogue.
+
+  The products are in `__NEXT_DATA__` and nowhere else: no JSON-LD, no
+  Microdata, no product meta tags. Layer B finds nothing here, and there is no
+  endpoint to call — the whole answer is already in the page.
+
+  The blob mixes shapes on purpose: `products` holds Shopify REST objects, while
+  `featured` holds the Storefront-GraphQL shape a headless build usually gets,
+  down to the `edges`/`node` wrapper. `collections` is there to be ignored — it
+  is named and identified but has no price, so it is not a product.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Nuts — Example Headless</title>
+    <link rel="preload" href="/_next/static/chunks/main.js" as="script" />
+  </head>
+  <body>
+    <div id="__next"><h1>Nuts</h1></div>
+    <script id="__NEXT_DATA__" type="application/json">
+      {
+        "props": {
+          "pageProps": {
+            "collection": { "handle": "nuts", "title": "Nuts" },
+            "collections": [
+              { "id": "gid://shopify/Collection/1", "title": "Nuts", "handle": "nuts" }
+            ],
+            "products": [
+              {
+                "id": 111,
+                "title": "Marcona Almonds",
+                "handle": "marcona-almonds",
+                "body_html": "<p>Fried in olive oil, salted.</p>",
+                "vendor": "Example Roastery",
+                "product_type": "Nuts",
+                "tags": ["spanish", "almonds"],
+                "images": [{ "id": 1, "src": "https://cdn.shopify.com/almonds.jpg" }],
+                "options": [{ "name": "Size", "position": 1, "values": ["250g", "1kg"] }],
+                "variants": [
+                  {
+                    "id": 1111,
+                    "title": "250g",
+                    "option1": "250g",
+                    "sku": "ALM-250",
+                    "price": "8.50",
+                    "compare_at_price": "10.00",
+                    "available": true,
+                    "grams": 250
+                  },
+                  {
+                    "id": 1112,
+                    "title": "1kg",
+                    "option1": "1kg",
+                    "sku": "ALM-1000",
+                    "price": "29.00",
+                    "compare_at_price": null,
+                    "available": false,
+                    "grams": 1000
+                  }
+                ]
+              }
+            ],
+            "featured": {
+              "edges": [
+                {
+                  "node": {
+                    "id": "gid://shopify/Product/222",
+                    "title": "Sicilian Pistachios",
+                    "handle": "sicilian-pistachios",
+                    "descriptionHtml": "<p>Bronte DOP.</p>",
+                    "vendor": "Example Roastery",
+                    "availableForSale": true,
+                    "priceRange": {
+                      "minVariantPrice": { "amount": "24.00", "currencyCode": "EUR" }
+                    },
+                    "compareAtPriceRange": {
+                      "minVariantPrice": { "amount": "30.00", "currencyCode": "EUR" }
+                    },
+                    "featuredImage": { "url": "https://cdn.shopify.com/pistachios.jpg" }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "page": "/collections/[handle]",
+        "buildId": "abc123"
+      }
+    </script>
+  </body>
+</html>

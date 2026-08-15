@@ -2,6 +2,7 @@ export * from './extract/index.js';
 export * from './model.js';
 export * from './money.js';
 export * from './numbers.js';
+export * from './platform/index.js';
 export * from './sha256.js';
 export * from './sku.js';
 export * from './text.js';
