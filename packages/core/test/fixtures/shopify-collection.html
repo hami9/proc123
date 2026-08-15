@@ -1,0 +1,36 @@
+<!doctype html>
+<!--
+  A Shopify collection page.
+
+  The JSON-LD `ItemList` declares `numberOfItems`, which is the one
+  cross-platform way to check what `/collections/{handle}/products.json`
+  returned against what the collection actually holds (ROADMAP §6.14). The
+  `Shopify.currency` global is the only place the shop's currency appears —
+  products.json never states it.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Nuts — Example Roastery</title>
+    <meta id="shopify-digital-wallet" name="shopify-digital-wallet" content="/12345/digital_wallets/dialog" />
+    <link rel="stylesheet" href="https://cdn.shopify.com/s/files/1/0001/theme.css" />
+    <script>
+      var Shopify = Shopify || {};
+      Shopify.shop = 'example-roastery.myshopify.com';
+      Shopify.currency = {"active":"EUR","rate":"1.0"};
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "numberOfItems": 3,
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "url": "/products/house-blend" }
+        ]
+      }
+    </script>
+  </head>
+  <body class="template-collection">
+    <h1>Nuts</h1>
+  </body>
+</html>
