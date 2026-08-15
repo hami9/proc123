@@ -21,8 +21,8 @@ problem first, the browser UI last.
 | ----- | ------------------------------------------------------------- | ------- |
 | 0     | Monorepo scaffold + CI                                        | ✅ done |
 | 1     | Canonical model + WooCommerce CSV exporter                    | ✅ done |
-| 2     | Layer B — structured markup (JSON-LD → Microdata → OpenGraph) | next    |
-| 3     | Layer A — WooCommerce Store API, then Shopify                 |         |
+| 2     | Layer B — structured markup (JSON-LD → Microdata → OpenGraph) | ✅ done |
+| 3     | Layer A — WooCommerce Store API, then Shopify                 | next    |
 | 4     | Category traversal / pagination                               |         |
 | 5     | Variable products & variations                                |         |
 | 6     | Layer C — Selector Learning Mode                              |         |
@@ -33,16 +33,18 @@ problem first, the browser UI last.
 | 11    | Release automation                                            |         |
 | 12    | Additional exporters                                          |         |
 
-There is no browser extension yet, and nothing here talks to the network. What
-exists is the part everything else is validated against: the canonical product
-model, the normalizers, and a WooCommerce CSV exporter with 189 tests behind it.
+There is no browser extension yet, and nothing here talks to the network — you
+supply the HTML, the pipeline turns it into a CSV. What exists is the part
+everything else is validated against: the canonical product model, the
+normalizers, the platform-independent extraction layer, and a WooCommerce CSV
+exporter, with 401 tests behind them.
 
 ## Packages
 
-| Package              | What it is                                                            |
-| -------------------- | --------------------------------------------------------------------- |
-| `packages/core`      | `CanonicalProduct`, number/money/text normalizers, deterministic SKUs |
-| `packages/exporters` | WooCommerce CSV exporter (Shopify CSV and JSON to follow)             |
+| Package              | What it is                                                                  |
+| -------------------- | --------------------------------------------------------------------------- |
+| `packages/core`      | `CanonicalProduct`, normalizers, deterministic SKUs, the Layer B extractors |
+| `packages/exporters` | WooCommerce CSV exporter (Shopify CSV and JSON to follow)                   |
 
 `packages/extension`, `packages/companion` and `packages/profiles` arrive with
 the phases that need them.
@@ -58,6 +60,47 @@ npm test
 Node 20.11+ required. Packages are consumed straight from TypeScript source;
 nothing emits to `dist` yet, because the extension and companion will bundle
 from source when Phase 10 packaging lands.
+
+## Scanning a page
+
+Layer B reads the structured markup SEO obliges stores to publish, so it works
+on any platform without knowing which one it is:
+
+```ts
+import { extractStructured } from '@proc123/core';
+import { exportWooCommerceCsv } from '@proc123/exporters';
+
+const result = extractStructured({ url: pageUrl, html });
+
+result.products; // CanonicalProduct[] — parents immediately before their variations
+result.discoveredUrls; // product links the page listed but did not describe
+result.issues; // every parse failure, assumption and skipped field, with a reason
+
+const { csv } = exportWooCommerceCsv(result.products);
+```
+
+Three sources are read in order and merged by confidence: **JSON-LD** (including
+`@graph`, `@id` references, `ItemList`, `BreadcrumbList` and `ProductGroup` with
+`hasVariant`), then **Microdata**, then **OpenGraph** `product:*` tags. A source
+lower down fills gaps but never overrules one above it, and every field carries
+the confidence it was recorded with in `extractionMeta.fieldConfidence`.
+
+`parseSitemap` reads `sitemap.xml` and sitemap indexes for product-URL discovery.
+Fetching is not done here — the extension and companion own the network,
+including the delay between requests.
+
+### What Layer B will not do
+
+- It does not invent a product from an `<h1>` and a price `<div>`. A page with no
+  structured markup produces zero rows and a `no-structured-data` issue pointing
+  at Selector Learning Mode (Phase 6).
+- A product with no name is skipped, not exported blank.
+- An `AggregateOffer` price _range_ is recorded as the low end with reduced
+  confidence and an issue naming both bounds, so a later per-product scan
+  replaces it rather than fighting it.
+- A regular and a sale price move together or not at all. Pairing one source's
+  regular price with another's sale price is how a product ends up permanently
+  marked down to exactly its own price.
 
 ## Using the exporter
 
@@ -168,6 +211,9 @@ logs it, and tells you. This is permanent and applies to every phase.
 - [`docs/woocommerce-csv-notes.md`](docs/woocommerce-csv-notes.md) — WooCommerce
   importer behaviour verified against its source, with references. Worth reading
   before changing the exporter.
+- [`docs/structured-markup-notes.md`](docs/structured-markup-notes.md) — what
+  storefronts actually publish as JSON-LD, Microdata and OpenGraph, and the
+  decisions Layer B makes about it.
 
 ## Contributing
 
