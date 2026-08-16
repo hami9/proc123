@@ -22,7 +22,7 @@ import {
   type TargetField,
 } from '@proc123/core';
 
-import { loadSettings, saveSettings } from './settings.js';
+import { loadApiKey, loadSettings, saveApiKey, saveSettings } from './settings.js';
 
 import type { ExtensionResponse, ScanSummary } from './messages.js';
 
@@ -122,6 +122,13 @@ function readSettings(): Proc123Config | undefined {
       delayMsBetweenRequests: Number(element<HTMLInputElement>('delayMs').value),
       maxConcurrent: Number(element<HTMLInputElement>('maxConcurrent').value) || 1,
     },
+    // The key is deliberately not here: `aiProvider` is serialised into
+    // `proc123.config.json`, and a key must never travel with it (CLAUDE.md §4).
+    aiProvider: {
+      name: element<HTMLSelectElement>('aiProvider').value,
+      model: element<HTMLInputElement>('aiModel').value.trim() || settings.aiProvider.model,
+      enabled: element<HTMLInputElement>('aiEnabled').checked,
+    },
   };
 }
 
@@ -131,13 +138,17 @@ async function persistSettings(): Promise<void> {
 
   settings = next;
   await saveSettings(next);
+  await saveApiKey(element<HTMLInputElement>('aiApiKey').value);
 
+  const key = element<HTMLInputElement>('aiApiKey').value.trim();
   settingsHint.textContent =
-    next.politeness.delayMsBetweenRequests < 400
-      ? 'A short delay puts more load on the store you are reading.'
-      : next.contentMode === 'reference'
-        ? 'Descriptions will be copied. They are the store’s content, not yours.'
-        : '';
+    next.aiProvider.enabled && key === ''
+      ? 'The AI fallback needs your own API key before it can run.'
+      : next.politeness.delayMsBetweenRequests < 400
+        ? 'A short delay puts more load on the store you are reading.'
+        : next.contentMode === 'reference'
+          ? 'Descriptions will be copied. They are the store’s content, not yours.'
+          : '';
 }
 
 async function renderSettings(): Promise<void> {
@@ -167,6 +178,10 @@ async function renderSettings(): Promise<void> {
   element<HTMLSelectElement>('displayUnit').value = settings.currency.displayUnit;
   element<HTMLInputElement>('delayMs').value = String(settings.politeness.delayMsBetweenRequests);
   element<HTMLInputElement>('maxConcurrent').value = String(settings.politeness.maxConcurrent);
+  element<HTMLInputElement>('aiEnabled').checked = settings.aiProvider.enabled;
+  element<HTMLSelectElement>('aiProvider').value = settings.aiProvider.name;
+  element<HTMLInputElement>('aiModel').value = settings.aiProvider.model;
+  element<HTMLInputElement>('aiApiKey').value = await loadApiKey();
 
   element('settings').addEventListener('change', () => {
     void persistSettings();

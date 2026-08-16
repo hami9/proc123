@@ -172,6 +172,7 @@
       }
       .settings input[type='text'],
       .settings input[type='number'],
+      .settings input[type='password'],
       .settings select {
         flex: 0 1 55%;
         padding: 3px 5px;
@@ -276,6 +277,36 @@
         >Delay between requests (ms) <input id="delayMs" type="number" min="0" step="100"
       /></label>
       <label>Requests at once <input id="maxConcurrent" type="number" min="1" max="8" /></label>
+
+      <fieldset>
+        <legend>AI fallback</legend>
+        <p class="hint">
+          Off by default. When on, pages the markup could not describe are sent — as a trimmed
+          fragment, never the whole page — to the provider below, using your own key. You are billed
+          by them directly.
+        </p>
+        <label>
+          <input id="aiEnabled" type="checkbox" />
+          Use AI when a field is still missing
+        </label>
+        <label>
+          Provider
+          <select id="aiProvider">
+            <option value="gemini">Gemini</option>
+            <option value="openai">OpenAI</option>
+            <option value="claude">Claude</option>
+          </select>
+        </label>
+        <label>Model <input id="aiModel" type="text" /></label>
+        <label>
+          Your API key
+          <input id="aiApiKey" type="password" autocomplete="off" spellcheck="false" />
+        </label>
+        <p class="hint">
+          The key is stored only in this browser and is never written into
+          <code>proc123.config.json</code>, so exporting your settings will not leak it.
+        </p>
+      </fieldset>
 
       <p class="hint" id="settingsHint"></p>
     </details>
