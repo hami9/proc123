@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { CanonicalProduct, CrawlState, HttpClient } from '@proc123/core';
 import { DEFAULT_CONFIG, createMemoryCrawlStore } from '@proc123/core';
 
+import { isFirefox, storage } from '../src/browser.js';
 import { createFetchClient } from '../src/http.js';
 import { isExportRequest, isLastResultRequest, isScanRequest } from '../src/messages.js';
 import { countCurrencyUnits, crawlIdFor, runScan } from '../src/scan.js';
@@ -355,5 +356,74 @@ describe('settings', () => {
     expect(problems.join(' ')).toContain('"nonsense" is not a proc123 setting');
     // And it was saved, so the next scan uses it.
     expect((await loadSettings()).maxPages).toBe(5);
+  });
+});
+
+/**
+ * The browser shim (Phase 10).
+ *
+ * One source tree has to work on Chrome and on Firefox, and this is the only
+ * file that knows the difference. The tests that matter are the two failure
+ * modes an eager binding would have: throwing on import where no extension API
+ * exists, and capturing a global that is replaced afterwards.
+ */
+describe('the browser shim', () => {
+  interface Globals {
+    browser?: unknown;
+    chrome?: unknown;
+  }
+
+  const globals = globalThis as Globals;
+  let saved: { browser?: unknown; chrome?: unknown };
+
+  beforeEach(() => {
+    saved = { browser: globals.browser, chrome: globals.chrome };
+  });
+
+  afterEach(() => {
+    if (saved.browser === undefined) delete globals.browser;
+    else globals.browser = saved.browser;
+    if (saved.chrome === undefined) delete globals.chrome;
+    else globals.chrome = saved.chrome;
+  });
+
+  it('prefers Firefox’s promise-returning `browser` over its `chrome` alias', () => {
+    globals.chrome = { storage: { local: 'the chrome alias' } };
+    globals.browser = { storage: { local: 'the browser API' } };
+
+    expect(storage.local).toBe('the browser API');
+  });
+
+  it('uses `chrome` when there is no `browser` — Chrome, Edge, Brave', () => {
+    delete globals.browser;
+    globals.chrome = { storage: { local: 'the chrome API' } };
+
+    expect(storage.local).toBe('the chrome API');
+  });
+
+  it('resolves on use, so a global installed after import is still seen', () => {
+    // An eager `const api = chrome` at module load would have captured the
+    // first of these and never noticed the second.
+    globals.chrome = { storage: { local: 'first' } };
+    expect(storage.local).toBe('first');
+
+    globals.chrome = { storage: { local: 'second' } };
+    expect(storage.local).toBe('second');
+  });
+
+  it('explains itself rather than throwing a ReferenceError when there is no API', () => {
+    delete globals.browser;
+    delete globals.chrome;
+
+    expect(() => storage.local).toThrow(/only runs inside a browser extension/);
+  });
+
+  it('knows which engine it is on', () => {
+    delete globals.browser;
+    globals.chrome = {};
+    expect(isFirefox()).toBe(false);
+
+    globals.browser = {};
+    expect(isFirefox()).toBe(true);
   });
 });

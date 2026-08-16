@@ -1,0 +1,28 @@
+{
+  "name": "@proc123/companion",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Command-line companion: scan a category and write a CSV without a browser",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "proc123": "./dist/proc123.js"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:binary": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@proc123/core": "*",
+    "@proc123/exporters": "*",
+    "@proc123/profiles": "*"
+  },
+  "devDependencies": {
+    "postject": "^1.0.0-alpha.6"
+  }
+}

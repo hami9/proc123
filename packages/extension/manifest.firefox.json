@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "proc123",
+  "version": "0.0.1",
+  "description": "Scan a store's category page and export a CSV another store can import.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "proc123@hami9.github.io",
+      "strict_min_version": "128.0"
+    }
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Scan this category with proc123"
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "type": "module"
+  },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "optional_host_permissions": ["*://*/*"]
+}
