@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# A release must never be cancelled halfway: it tags, commits and publishes, and
+# a half-finished one leaves the repository claiming a version that has no
+# release behind it. This is the one workflow that does not cancel in progress.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, typecheck & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  binaries:
+    name: Companion binary (${{ matrix.os }})
+    needs: check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # One platform failing should not hide whether the other worked.
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: proc123-linux-x64
+          - os: windows-latest
+            artifact: proc123-win32-x64.exe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Node 24+ has `--build-sea`, which does the whole thing in one step.
+          # Older Node needs postject, which is alpha and segfaults against some
+          # builds — see packages/companion/scripts/package.mjs.
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # SEA injects into the running Node binary, so there is no
+      # cross-compilation: each platform's executable is built on that platform.
+      # That is the whole reason this job is a matrix.
+      - name: Build the executable
+        run: npm run build:binary -w @proc123/companion
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: packages/companion/dist/binary/${{ matrix.artifact }}
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Tag, changelog and GitHub Release
+    needs: [check, binaries]
+    runs-on: ubuntu-latest
+    permissions:
+      # semantic-release commits the changelog and version bump, and creates
+      # the release. Nothing here needs `packages: write`: every workspace is
+      # private and nothing is published to npm.
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # semantic-release reads the tag history to work out the next version,
+          # so a shallow clone would make every release look like the first.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Flattened into one directory, because .releaserc.json names the assets
+      # by path and per-artifact subdirectories would break those paths.
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release

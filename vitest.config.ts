@@ -20,7 +20,10 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['packages/*/test/**/*.test.ts'],
+    // `scripts/` is build tooling rather than shipped code, and is tested for
+    // one reason: the release sync runs once, unattended, and its failure mode
+    // is silent — a store accepts an upload whose version did not change.
+    include: ['packages/*/test/**/*.test.ts', 'scripts/**/*.test.mjs'],
     environment: 'node',
     coverage: {
       provider: 'v8',

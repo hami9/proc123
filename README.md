@@ -1,5 +1,10 @@
 # proc123
 
+<!-- version-badge:start -->
+
+[![version](https://img.shields.io/badge/version-unreleased-6b6560)](https://github.com/hami9/proc123/releases)
+<!-- version-badge:end -->
+
 **Scan any online store's category page, get a CSV that imports cleanly into another store.**
 
 proc123 reads a category or collection page on any e-commerce platform, extracts
@@ -17,6 +22,8 @@ for the phase plan.
 Early. Built in the order set out in `CLAUDE.md` §14 — the hardest correctness
 problem first, the browser UI last.
 
+<!-- phase-table:start -->
+
 | Phase |                                                               |         |
 | ----- | ------------------------------------------------------------- | ------- |
 | 0     | Monorepo scaffold + CI                                        | ✅ done |
@@ -30,14 +37,16 @@ problem first, the browser UI last.
 | 8     | Layer D — pluggable AI providers                              | ✅ done |
 | 9     | Troubleshooting subsystem                                     | ✅ done |
 | 10    | Cross-platform packaging                                      | ✅ done |
-| 11    | Release automation                                            | next    |
+| 11    | Release automation                                            | ✅ done |
 | 12    | Additional exporters                                          |         |
+
+<!-- phase-table:end -->
 
 `core` still makes no requests of its own — you supply the HTML and, for Layer
 A, an HTTP client; the extension and the companion own the network. What exists
 is the part everything else is validated against: the canonical product model,
 the normalizers, all four extraction layers, a WooCommerce CSV exporter, a
-browser extension for Chrome and Firefox, and a command-line companion, with 691
+browser extension for Chrome and Firefox, and a command-line companion, with 710
 tests behind them.
 
 ## Packages
@@ -110,7 +119,35 @@ npm test
 Node 20.11+ required. `core`, `exporters` and `profiles` are consumed straight
 from TypeScript source; the extension and the companion each bundle at build
 time, because neither a browser nor a single-file executable can run TypeScript.
-Store signing lands with Phase 11.
+Store signing is not automated yet; the release workflow attaches unsigned
+artifacts.
+
+## Releasing
+
+Nobody edits a version by hand. Merging to `main` runs the checks, builds a
+companion binary on each platform, and lets
+[semantic-release](https://semantic-release.gitbook.io) work out the next
+version from the commit messages — which is why
+[Conventional Commits](https://www.conventionalcommits.org) are required rather
+than encouraged. It then writes `CHANGELOG.md`, syncs the version into every
+file that states one, and publishes a GitHub Release with the two extension zips
+and both companion binaries attached.
+
+`scripts/release/sync-version.mjs` is the part worth knowing about. A version
+appears in four places — the root `package.json`, both extension manifests, and
+the User-Agent a shop sees in its logs — and a store will happily accept an
+upload whose manifest version did not change, which is a slow way to find out.
+The same script regenerates the README's version badge and phase table from
+`scripts/release/phases.json`, so phase status lives in one file instead of
+being kept in step by hand. CI fails a pull request where those have drifted.
+
+```bash
+npm run release:check     # are the generated sections in step?
+npm run release:dry-run   # what would the next release be?
+```
+
+Nothing is published to npm: every workspace is private, and what ships is the
+extension zips and the binaries.
 
 ## Scanning a page
 

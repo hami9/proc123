@@ -1,0 +1,59 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md",
+        "changelogTitle": "# Changelog\n\nEvery release, newest first. Generated from Conventional Commits — see CLAUDE.md §13."
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "node scripts/release/sync-version.mjs ${nextRelease.version} && npm run build -w @proc123/extension -- --zip"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "CHANGELOG.md",
+          "README.md",
+          "package.json",
+          "packages/extension/manifest.chrome.json",
+          "packages/extension/manifest.firefox.json",
+          "packages/companion/src/http.ts"
+        ],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "packages/extension/dist/proc123-chrome-*.zip",
+            "label": "Extension — Chrome, Edge, Brave"
+          },
+          {
+            "path": "packages/extension/dist/proc123-firefox-*.zip",
+            "label": "Extension — Firefox"
+          },
+          {
+            "path": "artifacts/proc123-linux-x64",
+            "label": "Companion — Linux (x64)"
+          },
+          {
+            "path": "artifacts/proc123-win32-x64.exe",
+            "label": "Companion — Windows (x64)"
+          }
+        ],
+        "successComment": false,
+        "failComment": false
+      }
+    ]
+  ]
+}

@@ -43,6 +43,10 @@ export default tseslint.config(
     },
     rules: {
       'no-console': 'off',
+      // `disableTypeChecked` turns off the rules that need type information;
+      // this one only needs a parser, so it stays on and demands annotations
+      // that plain JavaScript cannot carry.
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
     },
   },
   {
