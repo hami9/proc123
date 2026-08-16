@@ -3,7 +3,7 @@
  *
  * Two things it owns that the worker cannot:
  *
- * - **The permission prompt.** `chrome.permissions.request` only works inside a
+ * - **The permission prompt.** `permissions.request` only works inside a
  *   user gesture, so asking has to happen in the click handler. `activeTab`
  *   already covers reading the page the user is looking at; permission for the
  *   origin is only needed to fetch the *other* pages of the category, so the
@@ -22,6 +22,7 @@ import {
   type TargetField,
 } from '@proc123/core';
 
+import { type Tab, permissions, runtime, tabs } from './browser.js';
 import { loadApiKey, loadSettings, saveApiKey, saveSettings } from './settings.js';
 
 import type { ExtensionResponse, ScanSummary } from './messages.js';
@@ -197,7 +198,7 @@ const STATUS_TEXT: Record<string, string> = {
   running: 'Still running.',
 };
 
-function describeTab(tab: chrome.tabs.Tab): string {
+function describeTab(tab: Tab): string {
   try {
     const url = new URL(tab.url ?? '');
     return `${url.hostname}${url.pathname}`;
@@ -278,8 +279,8 @@ function render(summary: ScanSummary): void {
   rescanButton.hidden = false;
 }
 
-async function activeTab(): Promise<chrome.tabs.Tab | undefined> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+async function activeTab(): Promise<Tab | undefined> {
+  const [tab] = await tabs.query({ active: true, currentWindow: true });
   return tab;
 }
 
@@ -298,9 +299,9 @@ async function scan(restart: boolean): Promise<void> {
 
   // Asked here, inside the click, because that is the only place Chrome allows
   // it. Declining is a normal answer, not an error.
-  let canFetch = await chrome.permissions.contains({ origins: [pattern] });
+  let canFetch = await permissions.contains({ origins: [pattern] });
   if (!canFetch) {
-    canFetch = await chrome.permissions.request({ origins: [pattern] });
+    canFetch = await permissions.request({ origins: [pattern] });
   }
 
   scanButton.disabled = true;
@@ -310,7 +311,7 @@ async function scan(restart: boolean): Promise<void> {
     : 'Scanning this page only — permission for the rest of the site was declined.';
 
   try {
-    const response = await chrome.runtime.sendMessage<unknown, ExtensionResponse>({
+    const response = await runtime.sendMessage<unknown, ExtensionResponse>({
       kind: 'scan',
       tabId: tab.id,
       url: tab.url,
@@ -359,7 +360,7 @@ async function download(): Promise<void> {
   statusLine.textContent = 'Building the CSV…';
 
   try {
-    const response = await chrome.runtime.sendMessage<unknown, ExtensionResponse>({
+    const response = await runtime.sendMessage<unknown, ExtensionResponse>({
       kind: 'export',
       url: scannedUrl,
       displayUnit: unitSelect.value as CurrencyUnit,
@@ -411,7 +412,7 @@ async function explain(): Promise<void> {
 
   try {
     const tab = await activeTab();
-    const response = await chrome.runtime.sendMessage<unknown, ExtensionResponse>({
+    const response = await runtime.sendMessage<unknown, ExtensionResponse>({
       kind: 'report',
       url: scannedUrl,
       // Sent only when the tab still shows the page that was scanned; a profile
@@ -455,7 +456,7 @@ async function teach(): Promise<void> {
   }
 
   statusLine.textContent = 'Click the product name, price and image on the page…';
-  void chrome.runtime
+  void runtime
     .sendMessage<unknown, ExtensionResponse>({ kind: 'teach', tabId: tab.id, url: tab.url })
     .catch(() => undefined);
 
@@ -483,7 +484,7 @@ void (async (): Promise<void> => {
   pageLine.textContent = tab === undefined ? 'No page open.' : describeTab(tab);
 
   // The popup may have been closed while the last scan was still running.
-  const response = await chrome.runtime
+  const response = await runtime
     .sendMessage<unknown, ExtensionResponse>({ kind: 'last-result' })
     .catch(() => undefined);
 

@@ -7,13 +7,15 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "build:watch": "node scripts/build.mjs --watch"
+    "build:watch": "node scripts/build.mjs --watch --only=chrome",
+    "build:zip": "node scripts/build.mjs --zip"
   },
   "dependencies": {
     "@proc123/core": "*",
     "@proc123/exporters": "*"
   },
   "devDependencies": {
+    "adm-zip": "^0.6.0",
     "esbuild": "^0.25.0"
   }
 }

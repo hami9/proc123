@@ -31,7 +31,9 @@
       "@proc123/exporters": ["packages/exporters/src/index.ts"],
       "@proc123/profiles": ["packages/profiles/src/index.ts"],
       "@proc123/profiles/*": ["packages/profiles/src/*"],
-      "@proc123/exporters/*": ["packages/exporters/src/*"]
+      "@proc123/exporters/*": ["packages/exporters/src/*"],
+      "@proc123/companion": ["packages/companion/src/index.ts"],
+      "@proc123/companion/*": ["packages/companion/src/*"]
     }
   },
   "include": ["packages/*/src/**/*.ts", "packages/*/test/**/*.ts", "*.config.ts"],

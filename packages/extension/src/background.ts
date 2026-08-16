@@ -3,7 +3,7 @@
  *
  * It is also the only long-lived-ish thing here, and it is not very long-lived
  * — Chrome kills it when idle. Nothing is kept in memory between messages;
- * every scan reads and writes its state through `chrome.storage`.
+ * every scan reads and writes its state through `storage`.
  */
 
 import {
@@ -23,6 +23,7 @@ import {
 import { exportWooCommerceCsv } from '@proc123/exporters';
 import type { ProfileField } from '@proc123/profiles';
 
+import { runtime, scripting } from './browser.js';
 import { createFetchClient } from './http.js';
 import {
   isExportRequest,
@@ -55,7 +56,7 @@ import { createChromeCrawlStore, loadLastResult, saveLastResult } from './storag
  * The function is serialized and injected, so it must close over nothing.
  */
 async function readPage(tabId: number): Promise<{ url: string; html: string; title: string }> {
-  const [injected] = await chrome.scripting.executeScript({
+  const [injected] = await scripting.executeScript({
     target: { tabId },
     func: () => ({
       url: location.href,
@@ -140,7 +141,7 @@ const STEP_LABELS: Record<ProfileField, string> = {
 async function handleTeach(request: { tabId: number; url: string }): Promise<TeachResult> {
   const labels = PICKER_STEPS.map((field) => STEP_LABELS[field]);
 
-  const [picked] = await chrome.scripting.executeScript({
+  const [picked] = await scripting.executeScript({
     target: { tabId: request.tabId },
     func: pickerScript,
     args: [labels],
@@ -311,7 +312,7 @@ async function handleReport(request: { url: string; tabId?: number }): Promise<E
   };
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (isScanRequest(message)) {
     handleScan(message).then(
       (summary) => {

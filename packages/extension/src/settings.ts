@@ -1,5 +1,5 @@
 /**
- * The user's settings, in `chrome.storage.local`.
+ * The user's settings, in the browser's extension storage.
  *
  * CLAUDE.md §9: "Everything here must also be settable from the extension
  * popup — most users will never open the JSON." So the popup is the primary
@@ -8,6 +8,8 @@
  */
 
 import { type Proc123Config, parseConfig, resolveConfig, serializeConfig } from '@proc123/core';
+
+import { storage } from './browser.js';
 
 const KEY = 'proc123.config';
 
@@ -23,7 +25,7 @@ const KEY = 'proc123.config';
 const API_KEY = 'proc123.apiKey';
 
 export async function loadSettings(): Promise<Proc123Config> {
-  const stored = await chrome.storage.local.get(KEY);
+  const stored = await storage.local.get(KEY);
   const raw = stored[KEY];
   // A stored config that this build cannot read falls back to the defaults
   // rather than failing the scan — settings are not worth losing a scan over.
@@ -31,12 +33,12 @@ export async function loadSettings(): Promise<Proc123Config> {
 }
 
 export async function saveSettings(config: Proc123Config): Promise<void> {
-  await chrome.storage.local.set({ [KEY]: serializeConfig(config) });
+  await storage.local.set({ [KEY]: serializeConfig(config) });
 }
 
 /** The user's own AI key, or `''` when they have not set one. */
 export async function loadApiKey(): Promise<string> {
-  const stored = await chrome.storage.local.get(API_KEY);
+  const stored = await storage.local.get(API_KEY);
   const raw = stored[API_KEY];
   return typeof raw === 'string' ? raw : '';
 }
@@ -44,10 +46,10 @@ export async function loadApiKey(): Promise<string> {
 export async function saveApiKey(key: string): Promise<void> {
   const trimmed = key.trim();
   if (trimmed === '') {
-    await chrome.storage.local.remove(API_KEY);
+    await storage.local.remove(API_KEY);
     return;
   }
-  await chrome.storage.local.set({ [API_KEY]: trimmed });
+  await storage.local.set({ [API_KEY]: trimmed });
 }
 
 /** Import a `proc123.config.json` a user pasted, reporting what it could not use. */

@@ -29,16 +29,16 @@ problem first, the browser UI last.
 | 7     | Filtering & field selection                                   | ✅ done |
 | 8     | Layer D — pluggable AI providers                              | ✅ done |
 | 9     | Troubleshooting subsystem                                     | ✅ done |
-| 10    | Cross-platform packaging                                      | next    |
-| 11    | Release automation                                            |         |
+| 10    | Cross-platform packaging                                      | ✅ done |
+| 11    | Release automation                                            | next    |
 | 12    | Additional exporters                                          |         |
 
 `core` still makes no requests of its own — you supply the HTML and, for Layer
 A, an HTTP client; the extension and the companion own the network. What exists
 is the part everything else is validated against: the canonical product model,
-the normalizers, both extraction layers,
-a WooCommerce CSV exporter, and a loadable browser extension, with 598 tests
-behind them.
+the normalizers, all four extraction layers, a WooCommerce CSV exporter, a
+browser extension for Chrome and Firefox, and a command-line companion, with 691
+tests behind them.
 
 ## Packages
 
@@ -48,8 +48,7 @@ behind them.
 | `packages/exporters` | WooCommerce CSV exporter (Shopify CSV and JSON to follow)                   |
 | `packages/extension` | Manifest V3 extension: popup, service worker, CSV download                  |
 | `packages/profiles`  | Site profile schema — the JSON Layer C learns and a person can edit         |
-
-`packages/companion` arrives with the phase that needs it.
+| `packages/companion` | Command-line runner: the same pipeline, no browser                          |
 
 ## Running the extension
 
@@ -58,9 +57,17 @@ npm install
 npm run build -w @proc123/extension
 ```
 
-Then load `packages/extension/dist` in `chrome://extensions` with developer mode
-on. Open a store's category page, click the toolbar button, and press **Scan
-this category**.
+That builds both browsers at once. Load `packages/extension/dist/chrome` in
+`chrome://extensions` with developer mode on — or
+`packages/extension/dist/firefox` via `about:debugging` → **This Firefox** →
+**Load Temporary Add-on**, picking its `manifest.json`. Then open a store's
+category page, click the toolbar button, and press **Scan this category**.
+
+The JavaScript is identical for both. The manifests differ because they have to
+— Firefox does not run extension service workers, and will not install an MV3
+add-on without an add-on id — and the runtime difference between `chrome.*` and
+`browser.*` is handled in one file, `src/browser.ts`. `npm run build:zip -w
+@proc123/extension` produces the two store uploads.
 
 `activeTab` covers reading the page you already have open. Permission for the
 rest of the site is asked for separately and only used to fetch the _other_
@@ -71,6 +78,27 @@ Before writing a file the popup shows how the prices were quoted. When the pages
 tagged prices `IRR` without saying toman or rial, it asks which they are, rather
 than picking one — that is the 10× error this project is most careful about.
 
+## Running it without a browser
+
+```bash
+npm run build -w @proc123/companion
+node packages/companion/dist/proc123.js https://shop.example/category -o out.csv
+```
+
+Same layers, same politeness, same exporter, same resumable state — `core` is
+platform-neutral precisely so there is only one implementation to get right.
+`--report` and `--log` write the troubleshooting files; `--unit toman|rial`
+answers the price question up front; Ctrl-C and re-run resumes where it stopped.
+
+**It reads the HTML a server sends.** A shop that builds its catalogue in the
+browser will look empty here, and the companion says so rather than reporting a
+bare zero — that is the whole reason the extension exists. Use the extension for
+those.
+
+`npm run build:binary -w @proc123/companion` produces a single executable for
+whoever has no Node installed. It is built for the machine that runs it; other
+platforms are built on themselves.
+
 ## Getting started
 
 ```bash
@@ -79,9 +107,10 @@ npm run check     # format check, lint, typecheck, test
 npm test
 ```
 
-Node 20.11+ required. `core` and `exporters` are consumed straight from
-TypeScript source; only the extension bundles, because a browser cannot run
-TypeScript. Signing and cross-browser manifests land with Phase 10.
+Node 20.11+ required. `core`, `exporters` and `profiles` are consumed straight
+from TypeScript source; the extension and the companion each bundle at build
+time, because neither a browser nor a single-file executable can run TypeScript.
+Store signing lands with Phase 11.
 
 ## Scanning a page
 
