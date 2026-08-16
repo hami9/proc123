@@ -24,7 +24,7 @@ problem first, the browser UI last.
 | 2     | Layer B — structured markup (JSON-LD → Microdata → OpenGraph) | ✅ done |
 | 3     | Layer A — WooCommerce Store API, then Shopify                 | ✅ done |
 | 4     | Category traversal / pagination                               | ✅ done |
-| 5     | Variable products & variations                                | next    |
+| 5     | Variable products & variations                                | partial |
 | 6     | Layer C — Selector Learning Mode                              |         |
 | 7     | Filtering & field selection                                   |         |
 | 8     | Layer D — pluggable AI providers                              |         |
@@ -33,11 +33,12 @@ problem first, the browser UI last.
 | 11    | Release automation                                            |         |
 | 12    | Additional exporters                                          |         |
 
-There is no browser extension yet. `core` still makes no requests of its own —
-you supply the HTML and, for Layer A, an HTTP client; the extension and the
-companion own the network. What exists is the part everything else is validated
-against: the canonical product model, the normalizers, both extraction layers,
-and a WooCommerce CSV exporter, with 508 tests behind them.
+`core` still makes no requests of its own — you supply the HTML and, for Layer
+A, an HTTP client; the extension and the companion own the network. What exists
+is the part everything else is validated against: the canonical product model,
+the normalizers, both extraction layers,
+a WooCommerce CSV exporter, and a loadable browser extension, with 531 tests
+behind them.
 
 ## Packages
 
@@ -45,9 +46,30 @@ and a WooCommerce CSV exporter, with 508 tests behind them.
 | -------------------- | --------------------------------------------------------------------------- |
 | `packages/core`      | `CanonicalProduct`, normalizers, SKUs, Layer A + Layer B, category crawling |
 | `packages/exporters` | WooCommerce CSV exporter (Shopify CSV and JSON to follow)                   |
+| `packages/extension` | Manifest V3 extension: popup, service worker, CSV download                  |
 
-`packages/extension`, `packages/companion` and `packages/profiles` arrive with
-the phases that need them.
+`packages/companion` and `packages/profiles` arrive with the phases that need
+them.
+
+## Running the extension
+
+```bash
+npm install
+npm run build -w @proc123/extension
+```
+
+Then load `packages/extension/dist` in `chrome://extensions` with developer mode
+on. Open a store's category page, click the toolbar button, and press **Scan
+this category**.
+
+`activeTab` covers reading the page you already have open. Permission for the
+rest of the site is asked for separately and only used to fetch the _other_
+pages of the category — declining it scans the open page and says so. The
+service worker owns every request; the content side only ever reads the DOM.
+
+Before writing a file the popup shows how the prices were quoted. When the pages
+tagged prices `IRR` without saying toman or rial, it asks which they are, rather
+than picking one — that is the 10× error this project is most careful about.
 
 ## Getting started
 
@@ -57,9 +79,9 @@ npm run check     # format check, lint, typecheck, test
 npm test
 ```
 
-Node 20.11+ required. Packages are consumed straight from TypeScript source;
-nothing emits to `dist` yet, because the extension and companion will bundle
-from source when Phase 10 packaging lands.
+Node 20.11+ required. `core` and `exporters` are consumed straight from
+TypeScript source; only the extension bundles, because a browser cannot run
+TypeScript. Signing and cross-browser manifests land with Phase 10.
 
 ## Scanning a page
 
