@@ -20,3 +20,6 @@ coverage/
 *.zip
 *.crx
 *.xpi
+
+# Release artifacts collected from the per-platform build jobs
+artifacts/

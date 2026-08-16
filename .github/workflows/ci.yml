@@ -1,8 +1,9 @@
 name: CI
 
+# Pull requests only. Pushes to `main` are covered by the release workflow,
+# which runs the same checks before it will tag anything — running both would
+# double the work and give two answers to the same question.
 on:
-  push:
-    branches: [main]
   pull_request:
 
 concurrency:
@@ -35,3 +36,9 @@ jobs:
 
       - name: Test
         run: npm run test
+
+      # The README's phase table is generated from scripts/release/phases.json.
+      # This catches the version where somebody edited the table by hand and the
+      # next release silently reverts it.
+      - name: Generated sections are in step
+        run: npm run release:check
