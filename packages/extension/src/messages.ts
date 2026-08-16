@@ -39,7 +39,32 @@ export interface TeachRequest {
   url: string;
 }
 
-export type ExtensionRequest = ScanRequest | LastResultRequest | ExportRequest | TeachRequest;
+/**
+ * "Why is this field empty?" (§11).
+ *
+ * `tabId` is optional because the report is worth having even when the tab has
+ * been closed — everything but the profile health check reads from the saved
+ * crawl. When a tab is available, the page is re-read so a taught profile can
+ * be checked against the markup as it stands today.
+ */
+export interface ReportRequest {
+  kind: 'report';
+  url: string;
+  tabId?: number;
+}
+
+export type ExtensionRequest =
+  ScanRequest | LastResultRequest | ExportRequest | TeachRequest | ReportRequest;
+
+export interface ExportedReport {
+  filename: string;
+  /** The readable report. */
+  text: string;
+  /** The structured log, as JSON lines, for whoever is helping. */
+  log: string;
+  /** Shown in the popup without downloading anything. */
+  summary: string;
+}
 
 export interface TeachResult {
   /** The profile that was learned and saved, if any. */
@@ -92,6 +117,7 @@ export type ExtensionResponse =
   | { ok: true; kind: 'summary'; summary: ScanSummary | undefined }
   | { ok: true; kind: 'download'; download: ExportedCsv }
   | { ok: true; kind: 'taught'; taught: TeachResult }
+  | { ok: true; kind: 'report'; report: ExportedReport }
   | { ok: false; message: string };
 
 export function isScanRequest(message: unknown): message is ScanRequest {
@@ -122,6 +148,12 @@ export function isTeachRequest(message: unknown): message is TeachRequest {
     typeof candidate.tabId === 'number' &&
     typeof candidate.url === 'string'
   );
+}
+
+export function isReportRequest(message: unknown): message is ReportRequest {
+  if (typeof message !== 'object' || message === null) return false;
+  const candidate = message as Partial<ReportRequest>;
+  return candidate.kind === 'report' && typeof candidate.url === 'string';
 }
 
 export function isLastResultRequest(message: unknown): message is LastResultRequest {
