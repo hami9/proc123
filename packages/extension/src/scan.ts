@@ -12,12 +12,17 @@ import {
   type HttpClient,
   type PageContext,
   type Money,
+  type Proc123Config,
+  applyConfig,
   canonicalizeUrl,
+  configToCrawlOptions,
   crawlCategory,
   isIranianCurrency,
   isResumable,
   shortHash,
 } from '@proc123/core';
+
+import type { SiteProfile } from '@proc123/profiles';
 
 import type { ScanSummary } from './messages.js';
 
@@ -32,7 +37,11 @@ export interface ScanInput {
   page: PageContext;
   title: string;
   restart?: boolean;
+  /** Overrides the config's own `maxPages`, for tests. */
   maxPages?: number;
+  /** The user's settings. Defaults are used when absent. */
+  config?: Proc123Config;
+  profile?: SiteProfile;
 }
 
 /** Errors first — the popup shows the top few and there is no room to scroll. */
@@ -89,8 +98,14 @@ export async function runScan(input: ScanInput, deps: ScanDeps): Promise<ScanSum
   const existing = input.restart === true ? undefined : await deps.store.load(id);
   const resumed = isResumable(existing);
 
+  // The config is the single source of the pipeline's options; nothing here
+  // assembles its own (CLAUDE.md §9).
+  const options = input.config === undefined ? {} : configToCrawlOptions(input.config);
+
   const crawl = await crawlCategory(input.page, {
+    ...options,
     ...(deps.http === undefined ? {} : { http: deps.http }),
+    ...(input.profile === undefined ? {} : { profile: input.profile }),
     store: deps.store,
     id,
     ...(input.restart === true ? { restart: true } : {}),
@@ -98,15 +113,24 @@ export async function runScan(input: ScanInput, deps: ScanDeps): Promise<ScanSum
     now,
   });
 
-  const variations = crawl.products.filter(isVariation).length;
+  // Filtering happens after the scan rather than during it: a Store API scan
+  // has to fetch a variable product to know it is one, and its variations are
+  // needed even when only `variable` was asked for.
+  const filtered =
+    input.config === undefined
+      ? { products: crawl.products, issues: [] }
+      : applyConfig(crawl.products, input.config);
+
+  const products = filtered.products;
+  const variations = products.filter(isVariation).length;
 
   return {
     url: input.page.url,
     title: input.title,
     layer: crawl.state.layer,
     platform: crawl.state.platform,
-    rowCount: crawl.products.length,
-    productCount: crawl.products.length - variations,
+    rowCount: products.length,
+    productCount: products.length - variations,
     variationCount: variations,
     duplicates: crawl.duplicates,
     pagesScanned: crawl.pagesScanned,
@@ -114,9 +138,9 @@ export async function runScan(input: ScanInput, deps: ScanDeps): Promise<ScanSum
     status: crawl.state.status,
     // More than a handful is a wall of text in a 360px popup; the full list
     // stays in the crawl record for the troubleshooting report (§11).
-    issues: rank(crawl.issues).slice(0, 6),
+    issues: rank([...crawl.issues, ...filtered.issues]).slice(0, 6),
     resumed,
-    currencyUnits: countCurrencyUnits(crawl.products),
+    currencyUnits: countCurrencyUnits(products),
     finishedAt: now(),
   };
 }

@@ -15,6 +15,7 @@ import { isExportRequest, isLastResultRequest, isScanRequest, isTeachRequest } f
 import type { ExportedCsv, ExtensionResponse, ScanSummary, TeachResult } from './messages.js';
 import { PICKER_STEPS, pickerScript } from './picker.js';
 import { loadProfile, saveProfile } from './profiles.js';
+import { loadSettings } from './settings.js';
 import { crawlIdFor, runScan } from './scan.js';
 import { createChromeCrawlStore, loadLastResult, saveLastResult } from './storage.js';
 
@@ -55,11 +56,13 @@ async function handleScan(request: {
   // A profile only matters when the layers above it come up empty, so it is
   // loaded unconditionally and used conditionally, inside the scan.
   const profile = await loadProfile(url);
+  const config = await loadSettings();
 
   const summary = await runScan(
     {
       page: { url, html },
       title,
+      config,
       ...(profile === undefined ? {} : { profile }),
       ...(request.restart === true ? { restart: true } : {}),
     },
@@ -174,10 +177,14 @@ async function handleExport(request: {
     throw new Error('Nothing to export yet — scan the category first.');
   }
 
+  const config = await loadSettings();
+
   const result = exportWooCommerceCsv(state.products, {
     // The user was shown the detected units and picked this one, so it is a
     // decision rather than a guess (CLAUDE.md §7.8).
     displayUnit: request.displayUnit,
+    currencyCode: config.currency.code,
+    contentMode: config.contentMode,
     bom: true,
   });
 
