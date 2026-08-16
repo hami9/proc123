@@ -6,7 +6,7 @@
  * its own rather than relying on a live conversation.
  */
 
-import type { CrawlStatus, ExtractionIssue } from '@proc123/core';
+import type { CrawlStatus, CurrencyUnit, ExtractionIssue } from '@proc123/core';
 
 export interface ScanRequest {
   kind: 'scan';
@@ -22,7 +22,26 @@ export interface LastResultRequest {
   kind: 'last-result';
 }
 
-export type ExtensionRequest = ScanRequest | LastResultRequest;
+export interface ExportRequest {
+  kind: 'export';
+  /** The scan to export, identified by the page it started from. */
+  url: string;
+  /**
+   * Which unit IRR prices are written in. The popup asks the user before this
+   * is sent, because reading toman as rial is a silent 10x error (§7.8).
+   */
+  displayUnit: CurrencyUnit;
+}
+
+export type ExtensionRequest = ScanRequest | LastResultRequest | ExportRequest;
+
+export interface ExportedCsv {
+  filename: string;
+  csv: string;
+  rowCount: number;
+  /** Every assumption and repair the exporter had to make. */
+  warnings: { code: string; message: string }[];
+}
 
 /** What the popup shows. Deliberately small — it is written to storage too. */
 export interface ScanSummary {
@@ -44,12 +63,18 @@ export interface ScanSummary {
   issues: ExtractionIssue[];
   /** True when a saved crawl was picked up rather than started. */
   resumed: boolean;
+  /**
+   * How the prices were quoted, e.g. `{ toman: 42, unknown: 5 }`. Shown before
+   * export so the user can confirm the unit rather than discover it afterwards
+   * in the target store (CLAUDE.md §7.8).
+   */
+  currencyUnits: Record<string, number>;
   finishedAt: string;
 }
 
 export type ExtensionResponse =
-  | { ok: true; summary: ScanSummary }
-  | { ok: true; summary: undefined }
+  | { ok: true; kind: 'summary'; summary: ScanSummary | undefined }
+  | { ok: true; kind: 'download'; download: ExportedCsv }
   | { ok: false; message: string };
 
 export function isScanRequest(message: unknown): message is ScanRequest {
@@ -59,6 +84,16 @@ export function isScanRequest(message: unknown): message is ScanRequest {
     candidate.kind === 'scan' &&
     typeof candidate.tabId === 'number' &&
     typeof candidate.url === 'string'
+  );
+}
+
+export function isExportRequest(message: unknown): message is ExportRequest {
+  if (typeof message !== 'object' || message === null) return false;
+  const candidate = message as Partial<ExportRequest>;
+  return (
+    candidate.kind === 'export' &&
+    typeof candidate.url === 'string' &&
+    (candidate.displayUnit === 'toman' || candidate.displayUnit === 'rial')
   );
 }
 

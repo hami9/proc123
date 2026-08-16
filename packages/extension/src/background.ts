@@ -6,10 +6,13 @@
  * every scan reads and writes its state through `chrome.storage`.
  */
 
+import type { CurrencyUnit } from '@proc123/core';
+import { exportWooCommerceCsv } from '@proc123/exporters';
+
 import { createFetchClient } from './http.js';
-import { isLastResultRequest, isScanRequest } from './messages.js';
-import type { ExtensionResponse, ScanSummary } from './messages.js';
-import { runScan } from './scan.js';
+import { isExportRequest, isLastResultRequest, isScanRequest } from './messages.js';
+import type { ExportedCsv, ExtensionResponse, ScanSummary } from './messages.js';
+import { crawlIdFor, runScan } from './scan.js';
 import { createChromeCrawlStore, loadLastResult, saveLastResult } from './storage.js';
 
 /**
@@ -75,11 +78,61 @@ async function handleScan(request: {
   return summary;
 }
 
+/** `proc123-ajil.example-2026-08-16.csv` — recognisable in a downloads folder. */
+function filenameFor(url: string): string {
+  const date = new Date().toISOString().slice(0, 10);
+  let host = 'export';
+  try {
+    host = new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    // A malformed URL is not worth failing an export over.
+  }
+  return `proc123-${host}-${date}.csv`;
+}
+
+/**
+ * Build the CSV from the saved crawl rather than from anything held in memory:
+ * the worker that ran the scan has very likely been killed since.
+ *
+ * The CSV is handed back to the popup rather than downloaded here, because a
+ * service worker has no `URL.createObjectURL` — the popup makes the blob.
+ */
+async function handleExport(request: {
+  url: string;
+  displayUnit: CurrencyUnit;
+}): Promise<ExportedCsv> {
+  const state = await createChromeCrawlStore().load(crawlIdFor(request.url));
+  if (state === undefined || state.products.length === 0) {
+    throw new Error('Nothing to export yet — scan the category first.');
+  }
+
+  const result = exportWooCommerceCsv(state.products, {
+    // The user was shown the detected units and picked this one, so it is a
+    // decision rather than a guess (CLAUDE.md §7.8).
+    displayUnit: request.displayUnit,
+    bom: true,
+  });
+
+  console.info(
+    `[proc123] exported ${String(result.rowCount)} rows with ${String(result.warnings.length)} warning(s)`
+  );
+
+  return {
+    filename: filenameFor(request.url),
+    csv: result.csv,
+    rowCount: result.rowCount,
+    warnings: result.warnings.map((warning) => ({
+      code: warning.code,
+      message: warning.message,
+    })),
+  };
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (isScanRequest(message)) {
     handleScan(message).then(
       (summary) => {
-        sendResponse({ ok: true, summary } satisfies ExtensionResponse);
+        sendResponse({ ok: true, kind: 'summary', summary } satisfies ExtensionResponse);
       },
       (error: unknown) => {
         const text = error instanceof Error ? error.message : String(error);
@@ -91,13 +144,27 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (isExportRequest(message)) {
+    handleExport(message).then(
+      (download) => {
+        sendResponse({ ok: true, kind: 'download', download } satisfies ExtensionResponse);
+      },
+      (error: unknown) => {
+        const text = error instanceof Error ? error.message : String(error);
+        console.error('[proc123] export failed', error);
+        sendResponse({ ok: false, message: text } satisfies ExtensionResponse);
+      }
+    );
+    return true;
+  }
+
   if (isLastResultRequest(message)) {
     loadLastResult<ScanSummary>().then(
       (summary) => {
-        sendResponse({ ok: true, summary } satisfies ExtensionResponse);
+        sendResponse({ ok: true, kind: 'summary', summary } satisfies ExtensionResponse);
       },
       () => {
-        sendResponse({ ok: true, summary: undefined } satisfies ExtensionResponse);
+        sendResponse({ ok: true, kind: 'summary', summary: undefined } satisfies ExtensionResponse);
       }
     );
     return true;

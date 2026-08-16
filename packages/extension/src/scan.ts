@@ -11,8 +11,10 @@ import {
   type ExtractionIssue,
   type HttpClient,
   type PageContext,
+  type Money,
   canonicalizeUrl,
   crawlCategory,
+  isIranianCurrency,
   isResumable,
   shortHash,
 } from '@proc123/core';
@@ -44,13 +46,46 @@ function isVariation(product: CanonicalProduct): boolean {
   return product.kind === 'variation';
 }
 
+/**
+ * Tally how the prices are quoted, so the popup can have the toman/rial
+ * conversation *before* a file is written rather than after.
+ *
+ * `unknown` is its own bucket on purpose: a price the page tagged `IRR` without
+ * saying which unit is not a toman price, it is an unanswered question, and
+ * answering it wrongly is a 10x error (CLAUDE.md §7.8).
+ */
+export function countCurrencyUnits(products: readonly CanonicalProduct[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+
+  const tally = (money: Money | undefined): void => {
+    if (money === undefined) return;
+    const key = isIranianCurrency(money.currency)
+      ? (money.unit ?? 'unknown')
+      : money.currency === ''
+        ? 'unknown'
+        : money.currency;
+    counts[key] = (counts[key] ?? 0) + 1;
+  };
+
+  for (const product of products) {
+    tally(product.regularPrice);
+    tally(product.salePrice);
+  }
+  return counts;
+}
+
+/** The crawl record for a page, so a later export can find the same scan. */
+export function crawlIdFor(url: string): string {
+  return `crawl-${shortHash(canonicalizeUrl(url), 10)}`;
+}
+
 export async function runScan(input: ScanInput, deps: ScanDeps): Promise<ScanSummary> {
   const now = deps.now ?? ((): string => new Date().toISOString());
 
   // The crawl id is chosen here rather than derived inside `crawlCategory`, so
   // that "was this resumed?" can be answered by looking before the crawl runs
   // instead of inferred from its counters afterwards.
-  const id = `crawl-${shortHash(canonicalizeUrl(input.page.url), 10)}`;
+  const id = crawlIdFor(input.page.url);
   const existing = input.restart === true ? undefined : await deps.store.load(id);
   const resumed = isResumable(existing);
 
@@ -81,6 +116,7 @@ export async function runScan(input: ScanInput, deps: ScanDeps): Promise<ScanSum
     // stays in the crawl record for the troubleshooting report (§11).
     issues: rank(crawl.issues).slice(0, 6),
     resumed,
+    currencyUnits: countCurrencyUnits(crawl.products),
     finishedAt: now(),
   };
 }

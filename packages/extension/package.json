@@ -10,7 +10,8 @@
     "build:watch": "node scripts/build.mjs --watch"
   },
   "dependencies": {
-    "@proc123/core": "*"
+    "@proc123/core": "*",
+    "@proc123/exporters": "*"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"

@@ -130,6 +130,26 @@
       li.warning {
         border-color: var(--warn);
       }
+      .export {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+      }
+      .export label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 11.5px;
+        color: var(--warn);
+      }
+      .export select {
+        margin-left: 4px;
+        padding: 2px 4px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: var(--bg);
+        color: var(--fg);
+        font: inherit;
+      }
     </style>
   </head>
   <body>
@@ -144,6 +164,18 @@
     <section class="counts" id="counts">
       <div class="headline" id="headline"></div>
       <dl id="detail"></dl>
+
+      <div class="export" id="export" hidden>
+        <label id="unitRow" hidden>
+          Prices are in
+          <select id="unit">
+            <option value="toman">toman</option>
+            <option value="rial">rial</option>
+          </select>
+        </label>
+        <button id="download" type="button">Download WooCommerce CSV</button>
+      </div>
+
       <ul id="issues"></ul>
     </section>
 

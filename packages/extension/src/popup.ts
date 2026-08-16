@@ -13,6 +13,8 @@
  *   assuming it has none.
  */
 
+import type { CurrencyUnit } from '@proc123/core';
+
 import type { ExtensionResponse, ScanSummary } from './messages.js';
 
 const element = <T extends HTMLElement>(id: string): T => {
@@ -29,6 +31,13 @@ const counts = element('counts');
 const headline = element('headline');
 const detail = element<HTMLDListElement>('detail');
 const issueList = element<HTMLUListElement>('issues');
+const exportBox = element('export');
+const unitRow = element('unitRow');
+const unitSelect = element<HTMLSelectElement>('unit');
+const downloadButton = element<HTMLButtonElement>('download');
+
+/** The page the rendered summary belongs to, so export targets the right scan. */
+let scannedUrl: string | undefined;
 
 const STATUS_TEXT: Record<string, string> = {
   complete: 'Read the whole category.',
@@ -82,6 +91,25 @@ function render(summary: ScanSummary): void {
   if (summary.requests > 0) row('Requests', String(summary.requests));
   if (summary.duplicates > 0) row('Duplicates merged', String(summary.duplicates));
   if (summary.resumed) row('Resumed', 'carried on from a saved scan');
+
+  const units = Object.entries(summary.currencyUnits);
+  if (units.length > 0) {
+    row('Prices', units.map(([unit, count]) => `${String(count)} ${unit}`).join(', '));
+  }
+
+  // The unit only has to be *asked* about when the pages did not say. An
+  // unstated IRR price is an unanswered question, and answering it wrongly is a
+  // 10x error, so the choice is put in front of the user before the file is
+  // written rather than defaulted behind their back (CLAUDE.md §7.8).
+  const unstated = summary.currencyUnits['unknown'] ?? 0;
+  const stated = summary.currencyUnits['toman'] ?? summary.currencyUnits['rial'];
+  unitRow.hidden = unstated === 0;
+  if (stated !== undefined && summary.currencyUnits['rial'] !== undefined) {
+    unitSelect.value = 'rial';
+  }
+
+  scannedUrl = summary.url;
+  exportBox.hidden = summary.rowCount === 0;
 
   statusLine.textContent = STATUS_TEXT[summary.status] ?? summary.status;
 
@@ -139,7 +167,7 @@ async function scan(restart: boolean): Promise<void> {
       statusLine.textContent = response.message;
       return;
     }
-    if (response.summary !== undefined) render(response.summary);
+    if (response.kind === 'summary' && response.summary !== undefined) render(response.summary);
   } catch (error) {
     statusLine.textContent = error instanceof Error ? error.message : String(error);
   } finally {
@@ -148,9 +176,74 @@ async function scan(restart: boolean): Promise<void> {
   }
 }
 
+/**
+ * Hand the file to the browser.
+ *
+ * The blob is made here rather than in the worker because a service worker has
+ * no `URL.createObjectURL`. The object URL is revoked once the click has been
+ * dispatched, so the CSV does not sit in memory after the download starts.
+ */
+function saveFile(filename: string, csv: string): void {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const href = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = href;
+  link.download = filename;
+  link.click();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(href);
+  }, 10_000);
+}
+
+async function download(): Promise<void> {
+  if (scannedUrl === undefined) return;
+
+  downloadButton.disabled = true;
+  statusLine.textContent = 'Building the CSV…';
+
+  try {
+    const response = await chrome.runtime.sendMessage<unknown, ExtensionResponse>({
+      kind: 'export',
+      url: scannedUrl,
+      displayUnit: unitSelect.value as CurrencyUnit,
+    });
+
+    if (!response.ok) {
+      statusLine.textContent = response.message;
+      return;
+    }
+    if (response.kind !== 'download') return;
+
+    saveFile(response.download.filename, response.download.csv);
+
+    const warnings = response.download.warnings.length;
+    statusLine.textContent =
+      `Saved ${String(response.download.rowCount)} rows` +
+      (warnings === 0 ? '.' : ` with ${String(warnings)} warning${warnings === 1 ? '' : 's'}.`);
+
+    for (const warning of response.download.warnings.slice(0, 4)) {
+      const item = document.createElement('li');
+      item.className = 'warning';
+      item.textContent = warning.message;
+      issueList.append(item);
+    }
+  } catch (error) {
+    statusLine.textContent = error instanceof Error ? error.message : String(error);
+  } finally {
+    downloadButton.disabled = false;
+  }
+}
+
+downloadButton.addEventListener('click', () => {
+  void download();
+});
+
 scanButton.addEventListener('click', () => {
   void scan(false);
 });
+
 rescanButton.addEventListener('click', () => {
   void scan(true);
 });
@@ -164,7 +257,9 @@ void (async (): Promise<void> => {
     .sendMessage<unknown, ExtensionResponse>({ kind: 'last-result' })
     .catch(() => undefined);
 
-  if (response?.ok === true && response.summary !== undefined) {
+  if (response?.ok === true && response.kind === 'summary' && response.summary !== undefined) {
+    // Only if it is about *this* page — a stale result from another tab would
+    // be worse than none.
     if (response.summary.url === tab?.url) {
       render(response.summary);
       statusLine.textContent = `${STATUS_TEXT[response.summary.status] ?? ''} (last scan)`;
