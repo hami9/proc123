@@ -27,8 +27,8 @@ problem first, the browser UI last.
 | 5     | Variable products & variations                                | partial |
 | 6     | Layer C — Selector Learning Mode                              | ✅ done |
 | 7     | Filtering & field selection                                   | ✅ done |
-| 8     | Layer D — pluggable AI providers                              | next    |
-| 9     | Troubleshooting subsystem                                     |         |
+| 8     | Layer D — pluggable AI providers                              | ✅ done |
+| 9     | Troubleshooting subsystem                                     | next    |
 | 10    | Cross-platform packaging                                      |         |
 | 11    | Release automation                                            |         |
 | 12    | Additional exporters                                          |         |
@@ -335,6 +335,25 @@ exposure and a duplicate-content SEO penalty that usually lands on the copy.
 columns are left empty. `reference` includes descriptions and tags every row
 with its source URL for review. `rewrite` will pass them through the configured
 AI provider once Layer D lands.
+
+## The AI fallback (Layer D)
+
+Off by default, and it stays off until you paste your own API key. When it is
+on, it runs only for products the markup could not describe — never as a first
+resort — and it is sent a **trimmed fragment of the page**, not the page:
+scripts, menus, footers and related-product carousels are stripped first, which
+cuts the bill and stops the model reading a neighbouring product's price.
+
+Everything it returns is checked back against that fragment before it is used. A
+price whose digits do not appear, an image URL that is not in the markup, a
+category invented out of nowhere — all discarded, with a line in the report
+saying so. A model will always answer; the point of the check is that only
+answers actually supported by the page survive it.
+
+Gemini, OpenAI and Claude are supported, each through its own structured-output
+mode with a strict JSON schema, and every scan reports the tokens it spent. Your
+key is stored in the browser only and is deliberately kept out of
+`proc123.config.json`, so exporting or sharing your settings cannot leak it.
 
 ## Fields you will not get
 

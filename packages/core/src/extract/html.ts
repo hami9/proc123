@@ -9,9 +9,9 @@
  */
 
 import { type CheerioAPI, load } from 'cheerio/slim';
-import { type AnyNode, type Element, isTag } from 'domhandler';
+import { type AnyNode, type Element, type Text, isTag, isText } from 'domhandler';
 
-export type { CheerioAPI, AnyNode, Element };
+export type { CheerioAPI, AnyNode, Element, Text };
 
 export function loadHtml(html: string): CheerioAPI {
   return load(html);
@@ -20,6 +20,11 @@ export function loadHtml(html: string): CheerioAPI {
 /** True for tag, `<script>` and `<style>` nodes; false for text and comments. */
 export function isElement(node: AnyNode): node is Element {
   return isTag(node);
+}
+
+/** True for text nodes. Comments and CDATA are not text for our purposes. */
+export function isTextNode(node: AnyNode): node is Text {
+  return isText(node);
 }
 
 /** Element children only, skipping text and comment nodes. */

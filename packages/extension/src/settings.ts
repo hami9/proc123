@@ -11,6 +11,17 @@ import { type Proc123Config, parseConfig, resolveConfig, serializeConfig } from 
 
 const KEY = 'proc123.config';
 
+/**
+ * The AI key lives under its own storage key, never inside the config.
+ *
+ * CLAUDE.md §4: "never hard-code or commit a key." The config is the thing
+ * users export, paste into issues and check into repositories — `saveSettings`
+ * writes it as JSON and `resolveConfig` already refuses an `apiKey` found in a
+ * file. Keeping the key in a separate entry means no code path can serialise it
+ * by accident, because `serializeConfig` is never handed it in the first place.
+ */
+const API_KEY = 'proc123.apiKey';
+
 export async function loadSettings(): Promise<Proc123Config> {
   const stored = await chrome.storage.local.get(KEY);
   const raw = stored[KEY];
@@ -21,6 +32,22 @@ export async function loadSettings(): Promise<Proc123Config> {
 
 export async function saveSettings(config: Proc123Config): Promise<void> {
   await chrome.storage.local.set({ [KEY]: serializeConfig(config) });
+}
+
+/** The user's own AI key, or `''` when they have not set one. */
+export async function loadApiKey(): Promise<string> {
+  const stored = await chrome.storage.local.get(API_KEY);
+  const raw = stored[API_KEY];
+  return typeof raw === 'string' ? raw : '';
+}
+
+export async function saveApiKey(key: string): Promise<void> {
+  const trimmed = key.trim();
+  if (trimmed === '') {
+    await chrome.storage.local.remove(API_KEY);
+    return;
+  }
+  await chrome.storage.local.set({ [API_KEY]: trimmed });
 }
 
 /** Import a `proc123.config.json` a user pasted, reporting what it could not use. */

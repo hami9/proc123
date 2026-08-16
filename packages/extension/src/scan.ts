@@ -17,6 +17,8 @@ import {
   canonicalizeUrl,
   configToCrawlOptions,
   crawlCategory,
+  createProvider,
+  enrichWithAI,
   isIranianCurrency,
   isResumable,
   shortHash,
@@ -31,6 +33,12 @@ export interface ScanDeps {
   http?: HttpClient;
   store: CrawlStore;
   now?: () => string;
+  /**
+   * The user's own AI key, from `chrome.storage`. Absent means Layer D is off,
+   * which is also the default. It is passed separately from the config because
+   * it must never travel with something that gets serialised (CLAUDE.md §4).
+   */
+  apiKey?: string;
 }
 
 export interface ScanInput {
@@ -88,6 +96,80 @@ export function crawlIdFor(url: string): string {
   return `crawl-${shortHash(canonicalizeUrl(url), 10)}`;
 }
 
+/**
+ * Run Layer D over the products that came from the page we still hold.
+ *
+ * **The scope limit worth being explicit about.** Layer D needs a page's markup
+ * to trim a fragment from, and to check the answer against afterwards. The
+ * crawl keeps products, not HTML — retaining every page's DOM across a
+ * multi-page crawl would blow the service worker's memory budget for a layer
+ * that is off by default. So the products this can help are the ones described
+ * by the page in hand: a single product page, or the cards on the category page
+ * that was scanned.
+ *
+ * Products discovered on *later* pages are left alone rather than sent a
+ * fragment from the wrong page — which would be worse than not running, because
+ * `verify.ts` would be checking answers against markup that never described
+ * them. Filling those needs per-product fetching, which belongs with the
+ * troubleshooting phase that already re-visits pages.
+ */
+async function enrichLayerD(
+  products: readonly CanonicalProduct[],
+  input: ScanInput,
+  deps: ScanDeps
+): Promise<{ products: CanonicalProduct[]; issues: ExtractionIssue[] }> {
+  const config = input.config;
+  if (config === undefined || !config.aiProvider.enabled || deps.http === undefined) {
+    return { products: [...products], issues: [] };
+  }
+
+  const provider = createProvider({
+    name: config.aiProvider.name,
+    apiKey: deps.apiKey ?? '',
+    model: config.aiProvider.model,
+    client: deps.http,
+  });
+
+  if (provider === undefined) {
+    return {
+      products: [...products],
+      issues: [
+        {
+          severity: 'warning',
+          code: 'ai-not-configured',
+          kind: 'ai-failed',
+          source: 'ai',
+          url: input.page.url,
+          message:
+            (deps.apiKey ?? '') === ''
+              ? 'The AI fallback is switched on but no API key is set. Add your own key in settings.'
+              : `"${config.aiProvider.name}" is not a provider this build knows.`,
+        },
+      ],
+    };
+  }
+
+  const pageUrl = canonicalizeUrl(input.page.url);
+  const onThisPage = products.filter((product) => canonicalizeUrl(product.sourceUrl) === pageUrl);
+  if (onThisPage.length === 0) return { products: [...products], issues: [] };
+
+  const result = await enrichWithAI(onThisPage, input.page, provider, config, {
+    maxRequests: onThisPage.length,
+  });
+
+  // Splice the enriched copies back into the original order.
+  const bySource = new Map<CanonicalProduct, CanonicalProduct>();
+  onThisPage.forEach((original, index) => {
+    const next = result.products[index];
+    if (next !== undefined) bySource.set(original, next);
+  });
+
+  return {
+    products: products.map((product) => bySource.get(product) ?? product),
+    issues: result.issues,
+  };
+}
+
 export async function runScan(input: ScanInput, deps: ScanDeps): Promise<ScanSummary> {
   const now = deps.now ?? ((): string => new Date().toISOString());
 
@@ -113,13 +195,19 @@ export async function runScan(input: ScanInput, deps: ScanDeps): Promise<ScanSum
     now,
   });
 
+  // Layer D runs before filtering, so it can fill a field that filtering is
+  // about to trim, and after the crawl, so it only ever sees what A/B/C failed
+  // to find. See `enrichWithAI` — the gate, the trim and the verification all
+  // live there; this is only the wiring.
+  const enriched = await enrichLayerD(crawl.products, input, deps);
+
   // Filtering happens after the scan rather than during it: a Store API scan
   // has to fetch a variable product to know it is one, and its variations are
   // needed even when only `variable` was asked for.
   const filtered =
     input.config === undefined
-      ? { products: crawl.products, issues: [] }
-      : applyConfig(crawl.products, input.config);
+      ? { products: enriched.products, issues: [] as ExtractionIssue[] }
+      : applyConfig(enriched.products, input.config);
 
   const products = filtered.products;
   const variations = products.filter(isVariation).length;
@@ -138,7 +226,7 @@ export async function runScan(input: ScanInput, deps: ScanDeps): Promise<ScanSum
     status: crawl.state.status,
     // More than a handful is a wall of text in a 360px popup; the full list
     // stays in the crawl record for the troubleshooting report (§11).
-    issues: rank([...crawl.issues, ...filtered.issues]).slice(0, 6),
+    issues: rank([...crawl.issues, ...enriched.issues, ...filtered.issues]).slice(0, 6),
     resumed,
     currencyUnits: countCurrencyUnits(products),
     finishedAt: now(),

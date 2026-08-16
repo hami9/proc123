@@ -15,7 +15,7 @@ import { isExportRequest, isLastResultRequest, isScanRequest, isTeachRequest } f
 import type { ExportedCsv, ExtensionResponse, ScanSummary, TeachResult } from './messages.js';
 import { PICKER_STEPS, pickerScript } from './picker.js';
 import { loadProfile, saveProfile } from './profiles.js';
-import { loadSettings } from './settings.js';
+import { loadApiKey, loadSettings } from './settings.js';
 import { crawlIdFor, runScan } from './scan.js';
 import { createChromeCrawlStore, loadLastResult, saveLastResult } from './storage.js';
 
@@ -57,6 +57,9 @@ async function handleScan(request: {
   // loaded unconditionally and used conditionally, inside the scan.
   const profile = await loadProfile(url);
   const config = await loadSettings();
+  // Read only when the user has actually turned Layer D on, so a stored key is
+  // not pulled into memory by every scan that will never use it.
+  const apiKey = config.aiProvider.enabled ? await loadApiKey() : '';
 
   const summary = await runScan(
     {
@@ -71,6 +74,7 @@ async function handleScan(request: {
       // reads the one page the user already has open and says so, rather than
       // asking again or reaching out anyway.
       ...(request.canFetch ? { http: createFetchClient() } : {}),
+      ...(apiKey === '' ? {} : { apiKey }),
       store: createChromeCrawlStore(),
     }
   );
