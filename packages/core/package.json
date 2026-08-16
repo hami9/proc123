@@ -12,6 +12,7 @@
   },
   "sideEffects": false,
   "dependencies": {
+    "@proc123/profiles": "*",
     "cheerio": "^1.2.0",
     "domhandler": "^5.0.3"
   }

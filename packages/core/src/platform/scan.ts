@@ -12,6 +12,9 @@
  * workaround wearing a layer's name, so it deliberately does not happen.
  */
 
+import type { SiteProfile } from '@proc123/profiles';
+
+import { extractWithProfile } from '../learn/apply.js';
 import { extractStructured } from '../extract/layer-b.js';
 import { loadHtml } from '../extract/html.js';
 import type { ExtractionIssue, PageContext } from '../extract/types.js';
@@ -43,6 +46,12 @@ export interface ScanPageOptions extends ScanOptions {
   http?: HttpClient;
   /** Override the adapter list, for tests and for a targeted re-scan. */
   adapters?: readonly PlatformAdapter[];
+  /**
+   * A profile the user taught for this site. Used only when the layers above it
+   * find nothing — a profile records what a person believed once, whereas
+   * markup is the store restating it on every render.
+   */
+  profile?: SiteProfile;
   /**
    * An already-paced client to use instead of building one.
    *
@@ -93,20 +102,37 @@ export async function scanCategory(
       ? undefined
       : createPoliteClient(options.http, options.politeness ?? {}));
 
-  const fallback = (
-    layerB: ReturnType<typeof extractStructured>,
-    requests: number,
-    incomplete: boolean
-  ): ScanResult => ({
-    layer: 'B',
-    platform: detections[0]?.platform ?? 'unknown',
-    products: layerB.products,
-    discoveredUrls: layerB.discoveredUrls,
-    issues: [...issues, ...layerB.issues],
-    requests,
-    incomplete,
-    detections,
-  });
+  /**
+   * Read the page itself: Layer B, then the learned profile if Layer B found
+   * nothing. Layer C runs last because it is a recorded guess and Layer B is
+   * the store speaking for itself.
+   */
+  const readPage = (): { layer: 'B' | 'C'; reading: ReturnType<typeof extractStructured> } => {
+    const layerB = extractStructured(page, options);
+    if (layerB.products.length > 0 || options.profile === undefined) {
+      return { layer: 'B', reading: layerB };
+    }
+
+    const layerC = extractWithProfile(page, options.profile, options);
+    if (layerC.products.length === 0) {
+      return { layer: 'B', reading: { ...layerB, issues: [...layerB.issues, ...layerC.issues] } };
+    }
+    return { layer: 'C', reading: layerC };
+  };
+
+  const fallback = (requests: number, incomplete: boolean): ScanResult => {
+    const { layer, reading } = readPage();
+    return {
+      layer,
+      platform: detections[0]?.platform ?? 'unknown',
+      products: reading.products,
+      discoveredUrls: reading.discoveredUrls,
+      issues: [...issues, ...reading.issues],
+      requests,
+      incomplete,
+      detections,
+    };
+  };
 
   for (const { adapter, detection } of candidates(page, $, adapters)) {
     // An adapter that needs the network cannot run without a client, and the
@@ -167,17 +193,26 @@ export async function scanCategory(
     // The adapter says its answer is partial — ROADMAP §6.14's case. Read the
     // page too and keep whichever saw more, rather than shipping half a
     // catalogue because one endpoint was capped.
-    const layerB = extractStructured(page, options);
-    if (layerB.products.length > reading.products.length) {
-      return fallback(layerB, polite?.requests ?? 0, false);
+    const page2 = readPage();
+    if (page2.reading.products.length > reading.products.length) {
+      return {
+        layer: page2.layer,
+        platform: detections[0]?.platform ?? 'unknown',
+        products: page2.reading.products,
+        discoveredUrls: page2.reading.discoveredUrls,
+        issues: [...issues, ...page2.reading.issues],
+        requests: polite?.requests ?? 0,
+        incomplete: false,
+        detections,
+      };
     }
 
     return {
       layer: 'A',
       platform: adapter.platform,
       products: reading.products,
-      discoveredUrls: layerB.discoveredUrls,
-      issues: [...issues, ...layerB.issues],
+      discoveredUrls: page2.reading.discoveredUrls,
+      issues: [...issues, ...page2.reading.issues],
       requests: polite?.requests ?? 0,
       incomplete: true,
       detections,
@@ -195,7 +230,7 @@ export async function scanCategory(
     });
   }
 
-  return fallback(extractStructured(page, options), polite?.requests ?? 0, false);
+  return fallback(polite?.requests ?? 0, false);
 }
 
 const notConfigured: HttpClient = () => {

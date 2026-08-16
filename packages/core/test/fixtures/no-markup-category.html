@@ -1,0 +1,61 @@
+<!doctype html>
+<!--
+  A category page with no machine-readable data at all: no JSON-LD, no
+  Microdata, no product meta tags, no platform anyone can name. Layers A and B
+  find nothing here, which is the entire reason Layer C exists.
+
+  It is also deliberately hostile to naive selector derivation. Every card
+  carries a build-generated class (`css-1f8a2b`) alongside an authored one, the
+  cards sit among sibling `<li>`s that are *not* products, prices are Persian
+  display text, and the second card has a sale price where the first does not.
+-->
+<html lang="fa-IR" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>آجیل | فروشگاه دست‌ساز</title>
+  </head>
+  <body>
+    <nav class="crumbs"><a href="/">خانه</a> / <a href="/c/nuts">آجیل</a></nav>
+    <h1>آجیل</h1>
+
+    <ul class="grid css-9z8y7x">
+      <li class="promo css-1f8a2b"><span>ارسال رایگان بالای ۵۰۰ هزار تومان</span></li>
+
+      <li class="product-tile css-1f8a2b" data-sku="AJ-WAL-500">
+        <a class="tile-link" href="/product/walnut-500">
+          <img class="tile-image" src="/img/walnut.jpg" alt="گردو" />
+          <h3 class="tile-title">گردو با پوست ۵۰۰ گرم</h3>
+        </a>
+        <div class="tile-prices">
+          <span class="price-now">۱٬۵۰۰٬۰۰۰ تومان</span>
+        </div>
+        <span class="stock in">موجود</span>
+      </li>
+
+      <li class="product-tile css-1f8a2b" data-sku="AJ-PIS-500">
+        <a class="tile-link" href="/product/pistachio-500">
+          <img class="tile-image" src="/img/pistachio.jpg" alt="پسته" />
+          <h3 class="tile-title">پسته اکبری ۵۰۰ گرم</h3>
+        </a>
+        <div class="tile-prices">
+          <del class="price-was">۳٬۴۰۰٬۰۰۰ تومان</del>
+          <span class="price-now">۲٬۹۰۰٬۰۰۰ تومان</span>
+        </div>
+        <span class="stock in">موجود</span>
+      </li>
+
+      <li class="product-tile css-1f8a2b" data-sku="AJ-ALM-500">
+        <a class="tile-link" href="/product/almond-500">
+          <img class="tile-image" src="/img/almond.jpg" alt="بادام" />
+          <h3 class="tile-title">بادام درختی ۵۰۰ گرم</h3>
+        </a>
+        <div class="tile-prices">
+          <span class="price-now">۹۲۰٬۰۰۰ تومان</span>
+        </div>
+        <span class="stock out">ناموجود</span>
+      </li>
+    </ul>
+
+    <nav class="pagination"><a href="/c/nuts/page/2">2</a></nav>
+  </body>
+</html>

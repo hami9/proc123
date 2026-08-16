@@ -29,6 +29,8 @@
       "@proc123/core": ["packages/core/src/index.ts"],
       "@proc123/core/*": ["packages/core/src/*"],
       "@proc123/exporters": ["packages/exporters/src/index.ts"],
+      "@proc123/profiles": ["packages/profiles/src/index.ts"],
+      "@proc123/profiles/*": ["packages/profiles/src/*"],
       "@proc123/exporters/*": ["packages/exporters/src/*"]
     }
   },

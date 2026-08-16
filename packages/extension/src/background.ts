@@ -6,12 +6,15 @@
  * every scan reads and writes its state through `chrome.storage`.
  */
 
-import type { CurrencyUnit } from '@proc123/core';
+import { type CurrencyUnit, type FieldPick, learnProfile, loadHtml } from '@proc123/core';
 import { exportWooCommerceCsv } from '@proc123/exporters';
+import type { ProfileField } from '@proc123/profiles';
 
 import { createFetchClient } from './http.js';
-import { isExportRequest, isLastResultRequest, isScanRequest } from './messages.js';
-import type { ExportedCsv, ExtensionResponse, ScanSummary } from './messages.js';
+import { isExportRequest, isLastResultRequest, isScanRequest, isTeachRequest } from './messages.js';
+import type { ExportedCsv, ExtensionResponse, ScanSummary, TeachResult } from './messages.js';
+import { PICKER_STEPS, pickerScript } from './picker.js';
+import { loadProfile, saveProfile } from './profiles.js';
 import { crawlIdFor, runScan } from './scan.js';
 import { createChromeCrawlStore, loadLastResult, saveLastResult } from './storage.js';
 
@@ -49,10 +52,15 @@ async function handleScan(request: {
 }): Promise<ScanSummary> {
   const { url, html, title } = await readPage(request.tabId);
 
+  // A profile only matters when the layers above it come up empty, so it is
+  // loaded unconditionally and used conditionally, inside the scan.
+  const profile = await loadProfile(url);
+
   const summary = await runScan(
     {
       page: { url, html },
       title,
+      ...(profile === undefined ? {} : { profile }),
       ...(request.restart === true ? { restart: true } : {}),
     },
     {
@@ -76,6 +84,66 @@ async function handleScan(request: {
   );
 
   return summary;
+}
+
+/** Words for the fields the picker asks about, in the order it asks. */
+const STEP_LABELS: Record<ProfileField, string> = {
+  name: 'product name',
+  regularPrice: 'price',
+  image: 'product image',
+  salePrice: 'sale price',
+  url: 'product link',
+  sku: 'SKU',
+  availability: 'stock label',
+};
+
+/**
+ * Teach this site.
+ *
+ * The picker runs in the page and returns index paths; every judgement about
+ * what those elements *mean* is made here, by `core`, against the same HTML —
+ * so the derivation is the tested one rather than whatever the page's DOM
+ * happened to make convenient.
+ */
+async function handleTeach(request: { tabId: number; url: string }): Promise<TeachResult> {
+  const labels = PICKER_STEPS.map((field) => STEP_LABELS[field]);
+
+  const [picked] = await chrome.scripting.executeScript({
+    target: { tabId: request.tabId },
+    func: pickerScript,
+    args: [labels],
+  });
+
+  const result = picked?.result;
+  if (result === undefined || result.cancelled) {
+    return { cardCount: 0, warnings: [], cancelled: true };
+  }
+
+  // Read the page *after* picking: the user may have scrolled more products in.
+  const { url, html } = await readPage(request.tabId);
+
+  const picks: FieldPick[] = PICKER_STEPS.map((field, index) => ({
+    field,
+    path: result.paths[index] ?? [],
+  })).filter((pick) => pick.path.length > 0);
+
+  const learned = learnProfile(loadHtml(html), picks, { url });
+  if (learned.profile === undefined) {
+    return { cardCount: 0, warnings: learned.warnings, cancelled: false };
+  }
+
+  await saveProfile(learned.profile);
+  console.info(
+    `[proc123] learned ${learned.profile.domain}: ` +
+      `"${learned.profile.card.container}" matched ${String(learned.cardCount)} cards`
+  );
+
+  return {
+    domain: learned.profile.domain,
+    cardCount: learned.cardCount,
+    warnings: learned.warnings,
+    cancelled: false,
+  };
 }
 
 /** `proc123-ajil.example-2026-08-16.csv` — recognisable in a downloads folder. */
@@ -141,6 +209,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       }
     );
     // Keeps the channel open for the async reply above.
+    return true;
+  }
+
+  if (isTeachRequest(message)) {
+    handleTeach(message).then(
+      (taught) => {
+        sendResponse({ ok: true, kind: 'taught', taught } satisfies ExtensionResponse);
+      },
+      (error: unknown) => {
+        const text = error instanceof Error ? error.message : String(error);
+        console.error('[proc123] teaching failed', error);
+        sendResponse({ ok: false, message: text } satisfies ExtensionResponse);
+      }
+    );
     return true;
   }
 

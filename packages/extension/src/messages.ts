@@ -33,7 +33,23 @@ export interface ExportRequest {
   displayUnit: CurrencyUnit;
 }
 
-export type ExtensionRequest = ScanRequest | LastResultRequest | ExportRequest;
+export interface TeachRequest {
+  kind: 'teach';
+  tabId: number;
+  url: string;
+}
+
+export type ExtensionRequest = ScanRequest | LastResultRequest | ExportRequest | TeachRequest;
+
+export interface TeachResult {
+  /** The profile that was learned and saved, if any. */
+  domain?: string;
+  /** How many product cards the learned selector matched. */
+  cardCount: number;
+  /** Everything the user should know before trusting it. */
+  warnings: string[];
+  cancelled: boolean;
+}
 
 export interface ExportedCsv {
   filename: string;
@@ -47,8 +63,8 @@ export interface ExportedCsv {
 export interface ScanSummary {
   url: string;
   title: string;
-  /** Which layer answered: the store's own API, or the page's markup. */
-  layer: 'A' | 'B';
+  /** Which layer answered: the store's own API, the page's markup, or a profile. */
+  layer: 'A' | 'B' | 'C';
   platform: string;
   /** Rows that would be written, variations included. */
   rowCount: number;
@@ -75,6 +91,7 @@ export interface ScanSummary {
 export type ExtensionResponse =
   | { ok: true; kind: 'summary'; summary: ScanSummary | undefined }
   | { ok: true; kind: 'download'; download: ExportedCsv }
+  | { ok: true; kind: 'taught'; taught: TeachResult }
   | { ok: false; message: string };
 
 export function isScanRequest(message: unknown): message is ScanRequest {
@@ -94,6 +111,16 @@ export function isExportRequest(message: unknown): message is ExportRequest {
     candidate.kind === 'export' &&
     typeof candidate.url === 'string' &&
     (candidate.displayUnit === 'toman' || candidate.displayUnit === 'rial')
+  );
+}
+
+export function isTeachRequest(message: unknown): message is TeachRequest {
+  if (typeof message !== 'object' || message === null) return false;
+  const candidate = message as Partial<TeachRequest>;
+  return (
+    candidate.kind === 'teach' &&
+    typeof candidate.tabId === 'number' &&
+    typeof candidate.url === 'string'
   );
 }
 
