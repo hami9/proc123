@@ -13,7 +13,16 @@
  *   assuming it has none.
  */
 
-import type { CurrencyUnit } from '@proc123/core';
+import {
+  ALL_TARGET_FIELDS,
+  type ContentMode,
+  type CurrencyUnit,
+  type Proc123Config,
+  type ProductKind,
+  type TargetField,
+} from '@proc123/core';
+
+import { loadSettings, saveSettings } from './settings.js';
 
 import type { ExtensionResponse, ScanSummary } from './messages.js';
 
@@ -39,6 +48,130 @@ const teachButton = element<HTMLButtonElement>('teach');
 
 /** The page the rendered summary belongs to, so export targets the right scan. */
 let scannedUrl: string | undefined;
+
+const settingsHint = element('settingsHint');
+const fieldChecks = element('fields');
+const typeChecks = element('types');
+
+/** Everything a person would rather read than `regularPrice`. */
+const FIELD_LABELS: Record<TargetField, string> = {
+  name: 'name',
+  sku: 'SKU',
+  description: 'description',
+  shortDescription: 'short description',
+  regularPrice: 'regular price',
+  salePrice: 'sale price',
+  categories: 'categories',
+  images: 'images',
+  attributes: 'attributes',
+  stock: 'stock',
+  tags: 'tags',
+  weight: 'weight',
+  dimensions: 'dimensions',
+  brand: 'brand',
+  gtin: 'GTIN',
+};
+
+const PRODUCT_KINDS: ProductKind[] = ['simple', 'variable'];
+
+let settings: Proc123Config | undefined;
+
+function checkbox(
+  container: HTMLElement,
+  value: string,
+  label: string,
+  checked: boolean,
+  disabled = false
+): HTMLInputElement {
+  const wrap = document.createElement('label');
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.value = value;
+  input.checked = checked;
+  input.disabled = disabled;
+
+  wrap.append(input, document.createTextNode(label));
+  container.append(wrap);
+  return input;
+}
+
+function readSettings(): Proc123Config | undefined {
+  if (settings === undefined) return undefined;
+
+  const fields = [...fieldChecks.querySelectorAll('input')]
+    .filter((input) => input.checked)
+    .map((input) => input.value as TargetField);
+  const types = [...typeChecks.querySelectorAll('input')]
+    .filter((input) => input.checked)
+    .map((input) => input.value as ProductKind);
+
+  const category = element<HTMLInputElement>('categoryFilter').value.trim();
+
+  return {
+    ...settings,
+    targetFields: fields.length > 0 ? fields : settings.targetFields,
+    productTypes: types.length > 0 ? types : settings.productTypes,
+    ...(category === '' ? {} : { categoryFilter: category }),
+    maxPages: Number(element<HTMLInputElement>('maxPages').value) || settings.maxPages,
+    contentMode: element<HTMLSelectElement>('contentMode').value as ContentMode,
+    currency: {
+      code: element<HTMLInputElement>('currencyCode').value.trim().toUpperCase() || 'IRR',
+      displayUnit: element<HTMLSelectElement>('displayUnit').value as CurrencyUnit,
+    },
+    politeness: {
+      delayMsBetweenRequests: Number(element<HTMLInputElement>('delayMs').value),
+      maxConcurrent: Number(element<HTMLInputElement>('maxConcurrent').value) || 1,
+    },
+  };
+}
+
+async function persistSettings(): Promise<void> {
+  const next = readSettings();
+  if (next === undefined) return;
+
+  settings = next;
+  await saveSettings(next);
+
+  settingsHint.textContent =
+    next.politeness.delayMsBetweenRequests < 400
+      ? 'A short delay puts more load on the store you are reading.'
+      : next.contentMode === 'reference'
+        ? 'Descriptions will be copied. They are the store’s content, not yours.'
+        : '';
+}
+
+async function renderSettings(): Promise<void> {
+  settings = await loadSettings();
+
+  fieldChecks.replaceChildren();
+  for (const field of ALL_TARGET_FIELDS) {
+    // Name is not optional: no row can be exported without it.
+    checkbox(
+      fieldChecks,
+      field,
+      FIELD_LABELS[field],
+      settings.targetFields.includes(field),
+      field === 'name'
+    );
+  }
+
+  typeChecks.replaceChildren();
+  for (const kind of PRODUCT_KINDS) {
+    checkbox(typeChecks, kind, kind, settings.productTypes.includes(kind));
+  }
+
+  element<HTMLInputElement>('categoryFilter').value = settings.categoryFilter ?? '';
+  element<HTMLInputElement>('maxPages').value = String(settings.maxPages);
+  element<HTMLSelectElement>('contentMode').value = settings.contentMode;
+  element<HTMLInputElement>('currencyCode').value = settings.currency.code;
+  element<HTMLSelectElement>('displayUnit').value = settings.currency.displayUnit;
+  element<HTMLInputElement>('delayMs').value = String(settings.politeness.delayMsBetweenRequests);
+  element<HTMLInputElement>('maxConcurrent').value = String(settings.politeness.maxConcurrent);
+
+  element('settings').addEventListener('change', () => {
+    void persistSettings();
+  });
+}
 
 const STATUS_TEXT: Record<string, string> = {
   complete: 'Read the whole category.',
@@ -280,6 +413,8 @@ rescanButton.addEventListener('click', () => {
 });
 
 void (async (): Promise<void> => {
+  await renderSettings();
+
   const tab = await activeTab();
   pageLine.textContent = tab === undefined ? 'No page open.' : describeTab(tab);
 

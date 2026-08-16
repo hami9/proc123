@@ -130,6 +130,62 @@
       li.warning {
         border-color: var(--warn);
       }
+      .settings {
+        margin-top: 14px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+        font-size: 11.5px;
+      }
+      .settings summary {
+        cursor: pointer;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .settings fieldset {
+        margin: 10px 0 0;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+      }
+      .settings legend {
+        padding: 0 4px;
+        color: var(--muted);
+      }
+      .checks {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2px 8px;
+      }
+      .checks label {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        margin: 0;
+      }
+      .settings > label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+        color: var(--muted);
+      }
+      .settings input[type='text'],
+      .settings input[type='number'],
+      .settings select {
+        flex: 0 1 55%;
+        padding: 3px 5px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: var(--bg);
+        color: var(--fg);
+        font: inherit;
+      }
+      .hint {
+        margin: 8px 0 0;
+        color: var(--warn);
+        min-height: 1em;
+      }
       .export {
         margin-top: 12px;
         padding-top: 10px;
@@ -179,6 +235,50 @@
 
       <ul id="issues"></ul>
     </section>
+
+    <details class="settings" id="settings">
+      <summary>Settings</summary>
+
+      <fieldset>
+        <legend>Fields to export</legend>
+        <div class="checks" id="fields"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Product types</legend>
+        <div class="checks" id="types"></div>
+      </fieldset>
+
+      <label
+        >Only this category <input id="categoryFilter" type="text" placeholder="آجیل > گردو"
+      /></label>
+      <label>Maximum pages <input id="maxPages" type="number" min="1" max="1000" /></label>
+
+      <label>
+        Descriptions
+        <select id="contentMode">
+          <option value="structured-only">leave empty (recommended)</option>
+          <option value="reference">copy, tagged with the source URL</option>
+          <option value="rewrite">rewrite with AI (needs Layer D)</option>
+        </select>
+      </label>
+
+      <label>Currency <input id="currencyCode" type="text" size="4" maxlength="3" /></label>
+      <label>
+        IRR prices are in
+        <select id="displayUnit">
+          <option value="toman">toman</option>
+          <option value="rial">rial</option>
+        </select>
+      </label>
+
+      <label
+        >Delay between requests (ms) <input id="delayMs" type="number" min="0" step="100"
+      /></label>
+      <label>Requests at once <input id="maxConcurrent" type="number" min="1" max="8" /></label>
+
+      <p class="hint" id="settingsHint"></p>
+    </details>
 
     <script type="module" src="popup.js"></script>
   </body>

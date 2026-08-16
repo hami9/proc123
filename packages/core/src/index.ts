@@ -1,3 +1,4 @@
+export * from './config/index.js';
 export * from './crawl/index.js';
 export * from './extract/index.js';
 export * from './learn/index.js';

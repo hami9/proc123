@@ -26,8 +26,8 @@ problem first, the browser UI last.
 | 4     | Category traversal / pagination                               | ✅ done |
 | 5     | Variable products & variations                                | partial |
 | 6     | Layer C — Selector Learning Mode                              | ✅ done |
-| 7     | Filtering & field selection                                   | next    |
-| 8     | Layer D — pluggable AI providers                              |         |
+| 7     | Filtering & field selection                                   | ✅ done |
+| 8     | Layer D — pluggable AI providers                              | next    |
 | 9     | Troubleshooting subsystem                                     |         |
 | 10    | Cross-platform packaging                                      |         |
 | 11    | Release automation                                            |         |
@@ -37,7 +37,7 @@ problem first, the browser UI last.
 A, an HTTP client; the extension and the companion own the network. What exists
 is the part everything else is validated against: the canonical product model,
 the normalizers, both extraction layers,
-a WooCommerce CSV exporter, and a loadable browser extension, with 559 tests
+a WooCommerce CSV exporter, and a loadable browser extension, with 598 tests
 behind them.
 
 ## Packages
@@ -235,6 +235,37 @@ including the delay between requests.
 - A regular and a sale price move together or not at all. Pairing one source's
   regular price with another's sale price is how a product ends up permanently
   marked down to exactly its own price.
+
+## Settings
+
+Everything lives in one `Proc123Config` — the shape from `CLAUDE.md` §9 — and
+everything in it is settable from the popup, because most users will never open
+the JSON:
+
+```ts
+const { config, problems } = parseConfig(json);
+const scan = await scanCategory(page, { ...configToScanOptions(config), http });
+const { products, issues } = applyConfig(scan.products, config);
+```
+
+`targetFields` decides which columns carry data, `productTypes` which products
+are kept, `categoryFilter` accepts `آجیل > گردو` or just `گردو`. Anything the
+config cannot use is **reported rather than ignored** — a typo that silently
+does nothing is worse than one that says so — and the defaults are kept instead
+of the scan failing.
+
+Two rules the filters enforce:
+
+- **A variation follows its parent.** Dropping a variable product while keeping
+  its variations leaves rows whose `Parent` column points at nothing, which the
+  exporter then discards with a warning the user never caused. Asking for only
+  `variable` keeps that product's variations too, since a variable product
+  without them imports as something nobody can buy.
+- **`name` cannot be turned off**, and a config that omits it gets it back with
+  an explanation. No row can be exported without one.
+
+An `apiKey` in a config file is refused and reported. Keys belong in extension
+settings, not in a file that gets shared or committed (§4).
 
 ## Using the exporter
 

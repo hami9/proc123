@@ -9,11 +9,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { CanonicalProduct, CrawlState, HttpClient } from '@proc123/core';
-import { createMemoryCrawlStore } from '@proc123/core';
+import { DEFAULT_CONFIG, createMemoryCrawlStore } from '@proc123/core';
 
 import { createFetchClient } from '../src/http.js';
 import { isExportRequest, isLastResultRequest, isScanRequest } from '../src/messages.js';
 import { countCurrencyUnits, crawlIdFor, runScan } from '../src/scan.js';
+import { importSettings, loadSettings, saveSettings } from '../src/settings.js';
 import { createChromeCrawlStore, loadLastResult, saveLastResult } from '../src/storage.js';
 import { type FakeChrome, installFakeChrome } from './fake-chrome.js';
 
@@ -311,5 +312,48 @@ describe('runScan', () => {
     expect(summary.rowCount).toBe(0);
     expect(summary.issues.length).toBeLessThanOrEqual(6);
     expect(summary.issues.map((issue) => issue.code)).toContain('no-structured-data');
+  });
+});
+
+describe('settings', () => {
+  let fake: FakeChrome;
+  beforeEach(() => {
+    fake = installFakeChrome();
+  });
+  afterEach(() => {
+    fake.restore();
+  });
+
+  it('starts from the defaults in CLAUDE.md §9', async () => {
+    const config = await loadSettings();
+    expect(config).toEqual(DEFAULT_CONFIG);
+  });
+
+  it('round-trips what the popup saved', async () => {
+    await saveSettings({ ...DEFAULT_CONFIG, maxPages: 3, targetFields: ['name', 'images'] });
+
+    const config = await loadSettings();
+    expect(config.maxPages).toBe(3);
+    expect(config.targetFields).toEqual(['name', 'images']);
+  });
+
+  it('stores settings as readable JSON, not an opaque blob', async () => {
+    // A user who does open the file should recognise what they are looking at.
+    await saveSettings(DEFAULT_CONFIG);
+    expect(String(fake.store.get('proc123.config'))).toContain('"contentMode": "structured-only"');
+  });
+
+  it('falls back to the defaults rather than failing a scan on a broken value', async () => {
+    fake.store.set('proc123.config', '{ not json');
+    expect((await loadSettings()).maxPages).toBe(20);
+  });
+
+  it('imports a pasted config and reports what it could not use', async () => {
+    const { config, problems } = await importSettings('{"maxPages": 5, "nonsense": true}');
+
+    expect(config.maxPages).toBe(5);
+    expect(problems.join(' ')).toContain('"nonsense" is not a proc123 setting');
+    // And it was saved, so the next scan uses it.
+    expect((await loadSettings()).maxPages).toBe(5);
   });
 });
