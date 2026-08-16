@@ -44,6 +44,7 @@ const exportBox = element('export');
 const unitRow = element('unitRow');
 const unitSelect = element<HTMLSelectElement>('unit');
 const downloadButton = element<HTMLButtonElement>('download');
+const explainButton = element<HTMLButtonElement>('explain');
 const teachButton = element<HTMLButtonElement>('teach');
 
 /** The page the rendered summary belongs to, so export targets the right scan. */
@@ -337,8 +338,8 @@ async function scan(restart: boolean): Promise<void> {
  * no `URL.createObjectURL`. The object URL is revoked once the click has been
  * dispatched, so the CSV does not sit in memory after the download starts.
  */
-function saveFile(filename: string, csv: string): void {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+function saveFile(filename: string, csv: string, type = 'text/csv;charset=utf-8'): void {
+  const blob = new Blob([csv], { type });
   const href = URL.createObjectURL(blob);
 
   const link = document.createElement('a');
@@ -392,6 +393,54 @@ async function download(): Promise<void> {
 
 downloadButton.addEventListener('click', () => {
   void download();
+});
+
+/**
+ * "Why is this field empty?" (CLAUDE.md §11).
+ *
+ * The summary goes into the popup, because most of the time it is the whole
+ * answer and nobody should have to open a file to read one sentence. The full
+ * report and the structured log are downloaded together — the report is for the
+ * user, the log is for whoever they send it to.
+ */
+async function explain(): Promise<void> {
+  if (scannedUrl === undefined) return;
+
+  explainButton.disabled = true;
+  statusLine.textContent = 'Working out what happened…';
+
+  try {
+    const tab = await activeTab();
+    const response = await chrome.runtime.sendMessage<unknown, ExtensionResponse>({
+      kind: 'report',
+      url: scannedUrl,
+      // Sent only when the tab still shows the page that was scanned; a profile
+      // health check against a different page would be nonsense.
+      ...(tab?.id !== undefined && tab.url === scannedUrl ? { tabId: tab.id } : {}),
+    });
+
+    if (!response.ok) {
+      statusLine.textContent = response.message;
+      return;
+    }
+    if (response.kind !== 'report') return;
+
+    saveFile(response.report.filename, response.report.text, 'text/plain;charset=utf-8');
+    saveFile(
+      response.report.filename.replace(/\.txt$/, '.log.jsonl'),
+      response.report.log,
+      'application/json;charset=utf-8'
+    );
+    statusLine.textContent = response.report.summary;
+  } catch (error) {
+    statusLine.textContent = error instanceof Error ? error.message : String(error);
+  } finally {
+    explainButton.disabled = false;
+  }
+}
+
+explainButton.addEventListener('click', () => {
+  void explain();
 });
 
 /**

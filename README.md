@@ -7,7 +7,7 @@ every product on it — simple and variable, with all variations — normalizes 
 into one platform-neutral model, and exports a CSV built for a specific target
 store. WooCommerce first, Shopify next.
 
-See [`CLAUDE.md`](CLAUDE.md) for the full design brief and [`ROADMAP.md`](ROADMAP.md)
+See [`CLAUDE.md`](Sp&Rm/CLAUDE.md) for the full design brief and [`ROADMAP.md`](Sp&Rm/ROADMAP.md)
 for the phase plan.
 
 ---
@@ -28,8 +28,8 @@ problem first, the browser UI last.
 | 6     | Layer C — Selector Learning Mode                              | ✅ done |
 | 7     | Filtering & field selection                                   | ✅ done |
 | 8     | Layer D — pluggable AI providers                              | ✅ done |
-| 9     | Troubleshooting subsystem                                     | next    |
-| 10    | Cross-platform packaging                                      |         |
+| 9     | Troubleshooting subsystem                                     | ✅ done |
+| 10    | Cross-platform packaging                                      | next    |
 | 11    | Release automation                                            |         |
 | 12    | Additional exporters                                          |         |
 
@@ -354,6 +354,20 @@ Gemini, OpenAI and Claude are supported, each through its own structured-output
 mode with a strict JSON schema, and every scan reports the tokens it spent. Your
 key is stored in the browser only and is deliberately kept out of
 `proc123.config.json`, so exporting or sharing your settings cannot leak it.
+
+## Why is this field empty?
+
+An empty column is usually not a bug, and telling the difference is the point of
+the report behind the **Why is this field empty?** button. For every field it
+says which of four things happened: you switched it off, the shop never
+published it, it is one of the columns nobody can get from outside the shop, or
+something actually went wrong — and only the last is worth reporting.
+
+It also names where each value came from, in words rather than layer letters
+("the shop's own product API", "the page's structured data"), flags a taught
+layout whose selectors have stopped matching, and downloads a JSON-lines log
+alongside it for whoever you ask for help. API keys and page content are never
+written to that log, so it is safe to attach to an issue.
 
 ## Fields you will not get
 

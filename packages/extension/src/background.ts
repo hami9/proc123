@@ -6,13 +6,38 @@
  * every scan reads and writes its state through `chrome.storage`.
  */
 
-import { type CurrencyUnit, type FieldPick, learnProfile, loadHtml } from '@proc123/core';
+import {
+  type CurrencyUnit,
+  type FieldPick,
+  type ProfileHealthSummary,
+  canonicalizeUrl,
+  checkProfileHealth,
+  createLogger,
+  explainScan,
+  formatLog,
+  formatReport,
+  learnProfile,
+  loadHtml,
+  shortHash,
+} from '@proc123/core';
 import { exportWooCommerceCsv } from '@proc123/exporters';
 import type { ProfileField } from '@proc123/profiles';
 
 import { createFetchClient } from './http.js';
-import { isExportRequest, isLastResultRequest, isScanRequest, isTeachRequest } from './messages.js';
-import type { ExportedCsv, ExtensionResponse, ScanSummary, TeachResult } from './messages.js';
+import {
+  isExportRequest,
+  isLastResultRequest,
+  isReportRequest,
+  isScanRequest,
+  isTeachRequest,
+} from './messages.js';
+import type {
+  ExportedCsv,
+  ExportedReport,
+  ExtensionResponse,
+  ScanSummary,
+  TeachResult,
+} from './messages.js';
 import { PICKER_STEPS, pickerScript } from './picker.js';
 import { loadProfile, saveProfile } from './profiles.js';
 import { loadApiKey, loadSettings } from './settings.js';
@@ -207,6 +232,85 @@ async function handleExport(request: {
   };
 }
 
+/**
+ * Build the "why is this field empty?" report (CLAUDE.md §11).
+ *
+ * Everything comes from the saved crawl rather than a fresh scan, so the report
+ * explains the export the user is actually looking at. The one thing that
+ * cannot come from storage is profile health: whether a taught selector still
+ * matches is a question about the page *now*, so the tab is re-read when there
+ * is one, and the check is simply skipped when there is not.
+ */
+async function handleReport(request: { url: string; tabId?: number }): Promise<ExportedReport> {
+  const state = await createChromeCrawlStore().load(crawlIdFor(request.url));
+  if (state === undefined) {
+    throw new Error('There is no scan to explain yet — scan the category first.');
+  }
+
+  const config = await loadSettings();
+  const log = createLogger({ level: 'debug' }).child({ crawlId: state.id });
+
+  log.info('report.requested', {
+    url: request.url,
+    products: state.products.length,
+    pagesScanned: state.pagesScanned,
+    requests: state.requests,
+    status: state.status,
+    layer: state.layer,
+    platform: state.platform,
+  });
+  for (const issue of state.issues) {
+    log[issue.severity === 'error' ? 'error' : issue.severity === 'warning' ? 'warn' : 'info'](
+      `issue.${issue.code}`,
+      {
+        ...(issue.kind === undefined ? {} : { kind: issue.kind }),
+        ...(issue.field === undefined ? {} : { field: issue.field }),
+        ...(issue.url === undefined ? {} : { url: issue.url }),
+        message: issue.message,
+      }
+    );
+  }
+
+  let health: ProfileHealthSummary | undefined;
+  const profile = await loadProfile(request.url);
+  if (profile !== undefined && request.tabId !== undefined) {
+    try {
+      const page = await readPage(request.tabId);
+      const checked = checkProfileHealth({ url: page.url, html: page.html }, profile);
+      health = {
+        healthy: checked.healthy,
+        summary: checked.summary,
+        brokenFields: checked.brokenFields,
+      };
+      log.info('profile.health', {
+        domain: checked.domain,
+        healthy: checked.healthy,
+        cardCount: checked.cardCount,
+        brokenFields: checked.brokenFields,
+      });
+    } catch {
+      // The tab moved on, or the page will not read. The rest of the report is
+      // still worth having, so this is not allowed to fail the whole thing.
+      log.warn('profile.health.skipped', { reason: 'the page could not be read' });
+    }
+  }
+
+  const report = explainScan({
+    url: request.url,
+    products: state.products,
+    issues: state.issues,
+    config,
+    ...(health === undefined ? {} : { profileHealth: health }),
+  });
+
+  return {
+    filename: `proc123-report-${shortHash(canonicalizeUrl(request.url), 8)}.txt`,
+    text: formatReport(report),
+    log: formatLog(log.records()),
+    summary: report.summary,
+  };
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (isScanRequest(message)) {
     handleScan(message).then(
@@ -245,6 +349,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       (error: unknown) => {
         const text = error instanceof Error ? error.message : String(error);
         console.error('[proc123] export failed', error);
+        sendResponse({ ok: false, message: text } satisfies ExtensionResponse);
+      }
+    );
+    return true;
+  }
+
+  if (isReportRequest(message)) {
+    handleReport(message).then(
+      (report) => {
+        sendResponse({ ok: true, kind: 'report', report } satisfies ExtensionResponse);
+      },
+      (error: unknown) => {
+        const text = error instanceof Error ? error.message : String(error);
+        console.error('[proc123] report failed', error);
         sendResponse({ ok: false, message: text } satisfies ExtensionResponse);
       }
     );
