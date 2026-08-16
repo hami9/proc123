@@ -2,7 +2,7 @@
 
 <!-- version-badge:start -->
 
-[![version](https://img.shields.io/badge/version-unreleased-6b6560)](https://github.com/hami9/proc123/releases)
+[![version](https://img.shields.io/badge/version-1.0.0-7a3e1d)](https://github.com/hami9/proc123/releases/tag/v1.0.0)
 <!-- version-badge:end -->
 
 **Scan any online store's category page, get a CSV that imports cleanly into another store.**
