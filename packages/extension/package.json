@@ -1,0 +1,18 @@
+{
+  "name": "@proc123/extension",
+  "version": "0.0.0",
+  "private": true,
+  "description": "proc123 Manifest V3 browser extension",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:watch": "node scripts/build.mjs --watch"
+  },
+  "dependencies": {
+    "@proc123/core": "*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

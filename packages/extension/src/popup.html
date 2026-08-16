@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>proc123</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --fg: #14110f;
+        --muted: #6b6560;
+        --line: #e2ddd7;
+        --bg: #ffffff;
+        --accent: #7a3e1d;
+        --error: #a02020;
+        --warn: #8a6100;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #f2ede8;
+          --muted: #a8a099;
+          --line: #35302b;
+          --bg: #1b1815;
+          --accent: #e0956a;
+          --error: #f08a80;
+          --warn: #e0b45a;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        width: 360px;
+        margin: 0;
+        padding: 14px;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          13px/1.45 system-ui,
+          -apple-system,
+          Segoe UI,
+          sans-serif;
+      }
+      h1 {
+        margin: 0 0 2px;
+        font-size: 14px;
+        letter-spacing: 0.01em;
+      }
+      .page {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 11px;
+        overflow-wrap: anywhere;
+      }
+      button {
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        background: var(--accent);
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+      button.secondary {
+        margin-top: 6px;
+        background: transparent;
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .status {
+        margin: 12px 0 0;
+        color: var(--muted);
+        min-height: 1.4em;
+      }
+      .counts {
+        display: none;
+        margin: 12px 0 0;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+      }
+      .counts.shown {
+        display: block;
+      }
+      .headline {
+        font-size: 22px;
+        font-weight: 650;
+        line-height: 1.1;
+      }
+      .headline small {
+        display: block;
+        margin-top: 2px;
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      dl {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 2px 10px;
+        margin: 10px 0 0;
+        font-size: 11.5px;
+      }
+      dt {
+        color: var(--muted);
+      }
+      dd {
+        margin: 0;
+      }
+      ul {
+        margin: 10px 0 0;
+        padding: 0;
+        list-style: none;
+        font-size: 11.5px;
+      }
+      li {
+        padding: 4px 0 4px 9px;
+        border-left: 2px solid var(--line);
+        margin-bottom: 4px;
+        color: var(--muted);
+      }
+      li.error {
+        border-color: var(--error);
+        color: var(--error);
+      }
+      li.warning {
+        border-color: var(--warn);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>proc123</h1>
+    <p class="page" id="page">…</p>
+
+    <button id="scan" type="button">Scan this category</button>
+    <button id="rescan" type="button" class="secondary" hidden>Scan again from the start</button>
+
+    <p class="status" id="status"></p>
+
+    <section class="counts" id="counts">
+      <div class="headline" id="headline"></div>
+      <dl id="detail"></dl>
+      <ul id="issues"></ul>
+    </section>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

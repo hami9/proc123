@@ -33,9 +33,26 @@ export default tseslint.config(
     },
   },
   {
-    // This file is JS, so it is not part of the TypeScript program.
-    files: ['**/*.js'],
+    // Build scripts are plain JS/ESM, so they are not part of the TypeScript
+    // program and cannot be type-checked by the lint rules. They run in Node
+    // and printing where the build went is the whole point of them.
+    files: ['**/*.js', '**/*.mjs'],
     extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly' },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
+    // A service worker has no UI of its own: its console is where a scan that
+    // went wrong is diagnosed, and CLAUDE.md §14 asks the minimal extension to
+    // log the product count outright.
+    files: ['packages/extension/src/**'],
+    rules: {
+      'no-console': ['error', { allow: ['info', 'warn', 'error'] }],
+    },
   },
   prettier
 );
