@@ -38,7 +38,7 @@ export interface CrawlState {
   startUrl: string;
   platform: PlatformId;
   /** Which layer the first page settled on; later pages use the same one. */
-  layer: 'A' | 'B';
+  layer: 'A' | 'B' | 'C';
   /** Canonicalized URLs already read, for loop protection and for resuming. */
   visited: string[];
   /** Pages still to read, in order. */
@@ -69,7 +69,7 @@ export function createCrawlState(
   id: string,
   startUrl: string,
   platform: PlatformId,
-  layer: 'A' | 'B',
+  layer: 'A' | 'B' | 'C',
   now: string
 ): CrawlState {
   return {

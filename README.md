@@ -25,8 +25,8 @@ problem first, the browser UI last.
 | 3     | Layer A — WooCommerce Store API, then Shopify                 | ✅ done |
 | 4     | Category traversal / pagination                               | ✅ done |
 | 5     | Variable products & variations                                | partial |
-| 6     | Layer C — Selector Learning Mode                              |         |
-| 7     | Filtering & field selection                                   |         |
+| 6     | Layer C — Selector Learning Mode                              | ✅ done |
+| 7     | Filtering & field selection                                   | next    |
 | 8     | Layer D — pluggable AI providers                              |         |
 | 9     | Troubleshooting subsystem                                     |         |
 | 10    | Cross-platform packaging                                      |         |
@@ -37,7 +37,7 @@ problem first, the browser UI last.
 A, an HTTP client; the extension and the companion own the network. What exists
 is the part everything else is validated against: the canonical product model,
 the normalizers, both extraction layers,
-a WooCommerce CSV exporter, and a loadable browser extension, with 531 tests
+a WooCommerce CSV exporter, and a loadable browser extension, with 559 tests
 behind them.
 
 ## Packages
@@ -47,9 +47,9 @@ behind them.
 | `packages/core`      | `CanonicalProduct`, normalizers, SKUs, Layer A + Layer B, category crawling |
 | `packages/exporters` | WooCommerce CSV exporter (Shopify CSV and JSON to follow)                   |
 | `packages/extension` | Manifest V3 extension: popup, service worker, CSV download                  |
+| `packages/profiles`  | Site profile schema — the JSON Layer C learns and a person can edit         |
 
-`packages/companion` and `packages/profiles` arrive with the phases that need
-them.
+`packages/companion` arrives with the phase that needs it.
 
 ## Running the extension
 
@@ -164,6 +164,37 @@ Products are deduplicated by canonical URL _and_ SKU, because pagination and
 infinite scroll overlap constantly. When the same product is seen twice, the two
 sightings are merged field by field, keeping whichever was recorded with more
 confidence.
+
+### Layer C — teaching it a store
+
+When a storefront publishes nothing machine-readable at all, the user clicks the
+product name, price and image on **one** card and proc123 works out the rest:
+
+```ts
+const learned = learnProfile(loadHtml(html), picks, { url });
+const result = extractWithProfile(page, learned.profile, options);
+```
+
+The card is found by looking for **repetition** — a product card is by
+definition the thing there are lots of, so the lowest ancestor of the clicks
+that has siblings shaped like itself is it. That works on every platform,
+because it uses the one fact true of every storefront.
+
+Selectors are scored by how much _meaning_ they carry, not by how short they
+are. `[itemprop="name"]` is the store telling us what an element is;
+`.product-title` is a developer saying so; `.css-1a2b3c` is a build tool saying
+nothing, and is never offered as a candidate. A position is used only when
+nothing else identifies the element — and the profile says so in words, because
+that is the rule to check first when it stops working.
+
+The product **link is found, not asked for**. Three clicks is the promise, and a
+product with no URL cannot be told apart from its neighbours — SKUs are derived
+from it and the crawl deduplicates on it.
+
+Profiles are plain JSON keyed by domain, so teaching one category page covers
+the whole store. `checkProfileHealth` reports selectors that have stopped
+matching, and distinguishes "missing everywhere" (broken) from "missing on some
+cards" (usually normal).
 
 ### Layer B — structured markup
 

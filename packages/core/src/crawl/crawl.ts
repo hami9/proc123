@@ -249,7 +249,7 @@ export async function crawlCategory(
 
 interface FirstPage {
   platform: CrawlState['platform'];
-  layer: 'A' | 'B';
+  layer: 'A' | 'B' | 'C';
   products: CanonicalProduct[];
   discoveredUrls: string[];
   issues: ExtractionIssue[];

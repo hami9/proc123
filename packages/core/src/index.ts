@@ -1,5 +1,6 @@
 export * from './crawl/index.js';
 export * from './extract/index.js';
+export * from './learn/index.js';
 export * from './model.js';
 export * from './money.js';
 export * from './numbers.js';

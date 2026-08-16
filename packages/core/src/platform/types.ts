@@ -108,7 +108,7 @@ export interface PlatformAdapter {
 
 /** The whole of Layer A for one page, plus what it fell back to. */
 export interface ScanResult {
-  layer: 'A' | 'B';
+  layer: 'A' | 'B' | 'C';
   platform: PlatformId;
   products: CanonicalProduct[];
   discoveredUrls: string[];

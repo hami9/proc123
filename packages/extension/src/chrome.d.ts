@@ -40,11 +40,15 @@ declare namespace chrome {
       result?: T;
       frameId: number;
     }
+    /**
+     * Chrome awaits a promise the injected function returns, so the result is
+     * the resolved value — which is what lets the picker be async.
+     */
     function executeScript<Args extends unknown[], Result>(injection: {
       target: { tabId: number; allFrames?: boolean };
       func: (...args: Args) => Result;
       args?: Args;
-    }): Promise<InjectionResult<Result>[]>;
+    }): Promise<InjectionResult<Awaited<Result>>[]>;
   }
 
   namespace storage {

@@ -11,6 +11,9 @@ export default defineConfig({
     // source when Phase 10 packaging lands.
     alias: {
       '@proc123/core': pkg('core'),
+      '@proc123/profiles': fileURLToPath(
+        new URL('./packages/profiles/src/index.ts', import.meta.url)
+      ),
       '@proc123/exporters': pkg('exporters'),
     },
   },

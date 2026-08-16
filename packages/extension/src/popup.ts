@@ -35,6 +35,7 @@ const exportBox = element('export');
 const unitRow = element('unitRow');
 const unitSelect = element<HTMLSelectElement>('unit');
 const downloadButton = element<HTMLButtonElement>('download');
+const teachButton = element<HTMLButtonElement>('teach');
 
 /** The page the rendered summary belongs to, so export targets the right scan. */
 let scannedUrl: string | undefined;
@@ -86,7 +87,12 @@ function render(summary: ScanSummary): void {
     `${summary.variationCount === 1 ? '' : 's'}`;
   headline.append(small);
 
-  row('Read from', summary.layer === 'A' ? `${summary.platform} API` : 'page markup');
+  const READ_FROM: Record<string, string> = {
+    A: `${summary.platform} API`,
+    B: 'page markup',
+    C: 'the profile you taught',
+  };
+  row('Read from', READ_FROM[summary.layer] ?? summary.layer);
   row('Pages', String(summary.pagesScanned));
   if (summary.requests > 0) row('Requests', String(summary.requests));
   if (summary.duplicates > 0) row('Duplicates merged', String(summary.duplicates));
@@ -238,6 +244,31 @@ async function download(): Promise<void> {
 
 downloadButton.addEventListener('click', () => {
   void download();
+});
+
+/**
+ * Teaching closes the popup on purpose: the picker runs in the page, and a
+ * popup left open would steal the clicks meant for the product card.
+ */
+async function teach(): Promise<void> {
+  const tab = await activeTab();
+  if (tab?.id === undefined || tab.url === undefined) {
+    statusLine.textContent = 'No page to teach.';
+    return;
+  }
+
+  statusLine.textContent = 'Click the product name, price and image on the page…';
+  void chrome.runtime
+    .sendMessage<unknown, ExtensionResponse>({ kind: 'teach', tabId: tab.id, url: tab.url })
+    .catch(() => undefined);
+
+  // The result is read back the next time the popup opens; the picker needs
+  // the page to itself until then.
+  window.close();
+}
+
+teachButton.addEventListener('click', () => {
+  void teach();
 });
 
 scanButton.addEventListener('click', () => {
