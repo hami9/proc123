@@ -193,7 +193,10 @@
         border-top: 1px solid var(--line);
       }
       .export label {
-        display: block;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
         margin-bottom: 8px;
         font-size: 11.5px;
         color: var(--warn);
@@ -231,7 +234,11 @@
             <option value="rial">rial</option>
           </select>
         </label>
-        <button id="download" type="button">Download WooCommerce CSV</button>
+        <label id="exporterRow">
+          Export for
+          <select id="exporter"></select>
+        </label>
+        <button id="download" type="button">Download</button>
         <button id="explain" type="button" class="secondary">Why is this field empty?</button>
       </div>
 

@@ -88,6 +88,17 @@ export interface PolitenessConfig {
   maxConcurrent: number;
 }
 
+/**
+ * Which exporter a scan is written with.
+ *
+ * Named here rather than in `packages/exporters` because the config owns the
+ * choice and `core` must not depend on the package that implements it — the
+ * dependency runs the other way. `exporters` maps these names to functions.
+ */
+export type ExporterName = 'woocommerce-csv' | 'shopify-csv' | 'json';
+
+export const ALL_EXPORTERS: readonly ExporterName[] = ['woocommerce-csv', 'shopify-csv', 'json'];
+
 export interface AIProviderConfig {
   name: string;
   model: string;
@@ -104,7 +115,7 @@ export interface Proc123Config {
   contentMode: ContentMode;
   currency: CurrencyConfig;
   politeness: PolitenessConfig;
-  exporter: string;
+  exporter: ExporterName;
   aiProvider: AIProviderConfig;
 }
 

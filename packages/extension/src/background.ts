@@ -8,6 +8,7 @@
 
 import {
   type CurrencyUnit,
+  type ExporterName,
   type FieldPick,
   type ProfileHealthSummary,
   canonicalizeUrl,
@@ -20,7 +21,12 @@ import {
   loadHtml,
   shortHash,
 } from '@proc123/core';
-import { exportWooCommerceCsv } from '@proc123/exporters';
+import {
+  EXPORTER_EXTENSIONS,
+  EXPORTER_MIME_TYPES,
+  exportProducts,
+  exportWarnings,
+} from '@proc123/exporters';
 import type { ProfileField } from '@proc123/profiles';
 
 import { runtime, scripting } from './browser.js';
@@ -180,7 +186,7 @@ async function handleTeach(request: { tabId: number; url: string }): Promise<Tea
 }
 
 /** `proc123-ajil.example-2026-08-16.csv` — recognisable in a downloads folder. */
-function filenameFor(url: string): string {
+function filenameFor(url: string, exporter: ExporterName): string {
   const date = new Date().toISOString().slice(0, 10);
   let host = 'export';
   try {
@@ -188,19 +194,28 @@ function filenameFor(url: string): string {
   } catch {
     // A malformed URL is not worth failing an export over.
   }
-  return `proc123-${host}-${date}.csv`;
+  // The exporter is in the name because the two CSVs are not interchangeable
+  // and both end in `.csv` — a downloads folder with three of these in it
+  // should not be a guessing game.
+  const kind =
+    exporter === 'woocommerce-csv' ? 'woo' : exporter === 'shopify-csv' ? 'shopify' : 'json';
+  return `proc123-${host}-${date}-${kind}.${EXPORTER_EXTENSIONS[exporter]}`;
 }
 
 /**
- * Build the CSV from the saved crawl rather than from anything held in memory:
+ * Build the file from the saved crawl rather than from anything held in memory:
  * the worker that ran the scan has very likely been killed since.
  *
- * The CSV is handed back to the popup rather than downloaded here, because a
+ * The text is handed back to the popup rather than downloaded here, because a
  * service worker has no `URL.createObjectURL` — the popup makes the blob.
+ *
+ * Which exporter runs comes from the config, and the request may override it so
+ * a user can take the same scan to two shops without changing their settings.
  */
 async function handleExport(request: {
   url: string;
   displayUnit: CurrencyUnit;
+  exporter?: ExporterName;
 }): Promise<ExportedCsv> {
   const state = await createChromeCrawlStore().load(crawlIdFor(request.url));
   if (state === undefined || state.products.length === 0) {
@@ -208,28 +223,35 @@ async function handleExport(request: {
   }
 
   const config = await loadSettings();
+  const exporter = request.exporter ?? config.exporter;
 
-  const result = exportWooCommerceCsv(state.products, {
-    // The user was shown the detected units and picked this one, so it is a
-    // decision rather than a guess (CLAUDE.md §7.8).
+  // The user was shown the detected units and picked this one, so it is a
+  // decision rather than a guess (CLAUDE.md §7.8). Both CSVs need it; JSON
+  // deliberately does not, and keeps the unknown unit unknown.
+  const shared = {
     displayUnit: request.displayUnit,
     currencyCode: config.currency.code,
     contentMode: config.contentMode,
     bom: true,
+  };
+
+  const outcome = exportProducts(state.products, exporter, {
+    woocommerce: shared,
+    shopify: shared,
+    json: { scannedUrl: request.url },
   });
+  const warnings = exportWarnings(outcome);
 
   console.info(
-    `[proc123] exported ${String(result.rowCount)} rows with ${String(result.warnings.length)} warning(s)`
+    `[proc123] exported ${String(outcome.rowCount)} rows as ${exporter} with ${String(warnings.length)} warning(s)`
   );
 
   return {
-    filename: filenameFor(request.url),
-    csv: result.csv,
-    rowCount: result.rowCount,
-    warnings: result.warnings.map((warning) => ({
-      code: warning.code,
-      message: warning.message,
-    })),
+    filename: filenameFor(request.url, exporter),
+    csv: outcome.text,
+    rowCount: outcome.rowCount,
+    mimeType: EXPORTER_MIME_TYPES[exporter],
+    warnings,
   };
 }
 

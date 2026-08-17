@@ -15,7 +15,13 @@
  */
 
 import type { ContentMode, CurrencyUnit, ProductKind } from '../model.js';
-import { ALL_TARGET_FIELDS, type PartialConfig, type Proc123Config } from './types.js';
+import {
+  ALL_EXPORTERS,
+  ALL_TARGET_FIELDS,
+  type ExporterName,
+  type PartialConfig,
+  type Proc123Config,
+} from './types.js';
 
 /** CLAUDE.md §9's example, which is also the sensible default. */
 export const DEFAULT_CONFIG: Proc123Config = {
@@ -211,7 +217,17 @@ export function resolveConfig(input: unknown): ConfigResult {
   }
 
   if (typeof input['exporter'] === 'string' && input['exporter'].trim() !== '') {
-    config.exporter = input['exporter'].trim();
+    const exporter = input['exporter'].trim();
+    // Checked by name rather than left free-form: a typo was previously
+    // accepted silently and then fell through to WooCommerce at export time, so
+    // a user asking for Shopify got a WooCommerce file and no explanation.
+    if ((ALL_EXPORTERS as readonly string[]).includes(exporter)) {
+      config.exporter = exporter as ExporterName;
+    } else {
+      problems.push(
+        `exporter must be one of ${ALL_EXPORTERS.join(', ')}; "${exporter}" was ignored`
+      );
+    }
   }
 
   const ai = input['aiProvider'];

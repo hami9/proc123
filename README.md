@@ -10,7 +10,7 @@
 proc123 reads a category or collection page on any e-commerce platform, extracts
 every product on it — simple and variable, with all variations — normalizes them
 into one platform-neutral model, and exports a CSV built for a specific target
-store. WooCommerce first, Shopify next.
+store. WooCommerce, Shopify, or plain JSON.
 
 See [`CLAUDE.md`](Sp&Rm/CLAUDE.md) for the full design brief and [`ROADMAP.md`](Sp&Rm/ROADMAP.md)
 for the phase plan.
@@ -38,23 +38,23 @@ problem first, the browser UI last.
 | 9     | Troubleshooting subsystem                                     | ✅ done |
 | 10    | Cross-platform packaging                                      | ✅ done |
 | 11    | Release automation                                            | ✅ done |
-| 12    | Additional exporters                                          |         |
+| 12    | Additional exporters                                          | ✅ done |
 
 <!-- phase-table:end -->
 
 `core` still makes no requests of its own — you supply the HTML and, for Layer
 A, an HTTP client; the extension and the companion own the network. What exists
 is the part everything else is validated against: the canonical product model,
-the normalizers, all four extraction layers, a WooCommerce CSV exporter, a
-browser extension for Chrome and Firefox, and a command-line companion, with 710
-tests behind them.
+the normalizers, all four extraction layers, three exporters, a browser
+extension for Chrome and Firefox, and a command-line companion, with 756 tests
+behind them.
 
 ## Packages
 
 | Package              | What it is                                                                  |
 | -------------------- | --------------------------------------------------------------------------- |
 | `packages/core`      | `CanonicalProduct`, normalizers, SKUs, Layer A + Layer B, category crawling |
-| `packages/exporters` | WooCommerce CSV exporter (Shopify CSV and JSON to follow)                   |
+| `packages/exporters` | WooCommerce CSV, Shopify CSV and JSON exporters                             |
 | `packages/extension` | Manifest V3 extension: popup, service worker, CSV download                  |
 | `packages/profiles`  | Site profile schema — the JSON Layer C learns and a person can edit         |
 | `packages/companion` | Command-line runner: the same pipeline, no browser                          |
@@ -333,7 +333,60 @@ Two rules the filters enforce:
 An `apiKey` in a config file is refused and reported. Keys belong in extension
 settings, not in a file that gets shared or committed (§4).
 
-## Using the exporter
+## Using the exporters
+
+Three of them, chosen by name from `proc123.config.json`, the popup, or the
+companion's `--format`:
+
+| Name              | What it produces                                                       |
+| ----------------- | ---------------------------------------------------------------------- |
+| `woocommerce-csv` | The default. Every rule in `CLAUDE.md` §7 under test.                  |
+| `shopify-csv`     | Shopify's product CSV, matching the template Shopify itself publishes. |
+| `json`            | Everything found, reshaped by nothing — see below.                     |
+
+```ts
+import { exportProducts } from '@proc123/exporters';
+
+const { text, rowCount } = exportProducts(products, 'shopify-csv', {
+  shopify: { displayUnit: 'toman' },
+});
+```
+
+### Shopify is not WooCommerce with different headers
+
+Its two price columns are **inverted**. WooCommerce has `Regular price` and an
+optional `Sale price`; Shopify has `Price` — what the customer is actually
+charged — and `Compare-at price`, the struck-through "was" figure. So a
+discounted product writes its _sale_ price into `Price` and its _regular_ price
+into `Compare-at price`.
+
+Copying the WooCommerce mapping across produces a file where either every
+product sells at its pre-discount price, or the whole shop appears permanently
+discounted. Both import cleanly. Neither is noticeable until somebody buys
+something.
+
+Rows are not products either: one product is a run of rows sharing a handle —
+the first carries the product-level fields and the first variant, later rows
+carry further variants, and rows after those carry nothing but extra images.
+
+Two defaults are deliberately cautious. Products import as **draft** and
+unpublished, because a few hundred scanned products going live at prices nobody
+has checked is not a thing a tool should do on your behalf; and inventory is
+**not** tracked, because a scanned quantity is a snapshot of somebody else's
+shop and Shopify would stop selling when that borrowed number ran out.
+
+### JSON is for you, not for a shop
+
+The CSVs answer "how does this shop want to be fed?". JSON answers "what did
+proc123 actually find?" — for writing your own importer, diffing two scans, or
+filing a bug about a field that came out wrong. It reshapes nothing: a price
+whose toman/rial unit the page never stated keeps `unit` absent, because a CSV
+has to pick one and that unanswered question is exactly what someone chasing a
+10× error needs to see. It also carries the per-field confidence and layer the
+CSVs have no column for. Keys are sorted, so two scans of the same shop diff
+cleanly.
+
+## Using the WooCommerce exporter
 
 ```ts
 import { exportWooCommerceCsv } from '@proc123/exporters';
