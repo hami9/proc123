@@ -19,6 +19,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 
 import {
+  ALL_EXPORTERS,
   type CanonicalProduct,
   type CurrencyUnit,
   type Proc123Config,
@@ -38,7 +39,12 @@ import {
   resolveConfig,
   shortHash,
 } from '@proc123/core';
-import { exportWooCommerceCsv } from '@proc123/exporters';
+import {
+  EXPORTER_EXTENSIONS,
+  exportProducts,
+  exportWarnings,
+  isExporterName,
+} from '@proc123/exporters';
 
 import { createFetchClient } from './http.js';
 import { createFileCrawlStore, defaultStateDir } from './store.js';
@@ -49,7 +55,9 @@ Usage:
   proc123 <category-url> [options]
 
 Options:
-  -o, --out <file>        Where to write the CSV. Default: proc123-<hash>.csv
+  -o, --out <file>        Where to write the file. Default: proc123-<hash>.<ext>
+      --format <name>     woocommerce-csv | shopify-csv | json.
+                          Default: whatever the config says.
   -c, --config <file>     A proc123.config.json. Default: the built-in defaults.
       --unit <toman|rial> How IRR prices on the page are quoted. Ask the shop if
                           unsure — guessing wrong is a silent 10x error.
@@ -130,6 +138,7 @@ export async function run(argv: readonly string[], deps: CliDeps = {}): Promise<
       allowPositionals: true,
       options: {
         out: { type: 'string', short: 'o' },
+        format: { type: 'string' },
         config: { type: 'string', short: 'c' },
         unit: { type: 'string' },
         'max-pages': { type: 'string' },
@@ -200,6 +209,14 @@ export async function run(argv: readonly string[], deps: CliDeps = {}): Promise<
   if (values.unit !== undefined && values.unit !== 'toman' && values.unit !== 'rial') {
     out('--unit must be toman or rial.');
     return { code: 2, rowCount: 0 };
+  }
+
+  if (values.format !== undefined) {
+    if (!isExporterName(values.format)) {
+      out(`--format must be one of ${ALL_EXPORTERS.join(', ')}.`);
+      return { code: 2, rowCount: 0 };
+    }
+    config = { ...config, exporter: values.format };
   }
 
   const logger = createLogger({ level: 'debug', now });
@@ -293,15 +310,24 @@ export async function run(argv: readonly string[], deps: CliDeps = {}): Promise<
 
     // Narrowed by the `--unit` check above, so no assertion is needed here.
     const unit: CurrencyUnit = values.unit ?? config.currency.displayUnit;
-    const csv = exportWooCommerceCsv(rows, {
+    // Both CSVs need the unit decision; JSON deliberately does not, and keeps
+    // an unknown unit unknown so a reader can see the question was never
+    // answered (CLAUDE.md §7.8).
+    const shared = {
       displayUnit: unit,
       currencyCode: config.currency.code,
       contentMode: config.contentMode,
       bom: true,
+    };
+    const exported = exportProducts(rows, config.exporter, {
+      woocommerce: shared,
+      shopify: shared,
+      json: { scannedUrl: page.url },
     });
 
-    const csvPath = values.out ?? `proc123-${shortHash(canonicalizeUrl(startUrl), 8)}.csv`;
-    await write(csvPath, csv.csv);
+    const extension = EXPORTER_EXTENSIONS[config.exporter];
+    const csvPath = values.out ?? `proc123-${shortHash(canonicalizeUrl(startUrl), 8)}.${extension}`;
+    await write(csvPath, exported.text);
 
     if (values.report !== undefined) {
       await write(
@@ -312,14 +338,14 @@ export async function run(argv: readonly string[], deps: CliDeps = {}): Promise<
     if (values.log !== undefined) await write(values.log, formatLog(logger.records()));
 
     const variations = rows.filter(isVariation).length;
-    for (const warning of csv.warnings.slice(0, 5)) say(`warning: ${warning.message}`);
+    for (const warning of exportWarnings(exported).slice(0, 5)) say(`warning: ${warning.message}`);
 
     out(
-      `Wrote ${String(csv.rowCount)} row(s) to ${csvPath} ` +
+      `Wrote ${String(exported.rowCount)} row(s) to ${csvPath} as ${config.exporter} ` +
         `(${String(rows.length - variations)} product(s), ${String(variations)} variation(s), ` +
         `${String(crawl.pagesScanned)} page(s), prices read as ${unit}).`
     );
-    return { code: 0, rowCount: csv.rowCount, csvPath };
+    return { code: 0, rowCount: exported.rowCount, csvPath };
   } catch (error) {
     // §2: a block ends the scan and is reported as itself, never retried or
     // worked around.

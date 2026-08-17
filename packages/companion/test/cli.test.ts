@@ -167,6 +167,35 @@ describe('scanning', () => {
     expect(said(rial)).toContain('read as rial');
   });
 
+  it('writes a Shopify file when asked for one', async () => {
+    const h = harness();
+    await run([URL, '-o', 'out.csv', '--format', 'shopify-csv', '--max-pages', '1'], h.deps);
+
+    const csv = h.files.get('out.csv') ?? '';
+    expect(csv).toContain('URL handle');
+    expect(csv).toContain('Compare-at price');
+    expect(csv).not.toContain('Regular price');
+    expect(said(h)).toContain('as shopify-csv');
+  });
+
+  it('writes JSON when asked for it, and names the file accordingly', async () => {
+    const h = harness();
+    const result = await run([URL, '--format', 'json', '--max-pages', '1'], h.deps);
+
+    expect(result.csvPath).toMatch(/\.json$/);
+    const json = h.files.get(result.csvPath ?? '') ?? '';
+    expect(JSON.parse(json)).toMatchObject({ format: 'proc123-products' });
+  });
+
+  it('rejects a format it does not know rather than falling back', async () => {
+    const h = harness();
+    const result = await run([URL, '--format', 'shopify'], h.deps);
+
+    expect(result.code).toBe(2);
+    expect(said(h)).toContain('--format must be one of');
+    expect(h.files.size).toBe(0);
+  });
+
   it('explains an empty result rather than just reporting zero', async () => {
     const h = harness(EMPTY_SHELL);
     const result = await run([URL, '-o', 'out.csv', '--max-pages', '1'], h.deps);

@@ -14,9 +14,11 @@
  */
 
 import {
+  ALL_EXPORTERS,
   ALL_TARGET_FIELDS,
   type ContentMode,
   type CurrencyUnit,
+  type ExporterName,
   type Proc123Config,
   type ProductKind,
   type TargetField,
@@ -24,6 +26,8 @@ import {
 
 import { type Tab, permissions, runtime, tabs } from './browser.js';
 import { loadApiKey, loadSettings, saveApiKey, saveSettings } from './settings.js';
+
+import { EXPORTER_LABELS } from '@proc123/exporters';
 
 import type { ExtensionResponse, ScanSummary } from './messages.js';
 
@@ -45,6 +49,7 @@ const exportBox = element('export');
 const unitRow = element('unitRow');
 const unitSelect = element<HTMLSelectElement>('unit');
 const downloadButton = element<HTMLButtonElement>('download');
+const exporterSelect = element<HTMLSelectElement>('exporter');
 const explainButton = element<HTMLButtonElement>('explain');
 const teachButton = element<HTMLButtonElement>('teach');
 
@@ -184,6 +189,18 @@ async function renderSettings(): Promise<void> {
   element<HTMLSelectElement>('aiProvider').value = settings.aiProvider.name;
   element<HTMLInputElement>('aiModel').value = settings.aiProvider.model;
   element<HTMLInputElement>('aiApiKey').value = await loadApiKey();
+
+  // The picker on the export row starts at the configured exporter, but is not
+  // itself a setting: choosing Shopify for one download should not silently
+  // change what the next scan exports.
+  exporterSelect.replaceChildren();
+  for (const name of ALL_EXPORTERS) {
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = EXPORTER_LABELS[name];
+    exporterSelect.append(option);
+  }
+  exporterSelect.value = settings.exporter;
 
   element('settings').addEventListener('change', () => {
     void persistSettings();
@@ -339,7 +356,7 @@ async function scan(restart: boolean): Promise<void> {
  * no `URL.createObjectURL`. The object URL is revoked once the click has been
  * dispatched, so the CSV does not sit in memory after the download starts.
  */
-function saveFile(filename: string, csv: string, type = 'text/csv;charset=utf-8'): void {
+function saveFile(filename: string, csv: string, type: string = 'text/csv;charset=utf-8'): void {
   const blob = new Blob([csv], { type });
   const href = URL.createObjectURL(blob);
 
@@ -364,6 +381,7 @@ async function download(): Promise<void> {
       kind: 'export',
       url: scannedUrl,
       displayUnit: unitSelect.value as CurrencyUnit,
+      exporter: exporterSelect.value as ExporterName,
     });
 
     if (!response.ok) {
@@ -372,7 +390,7 @@ async function download(): Promise<void> {
     }
     if (response.kind !== 'download') return;
 
-    saveFile(response.download.filename, response.download.csv);
+    saveFile(response.download.filename, response.download.csv, response.download.mimeType);
 
     const warnings = response.download.warnings.length;
     statusLine.textContent =

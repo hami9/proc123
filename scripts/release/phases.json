@@ -1,22 +1,70 @@
 {
   "$comment": "The single home for phase status. README's table is rendered from this by scripts/release/sync-version.mjs, so the status lives in exactly one place instead of being kept in step by hand across two files. Status is one of: done, partial, next, planned.",
   "phases": [
-    { "phase": 0, "title": "Monorepo scaffold + CI", "status": "done" },
-    { "phase": 1, "title": "Canonical model + WooCommerce CSV exporter", "status": "done" },
+    {
+      "phase": 0,
+      "title": "Monorepo scaffold + CI",
+      "status": "done"
+    },
+    {
+      "phase": 1,
+      "title": "Canonical model + WooCommerce CSV exporter",
+      "status": "done"
+    },
     {
       "phase": 2,
       "title": "Layer B — structured markup (JSON-LD → Microdata → OpenGraph)",
       "status": "done"
     },
-    { "phase": 3, "title": "Layer A — WooCommerce Store API, then Shopify", "status": "done" },
-    { "phase": 4, "title": "Category traversal / pagination", "status": "done" },
-    { "phase": 5, "title": "Variable products & variations", "status": "partial" },
-    { "phase": 6, "title": "Layer C — Selector Learning Mode", "status": "done" },
-    { "phase": 7, "title": "Filtering & field selection", "status": "done" },
-    { "phase": 8, "title": "Layer D — pluggable AI providers", "status": "done" },
-    { "phase": 9, "title": "Troubleshooting subsystem", "status": "done" },
-    { "phase": 10, "title": "Cross-platform packaging", "status": "done" },
-    { "phase": 11, "title": "Release automation", "status": "done" },
-    { "phase": 12, "title": "Additional exporters", "status": "planned" }
+    {
+      "phase": 3,
+      "title": "Layer A — WooCommerce Store API, then Shopify",
+      "status": "done"
+    },
+    {
+      "phase": 4,
+      "title": "Category traversal / pagination",
+      "status": "done"
+    },
+    {
+      "phase": 5,
+      "title": "Variable products & variations",
+      "status": "partial"
+    },
+    {
+      "phase": 6,
+      "title": "Layer C — Selector Learning Mode",
+      "status": "done"
+    },
+    {
+      "phase": 7,
+      "title": "Filtering & field selection",
+      "status": "done"
+    },
+    {
+      "phase": 8,
+      "title": "Layer D — pluggable AI providers",
+      "status": "done"
+    },
+    {
+      "phase": 9,
+      "title": "Troubleshooting subsystem",
+      "status": "done"
+    },
+    {
+      "phase": 10,
+      "title": "Cross-platform packaging",
+      "status": "done"
+    },
+    {
+      "phase": 11,
+      "title": "Release automation",
+      "status": "done"
+    },
+    {
+      "phase": 12,
+      "title": "Additional exporters",
+      "status": "done"
+    }
   ]
 }

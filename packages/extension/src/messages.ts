@@ -6,7 +6,8 @@
  * its own rather than relying on a live conversation.
  */
 
-import type { CrawlStatus, CurrencyUnit, ExtractionIssue } from '@proc123/core';
+import type { CrawlStatus, CurrencyUnit, ExporterName, ExtractionIssue } from '@proc123/core';
+import { isExporterName } from '@proc123/exporters';
 
 export interface ScanRequest {
   kind: 'scan';
@@ -31,6 +32,11 @@ export interface ExportRequest {
    * is sent, because reading toman as rial is a silent 10x error (§7.8).
    */
   displayUnit: CurrencyUnit;
+  /**
+   * Overrides the configured exporter for this download only, so the same scan
+   * can be taken to two shops without changing settings.
+   */
+  exporter?: ExporterName;
 }
 
 export interface TeachRequest {
@@ -78,7 +84,10 @@ export interface TeachResult {
 
 export interface ExportedCsv {
   filename: string;
+  /** The file's text. Named `csv` from when that was the only kind. */
   csv: string;
+  /** So the popup can hand the blob the right type — JSON is not `text/csv`. */
+  mimeType?: string;
   rowCount: number;
   /** Every assumption and repair the exporter had to make. */
   warnings: { code: string; message: string }[];
@@ -136,7 +145,8 @@ export function isExportRequest(message: unknown): message is ExportRequest {
   return (
     candidate.kind === 'export' &&
     typeof candidate.url === 'string' &&
-    (candidate.displayUnit === 'toman' || candidate.displayUnit === 'rial')
+    (candidate.displayUnit === 'toman' || candidate.displayUnit === 'rial') &&
+    (candidate.exporter === undefined || isExporterName(candidate.exporter))
   );
 }
 
