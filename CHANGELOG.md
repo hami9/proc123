@@ -2,6 +2,13 @@
 
 Every release, newest first. Generated from Conventional Commits — see CLAUDE.md §13.
 
+# [1.1.0](https://github.com/hami9/proc123/compare/v1.0.0...v1.1.0) (2026-08-17)
+
+
+### Features
+
+* **exporters:** add Shopify CSV and JSON exporters ([6eb06de](https://github.com/hami9/proc123/commit/6eb06dec9cb0b54e2cff5bf631cd5149bac72664))
+
 # 1.0.0 (2026-08-16)
 
 
