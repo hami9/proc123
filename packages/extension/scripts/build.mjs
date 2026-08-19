@@ -71,10 +71,19 @@ function optionsFor(target) {
   };
 }
 
+/**
+ * Everything that is not JavaScript.
+ *
+ * `icons/` is copied whole rather than file by file: the two manifests ask for
+ * overlapping but different sizes, and a list here is a third place to forget.
+ * The directory holds only what ships — the full-resolution master lives in
+ * `docs/logo.png`, where it is not dead weight in everyone's browser profile.
+ */
 async function copyStatic(target) {
   const out = resolve(dist, target.name);
   await cp(resolve(root, target.manifest), resolve(out, 'manifest.json'));
   await cp(resolve(root, 'src/popup.html'), resolve(out, 'popup.html'));
+  await cp(resolve(root, 'icons'), resolve(out, 'icons'), { recursive: true });
 }
 
 /**

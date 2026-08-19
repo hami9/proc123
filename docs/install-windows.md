@@ -32,10 +32,10 @@ Put the extracted folder somewhere you will not delete it — for example
 `C:\Users\<you>\proc123`. **The browser loads it from that folder every time it
 starts, so moving or deleting the folder uninstalls the extension.**
 
-You should see `manifest.json`, `popup.html`, `background.js` and `popup.js`
-directly inside the folder. If instead you see a single folder inside a folder,
-go one level deeper — the folder holding `manifest.json` is the one to pick in
-step 3.
+You should see `manifest.json`, `popup.html`, `background.js`, `popup.js` and an
+`icons` folder directly inside the folder. If instead you see a single folder
+inside a folder, go one level deeper — the folder holding `manifest.json` is the
+one to pick in step 3.
 
 > Do not skip the unzip. Browsers cannot load a `.zip` directly.
 

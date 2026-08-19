@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/logo.png" alt="proc123" width="160" height="160" />
+
 # proc123
 
 **Scan any online store's category page. Get a CSV that imports cleanly into another store.**
