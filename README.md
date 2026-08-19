@@ -57,6 +57,13 @@ build, no Node required.
 Then open a shop's category page, click the toolbar button, press **Scan this
 category**, check the currency line, and press **Download**.
 
+**Not in the Chrome Web Store yet**, which is why the install is a folder rather
+than a button. Chrome blocks extension files from anywhere but its own store, so
+loading the unpacked folder is the supported route until proc123 is listed —
+[`docs/publishing.md`](docs/publishing.md) covers what that takes and what is
+already in place for it. Firefox can be installed normally today via a signed
+build, described in the same document.
+
 Building it yourself is under [Getting started](#getting-started).
 
 ---

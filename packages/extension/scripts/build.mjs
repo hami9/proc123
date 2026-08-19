@@ -63,7 +63,12 @@ function optionsFor(target) {
     format: 'esm',
     target: target.esbuildTarget,
     platform: 'browser',
-    sourcemap: 'linked',
+    // Linked source maps make a directory loaded unpacked debuggable. A store
+    // upload excludes the `.map` files (see `zipTarget`), so emitting the
+    // `sourceMappingURL` comment there would leave every build pointing at a
+    // file that is not in the package — a console error for the user and a
+    // dangling reference for a reviewer. Build the store bundles without them.
+    sourcemap: zip ? false : 'linked',
     logLevel: 'info',
     // Not minified: a reviewer at a browser store, and anyone auditing what this
     // extension does on their pages, should be able to read it.

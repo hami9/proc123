@@ -16,6 +16,14 @@ anywhere — the scan happens in your own browser session, on pages you open.
 
 ## A. The browser extension
 
+> **Why is this not just an "Add to Chrome" button?** Because proc123 is not in
+> the Chrome Web Store yet. Chrome only offers a one-click install to extensions
+> that are, and it blocks `.crx` files from anywhere else — the **Pack
+> extension** button on the extensions page produces a file Chrome will then
+> refuse to install, so it is not a shortcut around this. Loading the folder is
+> the supported way to run an extension that is not in the store, and
+> [`publishing.md`](publishing.md) is what getting the button would take.
+
 ### 1. Download
 
 Go to the **[latest release](https://github.com/hami9/proc123/releases/latest)**
@@ -62,7 +70,10 @@ pin it so the button is always visible.
 
 Firefox forgets temporary add-ons when it closes, so this is per-session. A
 permanent install needs a Mozilla-signed build, which this project does not
-publish yet — on Windows, Chrome or Edge is the smoother path.
+publish yet — on Windows, Chrome or Edge is the smoother path. Unlike Chrome,
+though, Firefox does allow a normal one-click install of a signed build without
+listing it publicly; [`publishing.md`](publishing.md) covers the signing step,
+and the manifest already carries everything it requires.
 
 ### 4. Scan a category
 
@@ -107,7 +118,7 @@ From the **[latest release](https://github.com/hami9/proc123/releases/latest)**,
 download **`proc123-win32-x64.exe`** and put it in a folder you can find, e.g.
 `C:\Users\<you>\proc123\`.
 
-The file is around 60 MB — that is the Node runtime travelling inside it, not a
+The file is around 90 MB — that is the Node runtime travelling inside it, not a
 mistake.
 
 ### 2. Let Windows run it
@@ -191,17 +202,19 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 
 ## Troubleshooting
 
-| What you see                                    | What it means                                                                                                                                               |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Load unpacked** is greyed out or missing      | Developer mode is off. Toggle it on the extensions page and reload the tab.                                                                                 |
-| "Manifest file is missing or unreadable"        | You picked the zip, or a folder one level too high. Pick the folder that directly contains `manifest.json`.                                                 |
-| The extension vanished after restarting Firefox | Expected — Firefox temporary add-ons are per-session. Use Chrome or Edge for a persistent install.                                                          |
-| The extension vanished after restarting Chrome  | The folder you loaded it from was moved, renamed or deleted. Put it back, or load it again from its new location.                                           |
-| The scan stops and says the site blocked it     | Working as intended. proc123 does not solve CAPTCHAs, rotate proxies, or retry past a block — see [the README](../README.md#what-proc123-will-not-do).      |
-| "Windows protected your PC"                     | The binary is unsigned. **More info** → **Run anyway**, or Properties → **Unblock**.                                                                        |
-| Prices are exactly 10× off                      | The toman/rial answer was wrong. Re-export with the other setting — the raw scan is unaffected.                                                             |
-| Excel mangles the Persian/Arabic text           | Open the CSV in LibreOffice, or use Excel's **Data → From Text/CSV** import rather than double-clicking the file.                                           |
-| The scan says a category is incomplete          | The shop paginates with a "load more" button or infinite scroll and published no next-page link. proc123 says so rather than pretending the category ended. |
+| What you see                                                   | What it means                                                                                                                                                                 |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Load unpacked** is greyed out or missing                     | Developer mode is off. Toggle it on the extensions page and reload the tab.                                                                                                   |
+| "Manifest file is missing or unreadable"                       | You picked the zip, or a folder one level too high. Pick the folder that directly contains `manifest.json`.                                                                   |
+| **Pack extension** asks for a root directory and a private key | That button is for signing an upload to the Chrome Web Store, not for installing. The `.crx` it produces is one Chrome will refuse to install. Use **Load unpacked** instead. |
+| Nothing happens when you open a `.crx`                         | Chrome blocks extension files from outside its store. There is no setting for it — see [publishing.md](publishing.md).                                                        |
+| The extension vanished after restarting Firefox                | Expected — Firefox temporary add-ons are per-session. Use Chrome or Edge for a persistent install.                                                                            |
+| The extension vanished after restarting Chrome                 | The folder you loaded it from was moved, renamed or deleted. Put it back, or load it again from its new location.                                                             |
+| The scan stops and says the site blocked it                    | Working as intended. proc123 does not solve CAPTCHAs, rotate proxies, or retry past a block — see [the README](../README.md#what-proc123-will-not-do).                        |
+| "Windows protected your PC"                                    | The binary is unsigned. **More info** → **Run anyway**, or Properties → **Unblock**.                                                                                          |
+| Prices are exactly 10× off                                     | The toman/rial answer was wrong. Re-export with the other setting — the raw scan is unaffected.                                                                               |
+| Excel mangles the Persian/Arabic text                          | Open the CSV in LibreOffice, or use Excel's **Data → From Text/CSV** import rather than double-clicking the file.                                                             |
+| The scan says a category is incomplete                         | The shop paginates with a "load more" button or infinite scroll and published no next-page link. proc123 says so rather than pretending the category ended.                   |
 
 Still stuck? [Open an issue](https://github.com/hami9/proc123/issues/new/choose)
 and attach the report from **Why is this field empty?**.
