@@ -1,0 +1,149 @@
+# Roadmap — phases 13 onward
+
+Phases 0–12 built the engine and the extension, and are done. This plan adds an
+inspector, and an application for Windows, Linux and Android, without taking
+anything away: the extension stays and gets better, and the CLI stays for
+scripting.
+
+[`CLAUDE.md`](../CLAUDE.md) §15–§18 is the design. This file is the order of
+work. [`prompts/`](prompts/) is what a single session is handed.
+
+---
+
+## The shape of it
+
+```
+                         packages/core  +  packages/exporters
+                                      │
+              ┌───────────────────────┼───────────────────────┐
+              │                       │                       │
+      packages/extension        packages/app            packages/companion
+      the browser session       Windows · Linux         scripting, batches
+      (stays, gains §16)        Android · no CORS       (stays as-is)
+              │                       │
+              └────── §17 bridge ─────┘
+                 127.0.0.1 + per-run token
+                 both work alone; together they work better
+```
+
+One engine, three surfaces. Every phase below either widens the engine or adds
+a surface to it — none of them forks the logic.
+
+---
+
+## Why this order
+
+The same reason Layer B came before the extension UI in phase 2: **build the
+part that can be tested without a UI first, and prove it on the surface that
+already exists before building a new one.**
+
+So the inspector engine (13) lands before the inspector UI (14), and both land
+before the app (15+) — which means by the time the app shell exists there is
+something real to put in it, and the engine has already been used in anger by
+a surface that ships today.
+
+The bridge (17) comes after the app can stand alone, so that "both work alone"
+is a property the code has from the start rather than one retrofitted onto a
+dependency.
+
+---
+
+## Phases
+
+### 13 · Inspector engine
+
+`packages/core`. No UI, no requests of its own, fixture-driven.
+
+Technology detection widened from the seven storefront platforms
+`platform/detect.ts` knows to frameworks, analytics, CDNs, tag managers,
+payment and chat widgets — keeping its weighted-signal model and its
+every-signal-recorded rule. Font inventory and image inventory as new modules.
+
+**Done when** a fixture page yields its technologies with confidences and
+signals, its font families with weights and sources, and its complete image
+list — and `explain.ts` can already account for each answer. Licence recorded
+for every rule not written here.
+
+### 14 · Inspector in the extension
+
+`packages/extension`. The popup gains the three read-only views. Ships user
+value on the surface that already works, and shakes out the engine before the
+app depends on it.
+
+**Done when** all three views work on a real shop, image download goes through
+the service worker, and the popup at 360px is not cramped by them.
+
+### 15 · App shell — Windows and Linux
+
+`packages/app`, Tauri v2. Rust confined to HTTP, filesystem and the WebView
+host. Routing, the design system in §18, dark/light, Persian/English with RTL.
+
+The first Rust in the repository, so this phase also settles how it is built
+and tested in CI, and whether the release workflow can cross-compile or needs a
+matrix.
+
+**Done when** it builds on both, opens, and renders a real scan result handed
+to it from a fixture — no live network yet.
+
+### 16 · The app scans on its own
+
+Wire `core` in behind Rust's HTTP client, with no CORS to work around. Embed a
+WebView so client-rendered shops resolve — the failure the CLI has always had.
+Politeness (§10) is the app's obligation exactly as it is the extension's, and
+a native shell is not a licence to hit a server harder.
+
+**Done when** the app scans a static shop and a JS-built one end to end and
+writes a CSV directly to disk, with no browser involved.
+
+### 17 · The bridge
+
+`127.0.0.1`, per-run token, service worker on the extension side. The extension
+lends its authenticated rendered page; the app lends disk, fetching and a
+process that outlives a popup.
+
+**Done when** a scan started in the extension finishes in the app with the
+popup closed — and both still work with the other uninstalled, under test.
+
+### 18 · Android
+
+Same codebase, same UI. WebView-based scanning, share-sheet entry so a URL
+shared from a browser opens a scan. Touch targets and layout that were designed
+for this in §18 rather than patched for it now.
+
+**Done when** a debug APK scans a shop on a real device and exports to storage.
+
+> **Distribution risk, worth knowing now:** a general-purpose extraction tool
+> may not survive Google Play review. A sideloaded APK and F-Droid are the
+> routes that do not depend on that verdict. Plan for them; treat Play as a
+> bonus. This is the same lesson [`publishing.md`](publishing.md) records for
+> Chrome — find out what a store will accept before building for it.
+
+### 19 · Visual picker for any field
+
+Generalise Layer C from title/price/image to any value the user points at, so
+the tool extracts a spec table or a listing site and not only a product grid.
+Profiles stay human-readable, exportable JSON.
+
+**Done when** a user teaches a non-product page and the export carries the
+fields they picked, with the profile still readable and hand-editable.
+
+### 20 · Packaging and distribution
+
+MSI and AppImage, APK, signing where signing is possible, auto-update. Folded
+into the release workflow that already cuts versions and uploads assets.
+
+**Done when** a tagged release produces installable artefacts for all three
+targets without a manual step.
+
+---
+
+## What is deliberately not here
+
+- **macOS and iOS.** §15 gives the reasoning. Half-building either is worse
+  than not starting.
+- **Any account, server or telemetry.** §15 — this is a principle, not a
+  default awaiting a business case.
+- **Anything in §2's hard constraint.** A native shell lifts the browser's
+  restrictions, which makes CAPTCHA solving, fingerprint spoofing and proxy
+  rotation easier to build and no more acceptable. A phase that seems to need
+  one of them has been specified wrong.

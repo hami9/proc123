@@ -91,8 +91,22 @@ popup is the newest.
 | 10    | Cross-platform packaging                                      | ✅ done |
 | 11    | Release automation                                            | ✅ done |
 | 12    | Additional exporters                                          | ✅ done |
+| 13    | Inspector engine — technologies, fonts, images                | next    |
+| 14    | Inspector in the extension                                    |         |
+| 15    | App shell — Windows and Linux (Tauri v2)                      |         |
+| 16    | The app scans on its own                                      |         |
+| 17    | Bridge — app ↔ extension over loopback                        |         |
+| 18    | Android                                                       |         |
+| 19    | Visual picker for any field                                   |         |
+| 20    | Packaging and distribution                                    |         |
 
 <!-- phase-table:end -->
+
+Phases 13–20 add an inspector — what built this site, which fonts, which images
+— and an application for Windows, Linux and Android built on the same engine,
+with the extension kept and improved rather than replaced.
+[`docs/roadmap.md`](docs/roadmap.md) is the plan and [`CLAUDE.md`](CLAUDE.md)
+§15–§18 is the design.
 
 `core` still makes no requests of its own — you supply the HTML and, for Layer
 A, an HTTP client; the extension and the companion own the network. What exists

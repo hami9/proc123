@@ -65,6 +65,46 @@
       "phase": 12,
       "title": "Additional exporters",
       "status": "done"
+    },
+    {
+      "phase": 13,
+      "title": "Inspector engine — technologies, fonts, images",
+      "status": "next"
+    },
+    {
+      "phase": 14,
+      "title": "Inspector in the extension",
+      "status": "planned"
+    },
+    {
+      "phase": 15,
+      "title": "App shell — Windows and Linux (Tauri v2)",
+      "status": "planned"
+    },
+    {
+      "phase": 16,
+      "title": "The app scans on its own",
+      "status": "planned"
+    },
+    {
+      "phase": 17,
+      "title": "Bridge — app ↔ extension over loopback",
+      "status": "planned"
+    },
+    {
+      "phase": 18,
+      "title": "Android",
+      "status": "planned"
+    },
+    {
+      "phase": 19,
+      "title": "Visual picker for any field",
+      "status": "planned"
+    },
+    {
+      "phase": 20,
+      "title": "Packaging and distribution",
+      "status": "planned"
     }
   ]
 }
