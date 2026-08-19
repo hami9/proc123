@@ -23,3 +23,7 @@ coverage/
 
 # Release artifacts collected from the per-platform build jobs
 artifacts/
+
+# The private design brief and roadmap. They live on the author's machine; the
+# rules they state are enforced by tests, not by the document being present.
+Sp&Rm/

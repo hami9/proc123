@@ -1,0 +1,41 @@
+name: Bug report
+description: Something other than a bad scan is broken.
+labels: ['bug']
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: proc123 version
+      description: Shown on the release you downloaded, or in the extension's card.
+      placeholder: 1.1.0
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: OS and browser (or Node version)
+      placeholder: Windows 11, Chrome 131
+    validations:
+      required: true
