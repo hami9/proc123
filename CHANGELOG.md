@@ -2,6 +2,13 @@
 
 Every release, newest first. Generated from Conventional Commits — see CONTRIBUTING.md.
 
+# [1.2.0](https://github.com/hami9/proc123/compare/v1.1.0...v1.2.0) (2026-08-19)
+
+
+### Features
+
+* **extension:** ship the proc123 logo as the extension icon ([8dc299a](https://github.com/hami9/proc123/commit/8dc299a80a0119947035760ed54a9e49c9bd0e72))
+
 # [1.1.0](https://github.com/hami9/proc123/compare/v1.0.0...v1.1.0) (2026-08-17)
 
 
