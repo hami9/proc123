@@ -1,6 +1,6 @@
 # Changelog
 
-Every release, newest first. Generated from Conventional Commits — see CLAUDE.md §13.
+Every release, newest first. Generated from Conventional Commits — see CONTRIBUTING.md.
 
 # [1.1.0](https://github.com/hami9/proc123/compare/v1.0.0...v1.1.0) (2026-08-17)
 

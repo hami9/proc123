@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest something proc123 should do.
+labels: ['enhancement']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that proc123 makes hard or impossible?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like it to do
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This is not about evading a block — no CAPTCHA solving, fingerprint spoofing, proxy rotation, or retrying past a block. Those are permanently out of scope.
+          required: true

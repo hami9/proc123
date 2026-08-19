@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Installing it on Windows
+    url: https://github.com/hami9/proc123/blob/main/docs/install-windows.md
+    about: Click-by-click guide, including the troubleshooting table.
+  - name: Security or privacy problem
+    url: https://github.com/hami9/proc123/security/advisories/new
+    about: Report these privately, not as a public issue.

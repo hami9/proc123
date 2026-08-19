@@ -1,26 +1,69 @@
+<div align="center">
+
 # proc123
+
+**Scan any online store's category page. Get a CSV that imports cleanly into another store.**
 
 <!-- version-badge:start -->
 
 [![version](https://img.shields.io/badge/version-1.1.0-7a3e1d)](https://github.com/hami9/proc123/releases/tag/v1.1.0)
 <!-- version-badge:end -->
 
-**Scan any online store's category page, get a CSV that imports cleanly into another store.**
+[![CI](https://github.com/hami9/proc123/actions/workflows/ci.yml/badge.svg)](https://github.com/hami9/proc123/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-7a3e1d)](LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A520.11-7a3e1d)](https://nodejs.org)
+[![tests](https://img.shields.io/badge/tests-756-7a3e1d)](#getting-started)
+
+[Install on Windows](docs/install-windows.md) &nbsp;·&nbsp; [How it works](#scanning-a-page) &nbsp;·&nbsp; [What it will not do](#what-proc123-will-not-do) &nbsp;·&nbsp; [Contributing](CONTRIBUTING.md)
+
+</div>
+
+---
 
 proc123 reads a category or collection page on any e-commerce platform, extracts
 every product on it — simple and variable, with all variations — normalizes them
 into one platform-neutral model, and exports a CSV built for a specific target
-store. WooCommerce, Shopify, or plain JSON.
+store. **WooCommerce**, **Shopify**, or plain **JSON**.
 
-See [`CLAUDE.md`](Sp&Rm/CLAUDE.md) for the full design brief and [`ROADMAP.md`](Sp&Rm/ROADMAP.md)
-for the phase plan.
+It runs in your own browser session, on pages you already have open. No proxies,
+no CAPTCHA solving, no pretending to be someone else.
+
+```
+  a category page          four extraction layers            a file another
+  you already have    →    first one that answers wins   →   shop can import
+  open in a tab
+
+                     ┌── A · the shop's own catalogue API ──┐
+                     ├── B · structured markup (JSON-LD…) ──┤
+                     ├── C · a layout you taught it ────────┤
+                     └── D · AI, off until you opt in ──────┘
+```
+
+## Install
+
+**Just want to use it?** Grab the
+[latest release](https://github.com/hami9/proc123/releases/latest) — nothing to
+build, no Node required.
+
+| You are on             | Download                                       | Then                                                                 |
+| ---------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
+| **Windows**            | either asset below                             | follow the **[step-by-step Windows guide](docs/install-windows.md)** |
+| Chrome · Edge · Brave  | `proc123-chrome-<version>.zip`                 | unzip → `chrome://extensions` → Developer mode → Load unpacked       |
+| Firefox                | `proc123-firefox-<version>.zip`                | unzip → `about:debugging` → Load Temporary Add-on → `manifest.json`  |
+| A terminal, no browser | `proc123-win32-x64.exe` or `proc123-linux-x64` | `proc123 <category-url> -o products.csv`                             |
+
+Then open a shop's category page, click the toolbar button, press **Scan this
+category**, check the currency line, and press **Download**.
+
+Building it yourself is under [Getting started](#getting-started).
 
 ---
 
 ## Status
 
-Early. Built in the order set out in `CLAUDE.md` §14 — the hardest correctness
-problem first, the browser UI last.
+Usable. Built hardest-correctness-problem first, browser UI last — which is why
+the exporters and the extraction layers are the most heavily tested part and the
+popup is the newest.
 
 <!-- phase-table:start -->
 
@@ -304,7 +347,7 @@ including the delay between requests.
 
 ## Settings
 
-Everything lives in one `Proc123Config` — the shape from `CLAUDE.md` §9 — and
+Everything lives in one `Proc123Config`, and
 everything in it is settable from the popup, because most users will never open
 the JSON:
 
@@ -331,7 +374,7 @@ Two rules the filters enforce:
   an explanation. No row can be exported without one.
 
 An `apiKey` in a config file is refused and reported. Keys belong in extension
-settings, not in a file that gets shared or committed (§4).
+settings, not in a file that gets shared or committed.
 
 ## Using the exporters
 
@@ -340,7 +383,7 @@ companion's `--format`:
 
 | Name              | What it produces                                                       |
 | ----------------- | ---------------------------------------------------------------------- |
-| `woocommerce-csv` | The default. Every rule in `CLAUDE.md` §7 under test.                  |
+| `woocommerce-csv` | The default. Every rule below is under test.                           |
 | `shopify-csv`     | Shopify's product CSV, matching the template Shopify itself publishes. |
 | `json`            | Everything found, reshaped by nothing — see below.                     |
 
@@ -525,6 +568,8 @@ logs it, and tells you. This is permanent and applies to every phase.
 
 ## Documentation
 
+- [`docs/install-windows.md`](docs/install-windows.md) — installing and running
+  it on Windows, click by click, with no Node and no build step.
 - [`docs/woocommerce-csv-notes.md`](docs/woocommerce-csv-notes.md) — WooCommerce
   importer behaviour verified against its source, with references. Worth reading
   before changing the exporter.
@@ -537,8 +582,19 @@ logs it, and tells you. This is permanent and applies to every phase.
 
 ## Contributing
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org/)
-(`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`) — they will drive
-versioning once release automation lands in Phase 11.
+Issues and pull requests are welcome — including "it returned nothing on this
+shop", which is the most useful bug this project can get. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the short version: Conventional Commits
+(they decide the next version number), and `npm run check` before pushing.
 
-Run `npm run check` before pushing; CI runs the same thing.
+Security or privacy problems go to [SECURITY.md](SECURITY.md) instead of a
+public issue.
+
+## License
+
+[MIT](LICENSE) © hami9.
+
+Using it responsibly is on you. proc123 moves structured product data; the
+descriptions and photographs on someone else's shop belong to whoever made them,
+which is why `contentMode` leaves those columns empty unless you say otherwise.
+Check the terms of the site you are reading, and read at the pace it asks for.

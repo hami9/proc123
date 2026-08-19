@@ -1,0 +1,54 @@
+name: A shop it got wrong
+description: A scan came back empty, short, or with a field that is plainly incorrect.
+labels: ['bad-scan']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most useful report this project can get. The report and log
+        files carry no API keys and no page content, so they are safe to attach.
+  - type: input
+    id: url
+    attributes:
+      label: The category URL
+      description: The page you pressed Scan on. Without it nobody can reproduce anything.
+      placeholder: https://shop.example/category/nuts
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: How were you running it?
+      options:
+        - Extension — Chrome / Edge / Brave
+        - Extension — Firefox
+        - Companion — Windows .exe
+        - Companion — Linux binary
+        - Companion — from source
+        - Library (@proc123/core)
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what you got
+      description: e.g. "the category lists 240 products, the scan found 24".
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: The "Why is this field empty?" report
+      description: |
+        Extension — press the button in the popup after a scan.
+        Companion — pass `--report why.txt --log scan.jsonl`.
+        Drag both files in here.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked this is not the site blocking the scan — proc123 stops on purpose when it is, and that is not a bug.
+          required: true
+        - label: The report and log I am attaching contain no API keys (they should not — say so if they do, that is a security issue).
+          required: true

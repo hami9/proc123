@@ -7,7 +7,7 @@
       "@semantic-release/changelog",
       {
         "changelogFile": "CHANGELOG.md",
-        "changelogTitle": "# Changelog\n\nEvery release, newest first. Generated from Conventional Commits — see CLAUDE.md §13."
+        "changelogTitle": "# Changelog\n\nEvery release, newest first. Generated from Conventional Commits — see CONTRIBUTING.md."
       }
     ],
     [
