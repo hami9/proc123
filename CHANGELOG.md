@@ -2,6 +2,13 @@
 
 Every release, newest first. Generated from Conventional Commits — see CONTRIBUTING.md.
 
+## [1.2.1](https://github.com/hami9/proc123/compare/v1.2.0...v1.2.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* **extension:** make the package fit for a store, and say why the folder install exists ([99beab5](https://github.com/hami9/proc123/commit/99beab5d195d7f1850a3f1349cf0d25296af2c2a))
+
 # [1.2.0](https://github.com/hami9/proc123/compare/v1.1.0...v1.2.0) (2026-08-19)
 
 
