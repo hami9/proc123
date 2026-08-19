@@ -1,10 +1,15 @@
 # Publishing proc123 to the browser stores
 
-This is the only route to the install everyone expects — a button that says
-**Add to Chrome**, no developer mode, no folder to keep forever, and automatic
-updates. Everything in this document that could be done in the repository has
-been done; what is left needs a store account, which is a person with a credit
-card, not a commit.
+proc123 is meant to be installed by anyone who finds it, not only by whoever
+built it. That makes the stores the destination rather than an optional extra:
+they are the only route to a one-button install, and the only route to shipping
+a fix to people who already have it. A build distributed any other way reaches
+whoever is willing to turn on developer mode, and then stays at that version
+forever.
+
+Everything in this document that could be done in the repository has been done.
+What is left needs store accounts — **Firefox is free, Chrome is a one-time
+US$5** — which is a person, not a commit.
 
 ---
 
@@ -100,17 +105,10 @@ creditworthiness, and not used for anything unrelated to the single purpose.
 
 ## Firefox (addons.mozilla.org)
 
-Worth doing even if Chrome is the main target, because it is the one store where
-this project can get a normal install without waiting on a review: AMO's
-**self-distribution** signing returns a signed `.xpi` that installs in one click
-and survives a restart, and it does not require the add-on to be listed
-publicly.
+Free, and the store this project should reach first — there is no fee, and a
+listed add-on gets the install everyone recognises plus updates handled for us.
 
-Signing is **free** and, on the unlisted channel, **automatic** — no review
-queue, no fee, usually under a minute. That makes it the only route this project
-has today to an install that behaves the way people expect.
-
-### Why the zip is refused before signing
+### Why the zip is refused before it is signed
 
 Firefox has required signed add-ons since version 48, and on **release builds
 the `xpinstall.signatures.required` preference is ignored** — it is not a
@@ -119,29 +117,50 @@ rejects the zip with "could not be verified", and will keep rejecting it until
 the file has been signed. Nothing about the package causes this and no change to
 it can avoid it.
 
-Until then, `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on**
-installs the same build in one step (it accepts the `.zip` directly — no need to
-unzip), for the current session.
+Meanwhile `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on**
+installs the same build in one step and accepts the `.zip` without unzipping.
+That is a developer's route, not a user's: it lasts until the browser closes.
 
-### Signing it
+### Listed, for a public add-on
 
-Get an API key and secret from
-[the AMO credentials page](https://addons.mozilla.org/developers/addon/api/key/),
-then:
+**This is the right channel for proc123.** Listed means the add-on lives on
+addons.mozilla.org: people find it by searching, install it with one button, and
+Mozilla ships every subsequent version to them automatically.
 
 ```bash
 export WEB_EXT_API_KEY=user:12345678:123
 export WEB_EXT_API_SECRET=<the secret>
-npm run sign -w @proc123/extension
+npm run sign:listed -w @proc123/extension
 ```
 
-That builds the store bundles and submits the Firefox one on the **unlisted**
-channel, leaving a signed `.xpi` in `packages/extension/dist/`. That file
-installs permanently through **Install Add-on From File**, and survives
-restarts.
+or upload `proc123-firefox-<version>.zip` by hand at
+[the Developer Hub](https://addons.mozilla.org/developers/addon/submit/distribution)
+and choose **On this site**.
 
-Drop `--channel unlisted` from the script to list it publicly instead — that
-path does go through review.
+It goes through review. A Manifest V3 add-on with these permissions and
+unminified source is the easy case for a reviewer, but budget for one round of
+questions about the optional host permission — the answer is in
+[Permission justifications](#permission-justifications) above.
+
+### Unlisted, and its two catches
+
+Unlisted signing is automatic — no review, usually under a minute — which makes
+it the right way to get a working build to a tester today, or to yourself before
+the listing clears. `npm run sign -w @proc123/extension` does it, leaving a
+signed `.xpi` in `packages/extension/dist/`.
+
+It is **not** a substitute for listing on a public project, for two reasons that
+only show up after distribution starts:
+
+- **A download link will not install it.** Firefox only installs an `.xpi`
+  offered as `Content-Type: application/x-xpinstall`, and GitHub release assets
+  are served as `application/octet-stream`. Users have to save the file and feed
+  it to **Install Add-on From File** — which works, and is not what anyone
+  expects from a link.
+- **There are no updates.** A listed add-on updates through AMO. A
+  self-distributed one updates only if the manifest carries an `update_url` and
+  something keeps an update manifest hosted at it. Ship without that and every
+  user stays on whatever version they first installed.
 
 The manifest already carries what AMO requires:
 
@@ -168,7 +187,18 @@ second.
 
 ## What only an account holder can do
 
-- Pay the US$5 and register the Chrome developer account.
-- Host a privacy policy page and put its URL in the listing.
-- Take the two screenshots.
-- Press submit, and answer whatever the reviewer asks about the host permission.
+In the order that gets a working install into people's hands soonest:
+
+1. **Submit to AMO, listed.** Free, and the shorter of the two paths. A Mozilla
+   account and `npm run sign:listed` is the whole of it.
+2. **Host a privacy policy page** and put its URL in both listings. Both stores
+   require one from any extension declaring a permission.
+3. **Take two screenshots** — 1280×800. The popup mid-scan, and the popup after
+   a scan with the currency line showing.
+4. **Register the Chrome developer account** (one-time US$5) and submit, then
+   answer whatever the reviewer asks about the optional host permission.
+
+Until at least one listing clears, the honest thing to tell people is what
+[`install-windows.md`](install-windows.md) already tells them: load the folder,
+or load it temporarily in Firefox. Do not point users at a `.xpi` download link
+and let them discover that clicking it does nothing.
