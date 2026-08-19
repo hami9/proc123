@@ -2,6 +2,13 @@
 
 Every release, newest first. Generated from Conventional Commits — see CONTRIBUTING.md.
 
+# [1.3.0](https://github.com/hami9/proc123/compare/v1.2.1...v1.3.0) (2026-08-19)
+
+
+### Features
+
+* **extension:** make signing the Firefox build a single command ([3c58f68](https://github.com/hami9/proc123/commit/3c58f689fd86bf5ce1532722b8bf7569af8785b8))
+
 ## [1.2.1](https://github.com/hami9/proc123/compare/v1.2.0...v1.2.1) (2026-08-19)
 
 
