@@ -8,7 +8,9 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:watch": "node scripts/build.mjs --watch --only=chrome",
-    "build:zip": "node scripts/build.mjs --zip"
+    "build:zip": "node scripts/build.mjs --zip",
+    "lint:firefox": "web-ext lint --source-dir dist/firefox --self-hosted",
+    "sign": "npm run build:zip && web-ext sign --source-dir dist/firefox --artifacts-dir dist --channel unlisted"
   },
   "dependencies": {
     "@proc123/core": "*",
@@ -16,6 +18,7 @@
   },
   "devDependencies": {
     "adm-zip": "^0.6.0",
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "web-ext": "^8.0.0"
   }
 }

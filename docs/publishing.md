@@ -106,12 +106,42 @@ this project can get a normal install without waiting on a review: AMO's
 and survives a restart, and it does not require the add-on to be listed
 publicly.
 
-1. `npm run build:zip -w @proc123/extension`
-2. Upload `proc123-firefox-<version>.zip` at
-   [addons.mozilla.org/developers](https://addons.mozilla.org/developers/)
-3. Choose **On your own** for self-distribution, or **On this site** to be
-   listed and searchable.
-4. Download the signed `.xpi` it returns. That file is what users install.
+Signing is **free** and, on the unlisted channel, **automatic** — no review
+queue, no fee, usually under a minute. That makes it the only route this project
+has today to an install that behaves the way people expect.
+
+### Why the zip is refused before signing
+
+Firefox has required signed add-ons since version 48, and on **release builds
+the `xpinstall.signatures.required` preference is ignored** — it is not a
+setting that can be flipped. So `about:addons` → **Install Add-on From File**
+rejects the zip with "could not be verified", and will keep rejecting it until
+the file has been signed. Nothing about the package causes this and no change to
+it can avoid it.
+
+Until then, `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on**
+installs the same build in one step (it accepts the `.zip` directly — no need to
+unzip), for the current session.
+
+### Signing it
+
+Get an API key and secret from
+[the AMO credentials page](https://addons.mozilla.org/developers/addon/api/key/),
+then:
+
+```bash
+export WEB_EXT_API_KEY=user:12345678:123
+export WEB_EXT_API_SECRET=<the secret>
+npm run sign -w @proc123/extension
+```
+
+That builds the store bundles and submits the Firefox one on the **unlisted**
+channel, leaving a signed `.xpi` in `packages/extension/dist/`. That file
+installs permanently through **Install Add-on From File**, and survives
+restarts.
+
+Drop `--channel unlisted` from the script to list it publicly instead — that
+path does go through review.
 
 The manifest already carries what AMO requires:
 
@@ -121,14 +151,10 @@ The manifest already carries what AMO requires:
   its own, and `optional: ["websiteContent"]`, because Layer D sends page HTML
   to the provider whose key the user supplied.
 
-### Two expected lint warnings
-
-`web-ext lint` reports zero errors and two warnings, both saying the same thing:
-`data_collection_permissions` needs Firefox 140, and `strict_min_version` is 128. That is a deliberate trade. The key is simply ignored on 128–139 rather
-than breaking anything, and AMO reads it regardless — so keeping the floor at
-128 costs two informational warnings and keeps the extension installable on the
-older ESR. Raising the floor to 140 would silence them and drop those users;
-that is a decision to make on purpose, not to drift into.
+`npm run lint:firefox -w @proc123/extension` runs AMO's own validator over the
+built directory and currently reports **zero errors and zero warnings**. Run it
+before signing; it catches what the submission would reject, locally and in a
+second.
 
 ---
 

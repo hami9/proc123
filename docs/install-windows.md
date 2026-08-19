@@ -66,7 +66,15 @@ pin it so the button is always visible.
 
 1. Go to `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on…**.
-3. Select `manifest.json` inside the folder from step 2.
+3. Select `manifest.json` inside the folder from step 2 — or the downloaded
+   `.zip` itself, which this screen accepts without unzipping.
+
+> **Do not use `about:addons` → Install Add-on From File.** That screen only
+> accepts a Mozilla-signed file and will reject the zip as unverified. Firefox
+> has required signatures since version 48, and on release builds the
+> `xpinstall.signatures.required` preference is ignored, so there is no setting
+> that changes this. [`publishing.md`](publishing.md) covers signing, which is
+> free for Firefox and takes about a minute.
 
 Firefox forgets temporary add-ons when it closes, so this is per-session. A
 permanent install needs a Mozilla-signed build, which this project does not
@@ -208,7 +216,8 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 | "Manifest file is missing or unreadable"                       | You picked the zip, or a folder one level too high. Pick the folder that directly contains `manifest.json`.                                                                   |
 | **Pack extension** asks for a root directory and a private key | That button is for signing an upload to the Chrome Web Store, not for installing. The `.crx` it produces is one Chrome will refuse to install. Use **Load unpacked** instead. |
 | Nothing happens when you open a `.crx`                         | Chrome blocks extension files from outside its store. There is no setting for it — see [publishing.md](publishing.md).                                                        |
-| The extension vanished after restarting Firefox                | Expected — Firefox temporary add-ons are per-session. Use Chrome or Edge for a persistent install.                                                                            |
+| The extension vanished after restarting Firefox                | Expected — Firefox temporary add-ons are per-session. Use Chrome or Edge, or sign the build ([publishing.md](publishing.md)) for a permanent install.                         |
+| Firefox says the add-on could not be verified                  | You used `about:addons` → Install Add-on From File, which only accepts a signed file. Use `about:debugging` → Load Temporary Add-on instead, or sign it — signing is free.    |
 | The extension vanished after restarting Chrome                 | The folder you loaded it from was moved, renamed or deleted. Put it back, or load it again from its new location.                                                             |
 | The scan stops and says the site blocked it                    | Working as intended. proc123 does not solve CAPTCHAs, rotate proxies, or retry past a block — see [the README](../README.md#what-proc123-will-not-do).                        |
 | "Windows protected your PC"                                    | The binary is unsigned. **More info** → **Run anyway**, or Properties → **Unblock**.                                                                                          |
