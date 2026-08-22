@@ -2,6 +2,28 @@
 
 Every release, newest first. Generated from Conventional Commits — see CONTRIBUTING.md.
 
+## [1.4.1](https://github.com/hami9/proc123/compare/v1.4.0...v1.4.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* **extension:** stop long scans dying with "receiving end does not exist" ([3ea9ef1](https://github.com/hami9/proc123/commit/3ea9ef129c33054acde034a92dff394d36e896e6))
+
+
+---
+
+## Installing
+
+**Chrome · Edge · Brave** — unzip `proc123-chrome-1.4.1.zip`, open `chrome://extensions`, turn on **Developer mode**, then **Load unpacked** and pick the unzipped folder.
+
+**Firefox** — open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…**, and select `proc123-firefox-1.4.1.zip` directly. No need to unzip.
+
+> Do **not** use `about:addons` → Install Add-on From File. That screen only accepts a Mozilla-signed file and rejects the zip as "not verified". Firefox has required signatures since version 48, and `xpinstall.signatures.required` is ignored on release builds, so no setting changes it. A temporary add-on lasts until you close the browser.
+
+**A terminal, no browser** — download `proc123-win32-x64.exe` or `proc123-linux-x64`, then `proc123 <category-url> -o products.csv`.
+
+proc123 is not in the Chrome Web Store or listed on addons.mozilla.org yet, which is why the install is a folder rather than a button — [publishing.md](https://github.com/hami9/proc123/blob/main/docs/publishing.md) covers what that takes.
+
 # [1.4.0](https://github.com/hami9/proc123/compare/v1.3.1...v1.4.0) (2026-08-22)
 
 
