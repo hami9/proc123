@@ -188,6 +188,31 @@ The manifest already carries what AMO requires:
 
 - `browser_specific_settings.gecko.id` — without it the add-on cannot be signed
   at all.
+
+### Never press Delete Add-on
+
+AMO's delete button says what it does, in a paragraph that is easy to skim past:
+
+> The add-on ID cannot be restored and will forever be unusable for submission.
+
+It means it. Deleting an add-on **permanently burns its `gecko.id`** — every
+future upload carrying that id is rejected with "Duplicate add-on ID found", and
+there is no appeal, no cooldown and no support request that undoes it. The
+account keeps working; the id does not.
+
+This has already happened once here. `proc123@hami9.github.io` is dead and the
+current id is `proc123-addon@hami9.github.io`.
+
+So: **there is no situation in which deleting is the fix.** A version on the
+wrong channel, a listing that will not go public, a mistake in the metadata —
+all of those are solved by uploading a new version or editing the product page.
+Deleting solves none of them and costs the identity.
+
+Changing the id also costs the users on the old one: to Firefox a new id is a
+different add-on, so nobody updates across the change — they have to install
+again. With the old id that was nearly free, since it never reached a public
+listing. It will not be free a second time.
+
 - `data_collection_permissions` — mandatory for new extensions since November 2025. It declares `required: ["none"]`, because proc123 collects nothing on
   its own, and `optional: ["websiteContent"]`, because Layer D sends page HTML
   to the provider whose key the user supplied.

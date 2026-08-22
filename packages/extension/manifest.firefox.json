@@ -5,7 +5,7 @@
   "description": "Scan a store's category page and export a CSV another store can import.",
   "browser_specific_settings": {
     "gecko": {
-      "id": "proc123@hami9.github.io",
+      "id": "proc123-addon@hami9.github.io",
       "strict_min_version": "128.0",
       "data_collection_permissions": {
         "required": ["none"],
