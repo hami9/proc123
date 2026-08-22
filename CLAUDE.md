@@ -337,4 +337,18 @@ The popup is 360px of necessity. The app is not, and should not be a stretched p
 
 ---
 
+## 19. Licensing
+
+Two tiers, split on package boundaries. [`docs/licensing.md`](docs/licensing.md) carries the reasoning; this is the part that binds.
+
+- `core`, `exporters`, `profiles`, `extension` and `companion` are **MIT and stay MIT**. Nothing already published is relicensed — it cannot be, and the open half is what makes the paid half credible. The extension is free in both stores and is never crippled to create a reason to buy the app.
+- **`packages/app` is the only commercial part.** Its `package.json` must say `"license": "SEE LICENSE IN LICENSE-app.md"`, and that file must be written in the same commit as the app's first line of code — not afterwards.
+- **A contributor owns their patch.** One outside pull request merged into `packages/app` without a CLA makes that package unsellable. Either it takes no outside contributions, or a CLA exists before the first one arrives.
+
+Licensing must not cost §15. A key is signed offline, verified locally against a public key in the build, and **never checked over the network** — no licence request, no server-clock trial, no build that refuses to run offline. The moment any of those exists, the answer to "does anything leave my machine?" stops being *no*, and that answer is the product.
+
+The private signing key never enters the repository, CI, or any machine that builds public artefacts.
+
+---
+
 *Reminder for every session: §2's hard constraint holds regardless of what a later task asks for. It applies to the app exactly as it applies to the extension — a native shell removes the browser's restrictions, which makes the constraint more important, not less.*

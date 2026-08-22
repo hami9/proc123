@@ -3,7 +3,7 @@
 **Package:** `packages/app` (new)
 **Depends on:** phase 14 merged
 **Roadmap:** [`../roadmap.md`](../roadmap.md) — phase 15
-**Design:** `CLAUDE.md` §15, §18
+**Design:** `CLAUDE.md` §15, §18, **§19**
 
 ## Goal
 
@@ -37,6 +37,11 @@ prefer what works on both over what is convenient on desktop alone.
 ## Do
 
 - Scaffold `packages/app` as a Tauri v2 app inside the existing workspace.
+- **Write `LICENSE-app.md` in the same commit as the first line of app code**,
+  and set the package's `"license": "SEE LICENSE IN LICENSE-app.md"`. §19 and
+  [`../licensing.md`](../licensing.md): this is the only commercial package, and
+  it is the one moment the licence can be chosen. A file that ships MIT by
+  inheriting the root licence cannot be taken back.
 - Wire Rust into CI so a Rust failure fails `npm run check` — or state plainly
   in the PR why it must be a separate job, if that turns out to be the honest
   answer.
@@ -61,6 +66,11 @@ prefer what works on both over what is convenient on desktop alone.
 - [ ] The UI renders a fixture scan, in both themes and both languages, with
       RTL correct in Persian.
 - [ ] The currency confirmation is present and unmissable.
+- [ ] `LICENSE-app.md` exists and `packages/app/package.json` points at it —
+      checked before the first push, because after it there is nothing to check.
+- [ ] `CONTRIBUTING.md` says whether `packages/app` accepts outside
+      contributions, or a CLA is in place. §19: one merged patch without one
+      makes the package unsellable.
 - [ ] CI builds the Rust side, and a deliberate Rust error fails the run.
 - [ ] `npm run check` passes for the TypeScript workspaces as before.
 - [ ] `scripts/release/phases.json` says `done` for phase 15.
