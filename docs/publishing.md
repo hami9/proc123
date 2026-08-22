@@ -170,10 +170,25 @@ The manifest already carries what AMO requires:
   its own, and `optional: ["websiteContent"]`, because Layer D sends page HTML
   to the provider whose key the user supplied.
 
-`npm run lint:firefox -w @proc123/extension` runs AMO's own validator over the
-built directory and currently reports **zero errors and zero warnings**. Run it
-before signing; it catches what the submission would reject, locally and in a
-second.
+`npm run lint:firefox -w @proc123/extension` runs `web-ext lint` over the built
+directory in about a second, and catches most of what a submission would be
+rejected for. Run it before signing.
+
+**It is not the same checker AMO runs, and the two disagree.** On web-ext 8.10
+the local lint is clean; AMO's server-side validation of the same package
+reports zero errors and **two warnings**, both saying that
+`data_collection_permissions` needs Firefox 140 (Android 142) while
+`strict_min_version` is 128. Treat the local lint as a fast pre-flight, not as
+the verdict — the verdict is on the validation results page after upload.
+
+Those two warnings do not block anything: the add-on passes validation and can
+be submitted with them. What they do mean is that on Firefox 128–139 the key is
+ignored, so users there install without the data-consent prompt it exists to
+show. Raising the floor to **142** would silence both and make the key work
+everywhere it is declared, at the cost of dropping browsers roughly a year old —
+Firefox 128 ESR having itself been end-of-life since 140 ESR replaced it. That
+is a decision to take deliberately on some future version bump, not a reason to
+re-cut a release that has already passed.
 
 ---
 
