@@ -148,6 +148,159 @@ AMO differs from Chrome in three ways that matter when pasting:
 Open a shop's category page, press Scan, and get a CSV another shop can import — WooCommerce, Shopify or JSON. Simple and variable products with every variation. No account, no server, nothing leaves your browser.
 ```
 
+### Description, in AMO's HTML
+
+The plain-text description above is for Chrome. AMO strips headings, tables and
+monospace, so paste this instead — every tag in it is on AMO's allowed list.
+
+```html
+<p>proc123 reads a category or collection page you already have open, extracts every product on it, and writes a CSV built for the shop you are moving to.</p>
+
+<p><strong>What it does</strong></p>
+<ul>
+  <li>Reads simple and variable products, with all their variations</li>
+  <li>Exports WooCommerce CSV, Shopify CSV, or plain JSON</li>
+  <li>Works on WooCommerce, Shopify, Magento, headless storefronts, and shops built on nothing recognisable at all</li>
+  <li>Follows pagination — numbered pages, "load more", infinite scroll</li>
+  <li>Resumes where it stopped instead of starting over</li>
+</ul>
+
+<p><strong>How it reads a page</strong></p>
+<p>Four layers, tried in order, and it tells you which one answered:</p>
+<ul>
+  <li><strong>A</strong> — the shop's own catalogue API, where one is open</li>
+  <li><strong>B</strong> — structured markup: JSON-LD, Microdata, OpenGraph</li>
+  <li><strong>C</strong> — a layout you taught it by clicking a title, a price, an image</li>
+  <li><strong>D</strong> — AI, off until you switch it on with your own API key</li>
+</ul>
+<p>Layer C is why "any shop" is not a marketing claim. When the first two layers find nothing, you point at one product card and it applies what it learned to every card on every page. What it learns is readable JSON you can edit, export and share.</p>
+
+<p><strong>Built for Persian shops too</strong></p>
+<p>Persian and Arabic-Indic numerals are normalised to ASCII, thousands separators are stripped, and — the important one — it asks whether prices are in toman or rial before it writes anything, rather than guessing. Guessing wrong is a silent 10x price error, and that is the mistake this tool works hardest to prevent.</p>
+
+<p><strong>When a field comes out empty</strong></p>
+<p>Press "Why is this field empty?" and it explains every blank column in plain language: you switched it off, the shop never published it, or something genuinely went wrong. The report carries no API keys and no page content, so it is safe to attach to a bug report.</p>
+
+<p><strong>What it will not do</strong></p>
+<p>It does not solve CAPTCHAs, spoof fingerprints, rotate proxies, or retry past a block. When a shop signals that it does not want to be read automatically, proc123 stops and says so. Requests are paced by default so as not to burden the shop's server.</p>
+
+<p>There is no account, no server, and no analytics. Nothing you scan reaches anyone but the shop you are scanning — and your own AI provider, if you chose to switch that on with your own key.</p>
+
+<p>Descriptions and photographs are someone's authored content. By default proc123 copies the structured data and leaves description columns empty; you can opt into including them with attribution, or into rewriting them.</p>
+
+<p>Open source, MIT licensed: <a href="https://github.com/hami9/proc123">github.com/hami9/proc123</a></p>
+```
+
+### The two checkboxes under the description
+
+Both stay **unticked**, and both are wrong for this add-on rather than merely
+optional:
+
+- **"This add-on is experimental"** — it ships tested and versioned. Ticking it
+  puts a warning banner on the listing and suppresses it from search results.
+- **"This add-on requires payment, non-free services or software, or additional
+  hardware"** — it requires none. Layer D is off by default and needs nothing;
+  a key the user may optionally supply is not a requirement, and AMO's field
+  means a paywall.
+
+### Privacy policy, as AMO wants it
+
+AMO's field is a textarea, so [`privacy-policy.md`](privacy-policy.md) goes in
+with its Markdown removed. The table in it becomes a list:
+
+```
+proc123 has no account, no server, and no analytics. Nothing you scan is sent to
+the people who wrote it, because there is nowhere for it to be sent to. The only
+outbound requests it makes are to the shop you pointed it at — and, if you have
+chosen to switch that on and supplied your own key, to your own AI provider.
+
+WHAT IS COLLECTED
+
+Nothing. proc123 has no backend. There is no telemetry, no usage analytics, no
+crash reporting, and no update ping beyond the browser's own extension-update
+check, which is the browser's and not ours.
+
+WHAT IS STORED, AND WHERE
+
+Everything proc123 stores stays in your browser profile, in local extension
+storage. None of it is synced, and none of it leaves the device unless you
+export it yourself:
+
+- Settings — the options you set in the popup: export format, currency unit, limits
+- Site profiles — the layouts you taught it, per domain, in readable JSON you can edit
+- In-progress scan state — so a scan survives the background worker being shut down, and can resume
+- Your AI API key — only if you enter one; kept under its own storage key, never synced
+
+Removing the add-on removes all of it. Individual profiles and the API key can
+be cleared from the popup at any time.
+
+WHAT IS SENT, AND TO WHOM
+
+To the shop you are scanning. proc123 reads the page you already have open. If a
+category runs across several pages and you grant permission for that site, it
+fetches the remaining pages of that same category. Requests are paced
+deliberately — by default one at a time with a delay — so as not to burden the
+shop's server. If a site signals that it does not want to be read automatically,
+proc123 stops and tells you, rather than trying to get around it.
+
+To your AI provider, only if you turn it on. The AI extraction layer is off by
+default and does nothing until you paste an API key for your own account with
+OpenAI, Anthropic or Google. When it is on and a field could not be read any
+other way, a trimmed fragment of the page's HTML — not the whole page — is sent
+to that provider under your account and their terms. proc123 has no key of its
+own and no relationship with any of them.
+
+To nobody else. There is no third party in the middle.
+
+PERMISSIONS, AND WHY EACH EXISTS
+
+- activeTab — to read the page you have open, and only after you click the
+  toolbar button and start a scan.
+- scripting — to read the product cards out of that page's rendered DOM. It only
+  reads; it never modifies the page.
+- storage — for the list above. Local only.
+- Access to a website's data (optional) — never granted at install. When a
+  category paginates, the popup asks for permission for that one site, at that
+  moment, so the remaining pages can be fetched. Declining is a supported
+  answer: the scan covers the page you have open and the result says so.
+
+FILES proc123 WRITES
+
+Exports — CSV or JSON — are written by you, to your own machine, through the
+browser's normal download flow. They are never uploaded anywhere.
+
+The troubleshooting report ("Why is this field empty?") is written the same way.
+It is designed to be safe to attach to a bug report: API keys and page HTML are
+never written to it.
+
+CHILDREN
+
+proc123 is a tool for shop operators and developers. It is not directed at
+children and collects nothing from anyone, of any age.
+
+CONTACT
+
+Questions, or anything here that does not match what you observe: open an issue
+at https://github.com/hami9/proc123/issues
+
+The source is MIT-licensed and public, and the shipped bundles are not minified,
+so every claim above can be checked against the code — including in the browser.
+```
+
+### Notes to reviewer
+
+```
+Build is reproducible: `npm install && npm run build:zip -w @proc123/extension`
+produces a byte-identical zip. Bundles are intentionally not minified. No remote
+code. No analytics and no backend of any kind.
+
+The optional host permission is requested per-site at runtime, only when a
+category turns out to paginate, and only from a click in the popup. Declining is
+a supported path: the scan then covers the open page and the result says so.
+
+Source: https://github.com/hami9/proc123 (MIT), tag v1.4.3
+```
+
 ## Notes for the AMO submission
 
 - **Source code is required on every version**, because the shipped bundles are
