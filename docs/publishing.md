@@ -55,15 +55,15 @@ and nothing minified — a reviewer can read every line, which is deliberate.
 
 ### The listing
 
-| Field               | What to put                                                                                                                                                                                      |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Name                | proc123                                                                                                                                                                                          |
-| Summary (132 chars) | Scan a store's category page and export a CSV another store can import.                                                                                                                          |
-| Category            | Workflow & Planning                                                                                                                                                                              |
-| Single purpose      | Extract the products listed on a category page the user has open, and export them as a CSV or JSON file for another shop.                                                                        |
-| Icon                | `packages/extension/icons/icon-128.png` (already the right size)                                                                                                                                 |
-| Screenshots         | 1280×800 or 640×400, at least one. The popup mid-scan and the popup after a scan, with the currency line visible, are the two that explain it.                                                   |
-| Privacy policy URL  | Required, because the listing declares a permission. [`SECURITY.md`](../SECURITY.md) is not one — a short page stating that nothing leaves the browser except the fetches the user permitted is. |
+| Field               | What to put                                                                                                                                    |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name                | proc123                                                                                                                                        |
+| Summary (132 chars) | Scan a store's category page and export a CSV another store can import.                                                                        |
+| Category            | Workflow & Planning                                                                                                                            |
+| Single purpose      | Extract the products listed on a category page the user has open, and export them as a CSV or JSON file for another shop.                      |
+| Icon                | `packages/extension/icons/icon-128.png` (already the right size)                                                                               |
+| Screenshots         | 1280×800 or 640×400, at least one. The popup mid-scan and the popup after a scan, with the currency line visible, are the two that explain it. |
+| Privacy policy URL  | [`privacy-policy.md`](privacy-policy.md), linked at its raw GitHub URL. Required by both stores from any extension declaring a permission.     |
 
 ### Permission justifications
 
@@ -191,10 +191,12 @@ In the order that gets a working install into people's hands soonest:
 
 1. **Submit to AMO, listed.** Free, and the shorter of the two paths. A Mozilla
    account and `npm run sign:listed` is the whole of it.
-2. **Host a privacy policy page** and put its URL in both listings. Both stores
-   require one from any extension declaring a permission.
+2. **Fill in the product page.** Copy for every field is written out in
+   [`store-listing.md`](store-listing.md), including the privacy policy URL —
+   which points at [`privacy-policy.md`](privacy-policy.md) in this repository,
+   so it needs no separate hosting.
 3. **Take two screenshots** — 1280×800. The popup mid-scan, and the popup after
-   a scan with the currency line showing.
+   a scan with the currency line showing. `store-listing.md` says why those two.
 4. **Register the Chrome developer account** (one-time US$5) and submit, then
    answer whatever the reviewer asks about the optional host permission.
 
