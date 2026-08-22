@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { CanonicalProduct, CrawlState, HttpClient } from '@proc123/core';
 import { DEFAULT_CONFIG, createMemoryCrawlStore } from '@proc123/core';
 
-import { isFirefox, storage } from '../src/browser.js';
+import { isFirefox, permissions, storage } from '../src/browser.js';
 import { createFetchClient } from '../src/http.js';
 import { isExportRequest, isLastResultRequest, isScanRequest } from '../src/messages.js';
 import { countCurrencyUnits, crawlIdFor, runScan } from '../src/scan.js';
@@ -425,5 +425,55 @@ describe('the browser shim', () => {
 
     globals.browser = {};
     expect(isFirefox()).toBe(true);
+  });
+
+  /**
+   * The Firefox scan bug, kept from coming back.
+   *
+   * `permissions.request` only works while the click's user gesture is live.
+   * The popup used to await the tab and a `contains` check first, which spends
+   * it, so Firefox rejected the request — and because that happened outside
+   * the popup's try block, the scan died with no message and no re-enabled
+   * buttons. Pressing Scan simply did nothing, on Firefox only, because Chrome
+   * tolerates the same sequence.
+   *
+   * Ordering is enforced by `startScan` calling this before any await. What is
+   * checkable here is the other half: a request that fails must read as "not
+   * granted" so the scan continues on the open page, never as an exception
+   * that stops it.
+   */
+  describe('requestOrigin', () => {
+    it('reports a granted origin', async () => {
+      globals.chrome = { permissions: { request: () => Promise.resolve(true) } };
+      await expect(permissions.requestOrigin('https://shop.example/*')).resolves.toBe(true);
+    });
+
+    it('reports a declined origin without throwing', async () => {
+      globals.chrome = { permissions: { request: () => Promise.resolve(false) } };
+      await expect(permissions.requestOrigin('https://shop.example/*')).resolves.toBe(false);
+    });
+
+    it('treats a rejected request as declined — Firefox’s lost user gesture', async () => {
+      globals.chrome = {
+        permissions: {
+          request: () =>
+            Promise.reject(
+              new Error('permissions.request may only be called from a user input handler')
+            ),
+        },
+      };
+      await expect(permissions.requestOrigin('https://shop.example/*')).resolves.toBe(false);
+    });
+
+    it('treats a synchronous throw as declined too', async () => {
+      globals.chrome = {
+        permissions: {
+          request: () => {
+            throw new Error('may only be called from a user input handler');
+          },
+        },
+      };
+      await expect(permissions.requestOrigin('https://shop.example/*')).resolves.toBe(false);
+    });
   });
 });

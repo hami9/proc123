@@ -84,6 +84,33 @@ export const permissions = {
   request(request: chrome.permissions.Permissions): Promise<boolean> {
     return api().permissions.request(request);
   },
+
+  /**
+   * Ask for one origin, from inside a click, without ever rejecting.
+   *
+   * **This must be called before the handler awaits anything.** Firefox only
+   * honours `permissions.request` while the user gesture that started the
+   * click is still live, and every `await` spends it; asking afterwards throws
+   * "may only be called from a user input handler". Chrome is lenient about
+   * the same sequence, which is exactly why a popup that awaited first worked
+   * there and silently did nothing on Firefox.
+   *
+   * Returning `false` rather than throwing is the second half of the fix. A
+   * declined permission is an ordinary answer this project already handles —
+   * the scan covers the open page and says so — and a *failed* request should
+   * land in the same place rather than aborting a scan the user asked for.
+   * Both a synchronous throw and a rejected promise are caught, because which
+   * one arrives depends on the engine.
+   */
+  requestOrigin(pattern: string): Promise<boolean> {
+    try {
+      return api()
+        .permissions.request({ origins: [pattern] })
+        .catch(() => false);
+    } catch {
+      return Promise.resolve(false);
+    }
+  },
 };
 
 /**

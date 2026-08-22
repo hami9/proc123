@@ -301,31 +301,62 @@ async function activeTab(): Promise<Tab | undefined> {
   return tab;
 }
 
-async function scan(restart: boolean): Promise<void> {
-  const tab = await activeTab();
+/**
+ * The tab the popup was opened over, and its origin pattern.
+ *
+ * Resolved once, started at load rather than inside a handler, because
+ * `permissions.requestOrigin` must be reached before the click handler awaits
+ * anything (`browser.ts`) — and it needs the origin to ask for. A popup cannot
+ * change which tab it belongs to, so caching this costs nothing.
+ */
+let currentTab: Tab | undefined;
+let pageOrigin: string | undefined;
+
+const tabReady = activeTab().then((tab) => {
+  currentTab = tab;
+  pageOrigin = tab?.url === undefined ? undefined : originPattern(tab.url);
+  return tab;
+});
+
+/**
+ * Begin a scan from a click.
+ *
+ * Split from `scan` so that asking for the origin is the *first* thing the
+ * handler does. `permissions.requestOrigin` has to run before any `await` or
+ * Firefox refuses it (see `browser.ts`), and resolving the tab is itself
+ * asynchronous — so the tab is resolved when the popup opens and read from
+ * here synchronously.
+ */
+function startScan(restart: boolean): void {
+  const granting =
+    pageOrigin === undefined ? Promise.resolve(false) : permissions.requestOrigin(pageOrigin);
+  void scan(restart, granting);
+}
+
+async function scan(restart: boolean, granting: Promise<boolean>): Promise<void> {
+  const tab = currentTab;
   if (tab?.id === undefined || tab.url === undefined) {
     statusLine.textContent = 'No page to scan.';
     return;
   }
 
-  const pattern = originPattern(tab.url);
-  if (pattern === undefined) {
+  if (pageOrigin === undefined) {
     statusLine.textContent = 'This page cannot be scanned.';
     return;
   }
 
-  // Asked here, inside the click, because that is the only place Chrome allows
-  // it. Declining is a normal answer, not an error.
-  let canFetch = await permissions.contains({ origins: [pattern] });
-  if (!canFetch) {
-    canFetch = await permissions.request({ origins: [pattern] });
-  }
+  // Declining is a normal answer, not an error — and so is a request that
+  // failed outright, which `requestOrigin` reports the same way.
+  const canFetch = await granting;
 
   scanButton.disabled = true;
   rescanButton.disabled = true;
+  // Not "declined": `requestOrigin` also reports a request that failed as
+  // false, and telling someone they declined something they never saw is the
+  // kind of small lie this project's reports exist to avoid.
   statusLine.textContent = canFetch
     ? 'Scanning…'
-    : 'Scanning this page only — permission for the rest of the site was declined.';
+    : 'Scanning this page only — no permission for the rest of the site.';
 
   try {
     const response = await runtime.sendMessage<unknown, ExtensionResponse>({
@@ -488,18 +519,18 @@ teachButton.addEventListener('click', () => {
 });
 
 scanButton.addEventListener('click', () => {
-  void scan(false);
+  startScan(false);
 });
 
 rescanButton.addEventListener('click', () => {
-  void scan(true);
+  startScan(true);
 });
 
 void (async (): Promise<void> => {
-  await renderSettings();
-
-  const tab = await activeTab();
+  const tab = await tabReady;
   pageLine.textContent = tab === undefined ? 'No page open.' : describeTab(tab);
+
+  await renderSettings();
 
   // The popup may have been closed while the last scan was still running.
   const response = await runtime
