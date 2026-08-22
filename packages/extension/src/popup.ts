@@ -3,11 +3,14 @@
  *
  * Two things it owns that the worker cannot:
  *
- * - **The permission prompt.** `permissions.request` only works inside a
- *   user gesture, so asking has to happen in the click handler. `activeTab`
- *   already covers reading the page the user is looking at; permission for the
- *   origin is only needed to fetch the *other* pages of the category, so the
- *   scan degrades to one page rather than failing if it is declined.
+ * - **The permission prompt.** `permissions.request` only works while the
+ *   click's user gesture is live, so asking has to happen in the click handler
+ *   **and before it awaits anything** — every `await` spends the gesture, and
+ *   Firefox refuses the request once it is gone. That is why the tab is
+ *   resolved on open and cached rather than looked up inside the handler.
+ *   `activeTab` already covers reading the page the user is looking at;
+ *   permission for the origin is only needed to fetch the *other* pages of the
+ *   category, so the scan degrades to one page rather than failing without it.
  * - **Surviving its own death.** A popup is destroyed the moment it loses
  *   focus, so on open it asks the worker for the last result instead of
  *   assuming it has none.
