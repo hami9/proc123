@@ -619,6 +619,20 @@ shop", which is the most useful bug this project can get. See
 Security or privacy problems go to [SECURITY.md](SECURITY.md) instead of a
 public issue.
 
+## Contact and support
+
+**Telegram — [@ham1235i](https://t.me/ham1235i)** for anything that is not a bug
+report: questions, other projects, or a shop that will not scan and you would
+rather not write up. Bugs are still better as issues, where the next person with
+the same shop can find them.
+
+**Sponsored by [kgkala.ir](https://kgkala.ir).** Supporting the project is
+optional and changes nothing about it — every package is MIT, there is no paid
+tier, no supporter build, and no feature behind a link.
+[`docs/licensing.md`](docs/licensing.md) explains why that is a rule rather than
+a current state of affairs, and records that a paid version was considered and
+turned down.
+
 ## License
 
 [MIT](LICENSE) © hami9.

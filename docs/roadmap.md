@@ -82,12 +82,6 @@ The first Rust in the repository, so this phase also settles how it is built
 and tested in CI, and whether the release workflow can cross-compile or needs a
 matrix.
 
-It is also the **only** phase that can settle the licence. `packages/app` is
-the one commercial package (`CLAUDE.md` §19,
-[`licensing.md`](licensing.md)), and a package that ships once under the root
-MIT cannot be taken back. `LICENSE-app.md` is written in the same commit as the
-first line of app code, or it is written too late.
-
 **Done when** it builds on both, opens, and renders a real scan result handed
 to it from a fixture — no live network yet.
 

@@ -25,6 +25,11 @@ Scan a shop's category page and export a CSV another shop can import.
 **Support site:** `https://github.com/hami9/proc123`
 **Support email:** whichever address you want issues to reach.
 
+**Contributions URL:** leave empty. AMO accepts only a fixed list of donation
+hosts there, and this project's support links are not among them — see
+[`licensing.md`](licensing.md). Telegram `@ham1235i` goes in the support field,
+not this one.
+
 **Privacy policy URL:**
 
 ```
@@ -131,8 +136,9 @@ AMO differs from Chrome in three ways that matter when pasting:
 | Add-on URL    | `proc123`                                                                 |
 | Summary       | the 250-character one below                                               |
 | Categories    | **Shopping**, and **Web Development** as the second                       |
-| Support site  | `https://github.com/hami9/proc123`                                        |
+| Support site  | `https://github.com/hami9/proc123` (or `https://t.me/ham1235i`)           |
 | Support email | wherever you want issues to reach                                         |
+| Contributions | leave empty — AMO rejects URLs outside its donation-host list             |
 | Licence       | MIT                                                                       |
 | Privacy       | tick "This add-on has a privacy policy", paste `privacy-policy.md`'s text |
 

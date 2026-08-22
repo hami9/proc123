@@ -1,0 +1,14 @@
+# Puts the "Sponsor" button on the repository.
+#
+# `custom` rather than one of GitHub's named platforms — github, ko_fi,
+# liberapay, open_collective, patreon and the rest are unavailable to accounts
+# in sanctioned countries, and a button that leads somewhere nobody can pay is
+# worse than no button. `custom` takes any URL, so it is the one field that
+# works from anywhere.
+#
+# Supporting the project is entirely optional and changes nothing about it —
+# there is no supporter build and no feature behind this link. docs/licensing.md
+# says why that is a rule rather than a current state of affairs.
+custom:
+  - https://kgkala.ir
+  - https://t.me/ham1235i

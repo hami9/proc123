@@ -339,15 +339,13 @@ The popup is 360px of necessity. The app is not, and should not be a stretched p
 
 ## 19. Licensing
 
-Two tiers, split on package boundaries. [`docs/licensing.md`](docs/licensing.md) carries the reasoning; this is the part that binds.
+**Everything in this repository is MIT, including `packages/app`, and stays that way.** [`docs/licensing.md`](docs/licensing.md) carries the reasoning and records that a paid tier was considered and declined, so it is not re-proposed as a fresh idea.
 
-- `core`, `exporters`, `profiles`, `extension` and `companion` are **MIT and stay MIT**. Nothing already published is relicensed — it cannot be, and the open half is what makes the paid half credible. The extension is free in both stores and is never crippled to create a reason to buy the app.
-- **`packages/app` is the only commercial part.** Its `package.json` must say `"license": "SEE LICENSE IN LICENSE-app.md"`, and that file must be written in the same commit as the app's first line of code — not afterwards.
-- **A contributor owns their patch.** One outside pull request merged into `packages/app` without a CLA makes that package unsellable. Either it takes no outside contributions, or a CLA exists before the first one arrives.
+- Nothing is relicensed, no package is carved out, and no feature is held back from one surface to create a reason to buy another. There is nothing to buy.
+- **Contributions are welcome in every package.** No CLA is needed, because nothing here has to be relicensable.
+- **No licence keys, no activation, no trial.** This is not a constraint to work around — it is the reason §15's promise is free to keep: there is no mechanism that would ever need to make a request that is not to the shop being scanned.
 
-Licensing must not cost §15. A key is signed offline, verified locally against a public key in the build, and **never checked over the network** — no licence request, no server-clock trial, no build that refuses to run offline. The moment any of those exists, the answer to "does anything leave my machine?" stops being *no*, and that answer is the product.
-
-The private signing key never enters the repository, CI, or any machine that builds public artefacts.
+Support is optional and changes nothing. There is no supporter build, no feature behind a link, and no nag — a donation prompt that alters behaviour is a paywall with extra steps. The link lives in `.github/FUNDING.yml`.
 
 ---
 

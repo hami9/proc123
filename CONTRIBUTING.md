@@ -64,13 +64,9 @@ npm run release:dry-run   # what would the next release be?
 - Run `npm run check` before pushing.
 - Explain _why_ in the description. The _what_ is in the diff.
 
-Everything in this repository today is MIT and contributions to it are welcome
-on those terms. `packages/app`, when it exists, will be the one exception —
-see [`docs/licensing.md`](docs/licensing.md). It is not open for contributions
-without a signed agreement, because a contributor keeps the copyright in their
-own patch and a single unagreed one would make that package impossible to
-license. This is stated here in advance so nobody writes something that then
-cannot be merged.
+Everything here is MIT, every package, with no carve-outs and no CLA to sign —
+see [`docs/licensing.md`](docs/licensing.md). Nothing in this project has to
+stay relicensable, so a patch can simply be merged.
 
 ## Things that will not be merged
 
