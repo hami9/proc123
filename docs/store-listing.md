@@ -113,6 +113,35 @@ A third, if you want one: the "Why is this field empty?" report.
 
 ---
 
+## AMO product page, field by field
+
+AMO differs from Chrome in three ways that matter when pasting:
+
+- **The privacy policy is a textarea, not a URL.** Paste the text of
+  [`privacy-policy.md`](privacy-policy.md) in, minus its Markdown.
+- **Summary allows 250 characters** — Chrome allows 132, so AMO can carry the
+  longer one below.
+- **The description takes only inline HTML** (`<b>`, `<em>`, `<ul>`, `<li>`,
+  `<a>`, `<code>`, `<blockquote>`). No headings, no tables, and no monospace —
+  so the ASCII layer diagram above is for Chrome and the README, not for here.
+
+| Field         | Value                                                                     |
+| ------------- | ------------------------------------------------------------------------- |
+| Name          | `proc123`                                                                 |
+| Add-on URL    | `proc123`                                                                 |
+| Summary       | the 250-character one below                                               |
+| Categories    | **Shopping**, and **Web Development** as the second                       |
+| Support site  | `https://github.com/hami9/proc123`                                        |
+| Support email | wherever you want issues to reach                                         |
+| Licence       | MIT                                                                       |
+| Privacy       | tick "This add-on has a privacy policy", paste `privacy-policy.md`'s text |
+
+**Summary** (208 characters):
+
+```
+Open a shop's category page, press Scan, and get a CSV another shop can import — WooCommerce, Shopify or JSON. Simple and variable products with every variation. No account, no server, nothing leaves your browser.
+```
+
 ## Notes for the AMO submission
 
 - **Source code is required on every version**, because the shipped bundles are
