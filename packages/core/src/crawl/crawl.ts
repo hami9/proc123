@@ -45,6 +45,28 @@ export interface CrawlOptions extends ScanPageOptions {
   restart?: boolean;
   /** Injected in tests so timestamps do not depend on the clock. */
   now?: () => string;
+  /**
+   * Called each time a page has been read and the crawl's state advanced.
+   *
+   * A long crawl is otherwise silent for minutes, which CLAUDE.md §18 names as
+   * a bug waiting to happen: the caller cannot tell a slow scan from a stuck
+   * one, and neither can the user watching it.
+   *
+   * Never awaited, and never allowed to fail the crawl — a listener that
+   * throws loses its own update and nothing else.
+   */
+  onPage?: (progress: CrawlProgress) => void;
+}
+
+/** Where a crawl has got to. Emitted after every page. */
+export interface CrawlProgress {
+  /** Pages read so far, including the one the caller supplied. */
+  pagesScanned: number;
+  /** Distinct products found so far, after de-duplication. */
+  productCount: number;
+  /** Pages known about and not yet read. */
+  queued: number;
+  status: CrawlState['status'];
 }
 
 export interface CrawlResult {
@@ -96,6 +118,9 @@ export async function crawlCategory(
     }
   }
 
+  // Persisting is exactly the moment a page has been read and accounted for,
+  // so it is also the moment worth reporting — one place rather than a call
+  // beside every `await persist()`.
   const persist = async (): Promise<void> => {
     if (state === undefined) return;
     const { products, duplicates } = index.result();
@@ -104,6 +129,19 @@ export async function crawlCategory(
     state.requests = client?.requests ?? state.requests;
     state.updatedAt = now();
     await store?.save(state);
+
+    if (options.onPage === undefined) return;
+    try {
+      options.onPage({
+        pagesScanned: state.pagesScanned,
+        productCount: products.length,
+        queued: state.queue.length,
+        status: state.status,
+      });
+    } catch {
+      // A progress listener is a convenience. Losing an update is a smaller
+      // problem than losing the crawl that was describing itself.
+    }
   };
 
   // ---- First page -------------------------------------------------------

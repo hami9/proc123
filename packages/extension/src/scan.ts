@@ -7,6 +7,7 @@
 
 import {
   type CanonicalProduct,
+  type CrawlProgress,
   type CrawlStore,
   type ExtractionIssue,
   type HttpClient,
@@ -39,6 +40,8 @@ export interface ScanDeps {
    * it must never travel with something that gets serialised (CLAUDE.md §4).
    */
   apiKey?: string;
+  /** Reported after every page, so the popup can show a scan advancing. */
+  onProgress?: (progress: CrawlProgress) => void;
 }
 
 export interface ScanInput {
@@ -192,6 +195,7 @@ export async function runScan(input: ScanInput, deps: ScanDeps): Promise<ScanSum
     id,
     ...(input.restart === true ? { restart: true } : {}),
     ...(input.maxPages === undefined ? {} : { maxPages: input.maxPages }),
+    ...(deps.onProgress === undefined ? {} : { onPage: deps.onProgress }),
     now,
   });
 

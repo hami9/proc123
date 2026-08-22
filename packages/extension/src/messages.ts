@@ -23,6 +23,26 @@ export interface LastResultRequest {
   kind: 'last-result';
 }
 
+/**
+ * "How is the scan going?"
+ *
+ * A crawl of a large catalogue takes minutes, and the worker is not allowed to
+ * live that long: MV3 shuts an idle one down, and the paced client's waits
+ * between requests look exactly like idleness. Holding one `sendMessage` open
+ * for the whole scan therefore ends with the channel dying and the popup
+ * reporting "Could not establish connection", with the scan itself often
+ * having got most of the way there.
+ *
+ * So the scan is started and acknowledged immediately, and the popup asks for
+ * progress until it is told the scan finished. Each poll is also an extension
+ * event, which is what keeps the worker up while the work is real.
+ */
+export interface ScanStatusRequest {
+  kind: 'scan-status';
+  /** The scan being asked about, identified by the page it started from. */
+  url: string;
+}
+
 export interface ExportRequest {
   kind: 'export';
   /** The scan to export, identified by the page it started from. */
@@ -60,7 +80,12 @@ export interface ReportRequest {
 }
 
 export type ExtensionRequest =
-  ScanRequest | LastResultRequest | ExportRequest | TeachRequest | ReportRequest;
+  | ScanRequest
+  | ScanStatusRequest
+  | LastResultRequest
+  | ExportRequest
+  | TeachRequest
+  | ReportRequest;
 
 export interface ExportedReport {
   filename: string;
@@ -122,8 +147,20 @@ export interface ScanSummary {
   finishedAt: string;
 }
 
+/** Where a scan has got to, as the popup renders it. */
+export interface ScanProgress {
+  pagesScanned: number;
+  productCount: number;
+  /** Pages found and not yet read. */
+  queued: number;
+  status: CrawlStatus;
+}
+
 export type ExtensionResponse =
   | { ok: true; kind: 'summary'; summary: ScanSummary | undefined }
+  /** The scan is under way; ask again with `scan-status`. */
+  | { ok: true; kind: 'started' }
+  | { ok: true; kind: 'progress'; progress: ScanProgress }
   | { ok: true; kind: 'download'; download: ExportedCsv }
   | { ok: true; kind: 'taught'; taught: TeachResult }
   | { ok: true; kind: 'report'; report: ExportedReport }
@@ -164,6 +201,12 @@ export function isReportRequest(message: unknown): message is ReportRequest {
   if (typeof message !== 'object' || message === null) return false;
   const candidate = message as Partial<ReportRequest>;
   return candidate.kind === 'report' && typeof candidate.url === 'string';
+}
+
+export function isScanStatusRequest(message: unknown): message is ScanStatusRequest {
+  if (typeof message !== 'object' || message === null) return false;
+  const candidate = message as Partial<ScanStatusRequest>;
+  return candidate.kind === 'scan-status' && typeof candidate.url === 'string';
 }
 
 export function isLastResultRequest(message: unknown): message is LastResultRequest {

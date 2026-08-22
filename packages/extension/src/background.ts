@@ -29,19 +29,21 @@ import {
 } from '@proc123/exporters';
 import type { ProfileField } from '@proc123/profiles';
 
-import { runtime, scripting } from './browser.js';
+import { runtime, scripting, storage } from './browser.js';
 import { createFetchClient } from './http.js';
 import {
   isExportRequest,
   isLastResultRequest,
   isReportRequest,
   isScanRequest,
+  isScanStatusRequest,
   isTeachRequest,
 } from './messages.js';
 import type {
   ExportedCsv,
   ExportedReport,
   ExtensionResponse,
+  ScanProgress,
   ScanSummary,
   TeachResult,
 } from './messages.js';
@@ -78,6 +80,53 @@ async function readPage(tabId: number): Promise<{ url: string; html: string; tit
   return result;
 }
 
+/**
+ * The scan currently running, if any.
+ *
+ * A crawl outlives the message that asked for it. Holding the reply channel
+ * open for the whole thing is what produced "Could not establish connection:
+ * receiving end does not exist" on large catalogues — minutes of paced
+ * requests look like idleness to MV3, the worker is shut down, and the reply
+ * never comes even though the crawl had been persisting its progress the
+ * whole way. So the scan is tracked here and asked about instead.
+ *
+ * One at a time, deliberately: two crawls of the same site at once would
+ * double the request rate on someone else's server, which §10 exists to
+ * prevent.
+ */
+interface ActiveScan {
+  url: string;
+  progress: ScanProgress;
+  /** Set when the crawl finishes; the popup collects it on its next poll. */
+  summary?: ScanSummary;
+  /** Set when it failed, for the same reason. */
+  error?: string;
+}
+
+let active: ActiveScan | undefined;
+
+/**
+ * Keep the worker up for as long as there is real work.
+ *
+ * The crawl spends most of its life waiting between requests (§10's
+ * politeness), and a timer is not an extension event, so nothing tells the
+ * browser this worker is busy. Touching an extension API on an interval does.
+ * Cleared the moment the scan settles — a keepalive that outlives its work is
+ * just a worker that will not die.
+ */
+function startKeepalive(): () => void {
+  const timer = setInterval(() => {
+    void storage.local.get(KEEPALIVE_KEY).catch(() => undefined);
+  }, KEEPALIVE_MS);
+  return () => {
+    clearInterval(timer);
+  };
+}
+
+const KEEPALIVE_KEY = 'proc123.keepalive';
+/** Comfortably inside the 30s idle window both engines use. */
+const KEEPALIVE_MS = 20_000;
+
 async function handleScan(request: {
   tabId: number;
   canFetch: boolean;
@@ -108,6 +157,9 @@ async function handleScan(request: {
       ...(request.canFetch ? { http: createFetchClient() } : {}),
       ...(apiKey === '' ? {} : { apiKey }),
       store: createChromeCrawlStore(),
+      onProgress: (progress) => {
+        if (active?.url === url) active.progress = { ...progress };
+      },
     }
   );
 
@@ -336,18 +388,76 @@ async function handleReport(request: { url: string; tabId?: number }): Promise<E
 
 runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (isScanRequest(message)) {
+    // Already running for this page: say so rather than starting a second
+    // crawl over the same server.
+    if (active !== undefined && active.summary === undefined && active.error === undefined) {
+      sendResponse({ ok: true, kind: 'started' } satisfies ExtensionResponse);
+      return false;
+    }
+
+    active = {
+      url: message.url,
+      progress: { pagesScanned: 0, productCount: 0, queued: 0, status: 'running' },
+    };
+    const stopKeepalive = startKeepalive();
+
     handleScan(message).then(
       (summary) => {
-        sendResponse({ ok: true, kind: 'summary', summary } satisfies ExtensionResponse);
+        stopKeepalive();
+        if (active?.url === message.url) active.summary = summary;
       },
       (error: unknown) => {
+        stopKeepalive();
         const text = error instanceof Error ? error.message : String(error);
         console.error('[proc123] scan failed', error);
-        sendResponse({ ok: false, message: text } satisfies ExtensionResponse);
+        if (active?.url === message.url) active.error = text;
       }
     );
-    // Keeps the channel open for the async reply above.
-    return true;
+
+    // Answered now, not when the crawl ends. The popup follows it with
+    // `scan-status` — see the note on `ScanStatusRequest`.
+    sendResponse({ ok: true, kind: 'started' } satisfies ExtensionResponse);
+    return false;
+  }
+
+  if (isScanStatusRequest(message)) {
+    if (active === undefined || active.url !== message.url) {
+      // Nothing running for this page. The worker may have been restarted
+      // since; the saved result is the honest answer, and `undefined` from it
+      // means there is genuinely nothing.
+      loadLastResult<ScanSummary>().then(
+        (summary) => {
+          sendResponse({ ok: true, kind: 'summary', summary } satisfies ExtensionResponse);
+        },
+        () => {
+          sendResponse({
+            ok: true,
+            kind: 'summary',
+            summary: undefined,
+          } satisfies ExtensionResponse);
+        }
+      );
+      return true;
+    }
+
+    if (active.error !== undefined) {
+      sendResponse({ ok: false, message: active.error } satisfies ExtensionResponse);
+      return false;
+    }
+    if (active.summary !== undefined) {
+      sendResponse({
+        ok: true,
+        kind: 'summary',
+        summary: active.summary,
+      } satisfies ExtensionResponse);
+      return false;
+    }
+    sendResponse({
+      ok: true,
+      kind: 'progress',
+      progress: active.progress,
+    } satisfies ExtensionResponse);
+    return false;
   }
 
   if (isTeachRequest(message)) {

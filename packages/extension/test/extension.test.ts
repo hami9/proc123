@@ -13,7 +13,12 @@ import { DEFAULT_CONFIG, createMemoryCrawlStore } from '@proc123/core';
 
 import { isFirefox, permissions, storage } from '../src/browser.js';
 import { createFetchClient } from '../src/http.js';
-import { isExportRequest, isLastResultRequest, isScanRequest } from '../src/messages.js';
+import {
+  isExportRequest,
+  isLastResultRequest,
+  isScanRequest,
+  isScanStatusRequest,
+} from '../src/messages.js';
 import { countCurrencyUnits, crawlIdFor, runScan } from '../src/scan.js';
 import { importSettings, loadSettings, saveSettings } from '../src/settings.js';
 import { createChromeCrawlStore, loadLastResult, saveLastResult } from '../src/storage.js';
@@ -41,6 +46,7 @@ describe('message guards', () => {
       isScanRequest({ kind: 'scan', tabId: 1, url: 'https://x.example/', canFetch: true })
     ).toBe(true);
     expect(isLastResultRequest({ kind: 'last-result' })).toBe(true);
+    expect(isScanStatusRequest({ kind: 'scan-status', url: 'https://x.example/' })).toBe(true);
     expect(
       isExportRequest({ kind: 'export', url: 'https://x.example/', displayUnit: 'toman' })
     ).toBe(true);
@@ -49,6 +55,7 @@ describe('message guards', () => {
   it('rejects anything else, including a plausible near-miss', () => {
     // A message from another extension, or an older build of this one.
     expect(isScanRequest({ kind: 'scan', url: 'https://x.example/' })).toBe(false);
+    expect(isScanStatusRequest({ kind: 'scan-status' })).toBe(false);
     expect(isExportRequest({ kind: 'export', url: 'https://x.example/' })).toBe(false);
     // An unrecognised unit must not reach the exporter: it decides a 10x factor.
     expect(

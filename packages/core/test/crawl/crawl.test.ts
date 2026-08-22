@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   type CanonicalProduct,
+  type CrawlProgress,
   type CrawlState,
   type HttpClient,
   ProductIndex,
@@ -200,6 +201,59 @@ async function crawl(options: Parameters<typeof crawlCategory>[1] = {}) {
     { scannedAt: SCANNED_AT, now: NOW, politeness: { delayMsBetweenRequests: 0 }, ...options }
   );
 }
+
+describe('crawlCategory progress', () => {
+  /**
+   * The popup polls this to show a scan advancing. Before it existed, a long
+   * crawl was silent from the first click to the last page, which is
+   * indistinguishable from a hang — and on a large catalogue it was reported
+   * as one.
+   */
+  it('reports every page, with the counts only ever climbing', async () => {
+    const seen: CrawlProgress[] = [];
+    const result = await crawl({
+      http: paginatedStore(3),
+      onPage: (progress) => {
+        seen.push({ ...progress });
+      },
+    });
+
+    // Not an exact count: a page can be reported twice — the final one is
+    // reported again once its status settles — and the popup redrawing the
+    // same numbers costs nothing. What matters is that every page shows up
+    // and nothing ever goes backwards.
+    expect(new Set(seen.map((entry) => entry.pagesScanned))).toEqual(new Set([1, 2, 3]));
+    expect(seen.at(-1)?.pagesScanned).toBe(result.pagesScanned);
+
+    for (const [index, entry] of seen.entries()) {
+      const previous = seen[index - 1];
+      if (previous === undefined) continue;
+      expect(entry.pagesScanned).toBeGreaterThanOrEqual(previous.pagesScanned);
+      expect(entry.productCount).toBeGreaterThanOrEqual(previous.productCount);
+    }
+
+    // Nothing queued at the end, which is how the popup can tell "almost
+    // done" from "still discovering pages" instead of guessing from elapsed
+    // time.
+    expect(seen.at(-1)?.queued).toBe(0);
+    expect(seen.at(-1)?.status).toBe('complete');
+  });
+
+  it('finishes the crawl even when the listener throws', async () => {
+    // Progress is a convenience. A caller that breaks its own listener must
+    // not lose the scan it was describing.
+    const result = await crawl({
+      http: paginatedStore(3),
+      onPage: () => {
+        throw new Error('the popup went away mid-update');
+      },
+    });
+
+    expect(result.pagesScanned).toBe(3);
+    expect(result.state.status).toBe('complete');
+    expect(result.products).toHaveLength(3);
+  });
+});
 
 describe('crawlCategory', () => {
   it('follows pagination to the end of the category', async () => {

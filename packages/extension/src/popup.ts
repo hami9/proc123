@@ -32,7 +32,7 @@ import { loadApiKey, loadSettings, saveApiKey, saveSettings } from './settings.j
 
 import { EXPORTER_LABELS } from '@proc123/exporters';
 
-import type { ExtensionResponse, ScanSummary } from './messages.js';
+import type { ExtensionResponse, ScanProgress, ScanSummary } from './messages.js';
 
 const element = <T extends HTMLElement>(id: string): T => {
   const found = document.getElementById(id);
@@ -362,7 +362,7 @@ async function scan(restart: boolean, granting: Promise<boolean>): Promise<void>
     : 'Scanning this page only — no permission for the rest of the site.';
 
   try {
-    const response = await runtime.sendMessage<unknown, ExtensionResponse>({
+    const started = await runtime.sendMessage<unknown, ExtensionResponse>({
       kind: 'scan',
       tabId: tab.id,
       url: tab.url,
@@ -370,16 +370,67 @@ async function scan(restart: boolean, granting: Promise<boolean>): Promise<void>
       restart,
     });
 
-    if (!response.ok) {
-      statusLine.textContent = response.message;
+    if (!started.ok) {
+      statusLine.textContent = started.message;
       return;
     }
-    if (response.kind === 'summary' && response.summary !== undefined) render(response.summary);
+
+    await followScan(tab.url, canFetch);
   } catch (error) {
     statusLine.textContent = error instanceof Error ? error.message : String(error);
   } finally {
     scanButton.disabled = false;
     rescanButton.disabled = false;
+  }
+}
+
+/** How often to ask the worker where it has got to. */
+const POLL_MS = 700;
+
+function describeProgress(progress: ScanProgress, canFetch: boolean): string {
+  const pages =
+    progress.pagesScanned === 0 ? 'Reading the page…' : `Page ${String(progress.pagesScanned)}`;
+  const found = `${String(progress.productCount)} product${progress.productCount === 1 ? '' : 's'}`;
+  const left = progress.queued > 0 ? `, ${String(progress.queued)} page(s) to go` : '';
+  const scope = canFetch ? '' : ' — this page only';
+  return progress.pagesScanned === 0 ? pages : `${pages} · ${found}${left}${scope}`;
+}
+
+/**
+ * Follow a running scan to its end.
+ *
+ * The worker answers `scan` immediately and does the crawl afterwards, because
+ * a reply held open across minutes of paced requests is one MV3 will kill —
+ * see `ScanStatusRequest`. Polling also gives §18's honest progress: a spinner
+ * that says nothing for four minutes is indistinguishable from a hang, which
+ * is exactly how this looked on a large catalogue.
+ */
+async function followScan(url: string, canFetch: boolean): Promise<void> {
+  for (;;) {
+    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+
+    const response = await runtime.sendMessage<unknown, ExtensionResponse>({
+      kind: 'scan-status',
+      url,
+    });
+
+    if (!response.ok) {
+      statusLine.textContent = response.message;
+      return;
+    }
+    if (response.kind === 'progress') {
+      statusLine.textContent = describeProgress(response.progress, canFetch);
+      continue;
+    }
+    if (response.kind === 'summary') {
+      if (response.summary === undefined) {
+        statusLine.textContent = 'The scan stopped before it reported anything.';
+        return;
+      }
+      render(response.summary);
+      return;
+    }
+    return;
   }
 }
 
