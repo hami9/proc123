@@ -1,0 +1,1 @@
+Open a shop's category page, press Scan, and get a CSV another shop can import — WooCommerce, Shopify or JSON. Simple and variable products with every variation. No account, no server, nothing leaves your browser.

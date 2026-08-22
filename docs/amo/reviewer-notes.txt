@@ -1,0 +1,9 @@
+Build is reproducible: `npm install && npm run build:zip -w @proc123/extension`
+produces a byte-identical zip. Bundles are intentionally not minified. No remote
+code. No analytics and no backend of any kind.
+
+The optional host permission is requested per-site at runtime, only when a
+category turns out to paginate, and only from a click in the popup. Declining is
+a supported path: the scan then covers the open page and the result says so.
+
+Source: https://github.com/hami9/proc123 (MIT), tag v1.4.3

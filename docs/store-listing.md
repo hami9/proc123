@@ -120,15 +120,30 @@ A third, if you want one: the "Why is this field empty?" report.
 
 ## AMO product page, field by field
 
+**The four long fields are also in [`amo/`](amo/), one file each, whose entire
+contents are the paste.** Open the file, select all, paste — there is no block
+to find inside it and nothing to trim off the ends. The fenced copies below are
+the same text, kept here so this document reads on its own; `amo/` is generated
+from them, so edit here and re-generate rather than editing both.
+
+| Field           | File                                             |
+| --------------- | ------------------------------------------------ |
+| Summary         | [`amo/summary.txt`](amo/summary.txt)             |
+| Description     | [`amo/description.txt`](amo/description.txt)     |
+| Privacy Policy  | [`amo/privacy-policy.txt`](amo/privacy-policy.txt) |
+| Notes to Reviewer | [`amo/reviewer-notes.txt`](amo/reviewer-notes.txt) |
+
 AMO differs from Chrome in three ways that matter when pasting:
 
 - **The privacy policy is a textarea, not a URL.** Paste the text of
   [`privacy-policy.md`](privacy-policy.md) in, minus its Markdown.
 - **Summary allows 250 characters** — Chrome allows 132, so AMO can carry the
   longer one below.
-- **The description takes only inline HTML** (`<b>`, `<em>`, `<ul>`, `<li>`,
-  `<a>`, `<code>`, `<blockquote>`). No headings, no tables, and no monospace —
-  so the ASCII layer diagram above is for Chrome and the README, not for here.
+- **The description field says "Some Markdown supported"** — a subset: bold,
+  italic, links, and bullet lists. Not headings, not tables, not monospace,
+  which is why the ASCII layer diagram above is for Chrome and the README and
+  not for here. Do not paste HTML into it; the older AMO behaviour of accepting
+  inline tags is not what the current form advertises.
 
 | Field         | Value                                                                     |
 | ------------- | ------------------------------------------------------------------------- |
@@ -148,47 +163,52 @@ AMO differs from Chrome in three ways that matter when pasting:
 Open a shop's category page, press Scan, and get a CSV another shop can import — WooCommerce, Shopify or JSON. Simple and variable products with every variation. No account, no server, nothing leaves your browser.
 ```
 
-### Description, in AMO's HTML
+### Description, ready to paste into AMO
 
-The plain-text description above is for Chrome. AMO strips headings, tables and
-monospace, so paste this instead — every tag in it is on AMO's allowed list.
+The plain-text description above is for Chrome. Paste **only** what is between
+the fences below into AMO's Description field — not this sentence, not the
+heading, and not the rest of this file. It uses only the Markdown AMO renders:
+bold, bullets, and a bare link.
 
-```html
-<p>proc123 reads a category or collection page you already have open, extracts every product on it, and writes a CSV built for the shop you are moving to.</p>
+```
+proc123 reads a category or collection page you already have open, extracts every product on it, and writes a CSV built for the shop you are moving to.
 
-<p><strong>What it does</strong></p>
-<ul>
-  <li>Reads simple and variable products, with all their variations</li>
-  <li>Exports WooCommerce CSV, Shopify CSV, or plain JSON</li>
-  <li>Works on WooCommerce, Shopify, Magento, headless storefronts, and shops built on nothing recognisable at all</li>
-  <li>Follows pagination — numbered pages, "load more", infinite scroll</li>
-  <li>Resumes where it stopped instead of starting over</li>
-</ul>
+**What it does**
 
-<p><strong>How it reads a page</strong></p>
-<p>Four layers, tried in order, and it tells you which one answered:</p>
-<ul>
-  <li><strong>A</strong> — the shop's own catalogue API, where one is open</li>
-  <li><strong>B</strong> — structured markup: JSON-LD, Microdata, OpenGraph</li>
-  <li><strong>C</strong> — a layout you taught it by clicking a title, a price, an image</li>
-  <li><strong>D</strong> — AI, off until you switch it on with your own API key</li>
-</ul>
-<p>Layer C is why "any shop" is not a marketing claim. When the first two layers find nothing, you point at one product card and it applies what it learned to every card on every page. What it learns is readable JSON you can edit, export and share.</p>
+- Reads simple and variable products, with all their variations
+- Exports WooCommerce CSV, Shopify CSV, or plain JSON
+- Works on WooCommerce, Shopify, Magento, headless storefronts, and shops built on nothing recognisable at all
+- Follows pagination — numbered pages, "load more", infinite scroll
+- Resumes where it stopped instead of starting over
 
-<p><strong>Built for Persian shops too</strong></p>
-<p>Persian and Arabic-Indic numerals are normalised to ASCII, thousands separators are stripped, and — the important one — it asks whether prices are in toman or rial before it writes anything, rather than guessing. Guessing wrong is a silent 10x price error, and that is the mistake this tool works hardest to prevent.</p>
+**How it reads a page**
 
-<p><strong>When a field comes out empty</strong></p>
-<p>Press "Why is this field empty?" and it explains every blank column in plain language: you switched it off, the shop never published it, or something genuinely went wrong. The report carries no API keys and no page content, so it is safe to attach to a bug report.</p>
+Four layers, tried in order, and it tells you which one answered:
 
-<p><strong>What it will not do</strong></p>
-<p>It does not solve CAPTCHAs, spoof fingerprints, rotate proxies, or retry past a block. When a shop signals that it does not want to be read automatically, proc123 stops and says so. Requests are paced by default so as not to burden the shop's server.</p>
+- **A** — the shop's own catalogue API, where one is open
+- **B** — structured markup: JSON-LD, Microdata, OpenGraph
+- **C** — a layout you taught it by clicking a title, a price, an image
+- **D** — AI, off until you switch it on with your own API key
 
-<p>There is no account, no server, and no analytics. Nothing you scan reaches anyone but the shop you are scanning — and your own AI provider, if you chose to switch that on with your own key.</p>
+Layer C is why "any shop" is not a marketing claim. When the first two layers find nothing, you point at one product card and it applies what it learned to every card on every page. What it learns is readable JSON you can edit, export and share.
 
-<p>Descriptions and photographs are someone's authored content. By default proc123 copies the structured data and leaves description columns empty; you can opt into including them with attribution, or into rewriting them.</p>
+**Built for Persian shops too**
 
-<p>Open source, MIT licensed: <a href="https://github.com/hami9/proc123">github.com/hami9/proc123</a></p>
+Persian and Arabic-Indic numerals are normalised to ASCII, thousands separators are stripped, and — the important one — it asks whether prices are in toman or rial before it writes anything, rather than guessing. Guessing wrong is a silent 10x price error, and that is the mistake this tool works hardest to prevent.
+
+**When a field comes out empty**
+
+Press "Why is this field empty?" and it explains every blank column in plain language: you switched it off, the shop never published it, or something genuinely went wrong. The report carries no API keys and no page content, so it is safe to attach to a bug report.
+
+**What it will not do**
+
+It does not solve CAPTCHAs, spoof fingerprints, rotate proxies, or retry past a block. When a shop signals that it does not want to be read automatically, proc123 stops and says so. Requests are paced by default so as not to burden the shop's server.
+
+There is no account, no server, and no analytics. Nothing you scan reaches anyone but the shop you are scanning — and your own AI provider, if you chose to switch that on with your own key.
+
+Descriptions and photographs are someone's authored content. By default proc123 copies the structured data and leaves description columns empty; you can opt into including them with attribution, or into rewriting them.
+
+Open source, MIT licensed: https://github.com/hami9/proc123
 ```
 
 ### The two checkboxes under the description
@@ -206,7 +226,8 @@ optional:
 ### Privacy policy, as AMO wants it
 
 AMO's field is a textarea, so [`privacy-policy.md`](privacy-policy.md) goes in
-with its Markdown removed. The table in it becomes a list:
+with its Markdown removed — no `##`, no `**`, because that field renders none of
+it and the raw punctuation shows. Paste **only** what is between the fences.
 
 ```
 proc123 has no account, no server, and no analytics. Nothing you scan is sent to

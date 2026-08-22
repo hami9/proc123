@@ -1,0 +1,38 @@
+proc123 reads a category or collection page you already have open, extracts every product on it, and writes a CSV built for the shop you are moving to.
+
+**What it does**
+
+- Reads simple and variable products, with all their variations
+- Exports WooCommerce CSV, Shopify CSV, or plain JSON
+- Works on WooCommerce, Shopify, Magento, headless storefronts, and shops built on nothing recognisable at all
+- Follows pagination — numbered pages, "load more", infinite scroll
+- Resumes where it stopped instead of starting over
+
+**How it reads a page**
+
+Four layers, tried in order, and it tells you which one answered:
+
+- **A** — the shop's own catalogue API, where one is open
+- **B** — structured markup: JSON-LD, Microdata, OpenGraph
+- **C** — a layout you taught it by clicking a title, a price, an image
+- **D** — AI, off until you switch it on with your own API key
+
+Layer C is why "any shop" is not a marketing claim. When the first two layers find nothing, you point at one product card and it applies what it learned to every card on every page. What it learns is readable JSON you can edit, export and share.
+
+**Built for Persian shops too**
+
+Persian and Arabic-Indic numerals are normalised to ASCII, thousands separators are stripped, and — the important one — it asks whether prices are in toman or rial before it writes anything, rather than guessing. Guessing wrong is a silent 10x price error, and that is the mistake this tool works hardest to prevent.
+
+**When a field comes out empty**
+
+Press "Why is this field empty?" and it explains every blank column in plain language: you switched it off, the shop never published it, or something genuinely went wrong. The report carries no API keys and no page content, so it is safe to attach to a bug report.
+
+**What it will not do**
+
+It does not solve CAPTCHAs, spoof fingerprints, rotate proxies, or retry past a block. When a shop signals that it does not want to be read automatically, proc123 stops and says so. Requests are paced by default so as not to burden the shop's server.
+
+There is no account, no server, and no analytics. Nothing you scan reaches anyone but the shop you are scanning — and your own AI provider, if you chose to switch that on with your own key.
+
+Descriptions and photographs are someone's authored content. By default proc123 copies the structured data and leaves description columns empty; you can opt into including them with attribution, or into rewriting them.
+
+Open source, MIT licensed: https://github.com/hami9/proc123
