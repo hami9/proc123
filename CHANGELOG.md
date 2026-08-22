@@ -2,6 +2,13 @@
 
 Every release, newest first. Generated from Conventional Commits — see CONTRIBUTING.md.
 
+## [1.3.1](https://github.com/hami9/proc123/compare/v1.3.0...v1.3.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* **extension:** make Scan work on Firefox ([1c77899](https://github.com/hami9/proc123/commit/1c77899abcc76fc8f1a7a4254186dce55f673689))
+
 # [1.3.0](https://github.com/hami9/proc123/compare/v1.2.1...v1.3.0) (2026-08-19)
 
 
