@@ -59,7 +59,7 @@ npm run release:dry-run   # what would the next release be?
 ## Pull requests
 
 - One change per pull request.
-- New behaviour comes with tests. There are ~756 of them and they are the reason
+- New behaviour comes with tests. There are ~760 of them and they are the reason
   anything here can be trusted with someone's product catalogue.
 - Run `npm run check` before pushing.
 - Explain _why_ in the description. The _what_ is in the diff.

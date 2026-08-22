@@ -14,7 +14,7 @@
 [![CI](https://github.com/hami9/proc123/actions/workflows/ci.yml/badge.svg)](https://github.com/hami9/proc123/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-7a3e1d)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520.11-7a3e1d)](https://nodejs.org)
-[![tests](https://img.shields.io/badge/tests-756-7a3e1d)](#getting-started)
+[![tests](https://img.shields.io/badge/tests-760-7a3e1d)](#getting-started)
 
 [Install on Windows](docs/install-windows.md) &nbsp;·&nbsp; [How it works](#scanning-a-page) &nbsp;·&nbsp; [What it will not do](#what-proc123-will-not-do) &nbsp;·&nbsp; [Contributing](CONTRIBUTING.md)
 
@@ -51,7 +51,7 @@ build, no Node required.
 | ---------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
 | **Windows**            | either asset below                             | follow the **[step-by-step Windows guide](docs/install-windows.md)** |
 | Chrome · Edge · Brave  | `proc123-chrome-<version>.zip`                 | unzip → `chrome://extensions` → Developer mode → Load unpacked       |
-| Firefox                | `proc123-firefox-<version>.zip`                | unzip → `about:debugging` → Load Temporary Add-on → `manifest.json`  |
+| Firefox                | `proc123-firefox-<version>.zip`                | `about:debugging` → Load Temporary Add-on → pick the zip itself      |
 | A terminal, no browser | `proc123-win32-x64.exe` or `proc123-linux-x64` | `proc123 <category-url> -o products.csv`                             |
 
 Then open a shop's category page, click the toolbar button, press **Scan this
@@ -64,6 +64,11 @@ can work around, so loading it as a developer is the supported route until the
 listings exist. [`docs/publishing.md`](docs/publishing.md) covers what that
 takes, in the order that gets a real install to people soonest, and what is
 already in place for it.
+
+> **Firefox: use `about:debugging`, not `about:addons`.** The Add-ons Manager
+> only accepts a Mozilla-signed file and will reject the zip as unverified.
+> `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** takes the
+> zip as it is, and lasts until you close the browser.
 
 Building it yourself is under [Getting started](#getting-started).
 
@@ -113,7 +118,7 @@ with the extension kept and improved rather than replaced.
 A, an HTTP client; the extension and the companion own the network. What exists
 is the part everything else is validated against: the canonical product model,
 the normalizers, all four extraction layers, three exporters, a browser
-extension for Chrome and Firefox, and a command-line companion, with 756 tests
+extension for Chrome and Firefox, and a command-line companion, with 760 tests
 behind them.
 
 ## Packages

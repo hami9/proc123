@@ -2,7 +2,15 @@
   "branches": ["main"],
   "plugins": [
     "@semantic-release/commit-analyzer",
-    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "$comment": "Every release page is someone's first contact with the project, and the commit list alone does not tell them how to install it. `writerOpts` is merged over the preset's, so only the footer changes. `{{version}}` interpolates, which keeps the asset filenames right without anyone editing this per release. The Firefox note is here because about:addons rejecting the zip is the single most common way this install goes wrong.",
+        "writerOpts": {
+          "footerPartial": "\n---\n\n## Installing\n\n**Chrome · Edge · Brave** — unzip `proc123-chrome-{{version}}.zip`, open `chrome://extensions`, turn on **Developer mode**, then **Load unpacked** and pick the unzipped folder.\n\n**Firefox** — open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…**, and select `proc123-firefox-{{version}}.zip` directly. No need to unzip.\n\n> Do **not** use `about:addons` → Install Add-on From File. That screen only accepts a Mozilla-signed file and rejects the zip as \"not verified\". Firefox has required signatures since version 48, and `xpinstall.signatures.required` is ignored on release builds, so no setting changes it. A temporary add-on lasts until you close the browser.\n\n**A terminal, no browser** — download `proc123-win32-x64.exe` or `proc123-linux-x64`, then `proc123 <category-url> -o products.csv`.\n\nproc123 is not in the Chrome Web Store or listed on addons.mozilla.org yet, which is why the install is a folder rather than a button — [publishing.md](https://github.com/hami9/proc123/blob/main/docs/publishing.md) covers what that takes.\n"
+        }
+      }
+    ],
     [
       "@semantic-release/changelog",
       {
