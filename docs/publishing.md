@@ -130,7 +130,7 @@ Mozilla ships every subsequent version to them automatically.
 ```bash
 export WEB_EXT_API_KEY=user:12345678:123
 export WEB_EXT_API_SECRET=<the secret>
-npm run sign:listed -w @proc123/extension
+npm run sign -w @proc123/extension
 ```
 
 or upload `proc123-firefox-<version>.zip` by hand at
@@ -142,16 +142,22 @@ unminified source is the easy case for a reviewer, but budget for one round of
 questions about the optional host permission — the answer is in
 [Permission justifications](#permission-justifications) above.
 
-### Unlisted, and its two catches
+### Unlisted, and its three catches
 
 Unlisted signing is automatic — no review, usually under a minute — which makes
 it the right way to get a working build to a tester today, or to yourself before
-the listing clears. `npm run sign -w @proc123/extension` does it, leaving a
-signed `.xpi` in `packages/extension/dist/`.
+a listing clears. `npm run sign:unlisted -w @proc123/extension` does it, leaving
+a signed `.xpi` in `packages/extension/dist/`.
 
-It is **not** a substitute for listing on a public project, for two reasons that
-only show up after distribution starts:
+It is **not** a substitute for listing on a public project, for three reasons
+that only show up after distribution starts:
 
+- **The channel cannot be changed afterwards.** This is the one that costs
+  time, because nothing warns you. A version uploaded unlisted stays unlisted
+  for ever; there is no switch, and AMO will not accept the same version number
+  again on the other channel. Getting onto the listed channel means **cutting a
+  new version number** and uploading that. Choose the channel deliberately at
+  the first upload.
 - **A download link will not install it.** Firefox only installs an `.xpi`
   offered as `Content-Type: application/x-xpinstall`, and GitHub release assets
   are served as `application/octet-stream`. Users have to save the file and feed
@@ -161,6 +167,22 @@ only show up after distribution starts:
   self-distributed one updates only if the manifest carries an `update_url` and
   something keeps an update manifest hosted at it. Ship without that and every
   user stays on whatever version they first installed.
+
+### Telling the two apart after the fact
+
+An add-on whose versions are all unlisted looks _approved_ in the Developer Hub
+— every version says `Approved`, with zero errors — while its public page says
+"This is not a public listing" and "no versions have been published". The
+Developer Hub does not spell out which channel a version went to, and it offers
+**Edit Product Page** either way, so that is not the tell.
+
+The reliable tell is on **Manage Status & Versions**: a listed add-on has a
+**Visible / Invisible** control there. An add-on with no listed versions has no
+such section at all, because there is nothing that could appear in the gallery.
+If that control is absent, every version is unlisted.
+
+The second tell is the clock. Unlisted signing completes in under a minute;
+listed review does not.
 
 The manifest already carries what AMO requires:
 
@@ -205,7 +227,7 @@ re-cut a release that has already passed.
 In the order that gets a working install into people's hands soonest:
 
 1. **Submit to AMO, listed.** Free, and the shorter of the two paths. A Mozilla
-   account and `npm run sign:listed` is the whole of it.
+   account and `npm run sign` is the whole of it.
 2. **Fill in the product page.** Copy for every field is written out in
    [`store-listing.md`](store-listing.md), including the privacy policy URL —
    which points at [`privacy-policy.md`](privacy-policy.md) in this repository,

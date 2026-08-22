@@ -10,8 +10,8 @@
     "build:watch": "node scripts/build.mjs --watch --only=chrome",
     "build:zip": "node scripts/build.mjs --zip",
     "lint:firefox": "web-ext lint --source-dir dist/firefox --self-hosted",
-    "sign": "npm run build:zip && web-ext sign --source-dir dist/firefox --artifacts-dir dist --channel unlisted",
-    "sign:listed": "npm run build:zip && web-ext sign --source-dir dist/firefox --artifacts-dir dist --channel listed"
+    "sign": "npm run build:zip && web-ext sign --source-dir dist/firefox --artifacts-dir dist --channel listed",
+    "sign:unlisted": "npm run build:zip && web-ext sign --source-dir dist/firefox --artifacts-dir dist --channel unlisted"
   },
   "dependencies": {
     "@proc123/core": "*",
