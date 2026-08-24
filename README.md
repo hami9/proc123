@@ -14,7 +14,7 @@
 [![CI](https://github.com/hami9/proc123/actions/workflows/ci.yml/badge.svg)](https://github.com/hami9/proc123/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-7a3e1d)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520.11-7a3e1d)](https://nodejs.org)
-[![tests](https://img.shields.io/badge/tests-760-7a3e1d)](#getting-started)
+[![tests](https://img.shields.io/badge/tests-800-7a3e1d)](#getting-started)
 
 [Install on Windows](docs/install-windows.md) &nbsp;·&nbsp; [How it works](#scanning-a-page) &nbsp;·&nbsp; [What it will not do](#what-proc123-will-not-do) &nbsp;·&nbsp; [Contributing](CONTRIBUTING.md)
 
@@ -118,18 +118,22 @@ with the extension kept and improved rather than replaced.
 A, an HTTP client; the extension and the companion own the network. What exists
 is the part everything else is validated against: the canonical product model,
 the normalizers, all four extraction layers, three exporters, a browser
-extension for Chrome and Firefox, and a command-line companion, with 760 tests
+extension for Chrome and Firefox, and a command-line companion, with 800 tests
 behind them.
+
+Phase 13 added the inspector's engine to `core`, so it is there to build on but
+**not yet something you can click** — the three views reach the popup in phase 14. It reads a document you already have and makes no requests of its own
+either.
 
 ## Packages
 
-| Package              | What it is                                                                  |
-| -------------------- | --------------------------------------------------------------------------- |
-| `packages/core`      | `CanonicalProduct`, normalizers, SKUs, Layer A + Layer B, category crawling |
-| `packages/exporters` | WooCommerce CSV, Shopify CSV and JSON exporters                             |
-| `packages/extension` | Manifest V3 extension: popup, service worker, CSV download                  |
-| `packages/profiles`  | Site profile schema — the JSON Layer C learns and a person can edit         |
-| `packages/companion` | Command-line runner: the same pipeline, no browser                          |
+| Package              | What it is                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| `packages/core`      | `CanonicalProduct`, normalizers, SKUs, Layer A + Layer B, category crawling, the inspector engine |
+| `packages/exporters` | WooCommerce CSV, Shopify CSV and JSON exporters                                                   |
+| `packages/extension` | Manifest V3 extension: popup, service worker, CSV download                                        |
+| `packages/profiles`  | Site profile schema — the JSON Layer C learns and a person can edit                               |
+| `packages/companion` | Command-line runner: the same pipeline, no browser                                                |
 
 ## Running the extension
 
