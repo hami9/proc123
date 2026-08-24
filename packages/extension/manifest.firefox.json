@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "proc123",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "description": "Scan a store's category page and export a CSV another store can import.",
   "browser_specific_settings": {
     "gecko": {
