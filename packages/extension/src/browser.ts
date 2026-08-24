@@ -113,6 +113,12 @@ export const permissions = {
   },
 };
 
+export const downloads = {
+  download(options: chrome.downloads.DownloadOptions): Promise<number> {
+    return api().downloads.download(options);
+  },
+};
+
 /**
  * Which engine we are on, for the places that genuinely have to care.
  *

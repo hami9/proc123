@@ -4,7 +4,19 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', 'packages/*/test/fixtures/**'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      'packages/*/test/fixtures/**',
+      // Agent worktrees are checkouts of this same repository nested inside it.
+      // They are gitignored, but ESLint walks the directory tree rather than
+      // git, so without this a local `npm run check` lints a second copy of
+      // every file — and lints it *without* the per-package overrides below,
+      // because those are keyed on paths starting `packages/`. CI never sees
+      // this, which is exactly what makes it worth pinning down here.
+      '.claude/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

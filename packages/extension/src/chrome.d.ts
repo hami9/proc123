@@ -69,4 +69,22 @@ declare namespace chrome {
     /** Must be called from a user gesture, which is why the popup owns this. */
     function request(permissions: Permissions): Promise<boolean>;
   }
+
+  namespace downloads {
+    interface DownloadOptions {
+      url: string;
+      /** Relative to the downloads folder. Sub-folders are allowed. */
+      filename?: string;
+      /** `uniquify` rather than `overwrite`: never clobber someone's file. */
+      conflictAction?: 'uniquify' | 'overwrite' | 'prompt';
+      saveAs?: boolean;
+    }
+    /**
+     * Resolves with the download id once the download has *started*.
+     *
+     * The worker owns this rather than the popup, because a popup is destroyed
+     * the moment it loses focus and a twenty-image download outlives it.
+     */
+    function download(options: DownloadOptions): Promise<number>;
+  }
 }

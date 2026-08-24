@@ -10,6 +10,7 @@ import {
   type CurrencyUnit,
   type ExporterName,
   type FieldPick,
+  type PageInspection,
   type ProfileHealthSummary,
   canonicalizeUrl,
   checkProfileHealth,
@@ -17,6 +18,7 @@ import {
   explainScan,
   formatLog,
   formatReport,
+  inspectPage,
   learnProfile,
   loadHtml,
   shortHash,
@@ -29,10 +31,14 @@ import {
 } from '@proc123/exporters';
 import type { ProfileField } from '@proc123/profiles';
 
-import { runtime, scripting, storage } from './browser.js';
+import { downloads, runtime, scripting, storage } from './browser.js';
+import { FONT_PROBE_LIMIT, fontsProbeScript } from './fonts-probe.js';
 import { createFetchClient } from './http.js';
+import { imageFilename } from './images.js';
 import {
+  isDownloadImagesRequest,
   isExportRequest,
+  isInspectRequest,
   isLastResultRequest,
   isReportRequest,
   isScanRequest,
@@ -43,6 +49,7 @@ import type {
   ExportedCsv,
   ExportedReport,
   ExtensionResponse,
+  ImageDownloadResult,
   ScanProgress,
   ScanSummary,
   TeachResult,
@@ -386,6 +393,86 @@ async function handleReport(request: { url: string; tabId?: number }): Promise<E
   };
 }
 
+/**
+ * Inspect the page the user is looking at (CLAUDE.md §16).
+ *
+ * Two reads of the same tab, and both are reads: the rendered HTML, which is
+ * what `core` works from, and the computed font usage, which is the one thing
+ * `core` cannot derive from a string. Neither touches the network — the whole
+ * inspector is a function of a document already in the browser, which is why
+ * this costs the shop's server nothing and needs no permission beyond
+ * `activeTab`.
+ *
+ * The font probe is allowed to fail on its own. It walks the live DOM and a
+ * hostile or half-loaded page can make that throw; when it does, the inspection
+ * is still worth having, minus `usedBy`. Losing three views because one
+ * measurement failed would be the wrong trade.
+ */
+async function handleInspect(request: { tabId: number }): Promise<PageInspection> {
+  const { url, html } = await readPage(request.tabId);
+
+  let computed: { selector: string; family: string; weight?: string; style?: string }[] = [];
+  try {
+    const [probed] = await scripting.executeScript({
+      target: { tabId: request.tabId },
+      func: fontsProbeScript,
+      args: [FONT_PROBE_LIMIT],
+    });
+    computed = probed?.result ?? [];
+  } catch {
+    console.warn('[proc123] the font probe did not run; fonts will have no usage data');
+  }
+
+  const inspection = inspectPage({ url, html }, { computed });
+
+  console.info(
+    `[proc123] inspected ${url}: ${String(inspection.technologies.length)} technologies, ` +
+      `${String(inspection.fonts.length)} font families, ${String(inspection.images.length)} images`
+  );
+
+  return inspection;
+}
+
+/**
+ * Download a selection of images.
+ *
+ * Sequential rather than parallel, and that is §10 rather than caution: these
+ * are requests to someone else's server, and a native shell — or here, a
+ * download API that does not go through the paced client — is not a licence to
+ * hit it forty times at once.
+ *
+ * Every failure is collected instead of aborting the batch. The usual cause is
+ * an image on a CDN the user has not granted the host permission for, and
+ * "seven of twenty saved, thirteen refused" is a far better answer than either
+ * a silent partial success or nothing at all.
+ */
+async function handleDownloadImages(request: {
+  urls: string[];
+  pageUrl: string;
+}): Promise<ImageDownloadResult> {
+  const failed: { url: string; message: string }[] = [];
+  let started = 0;
+
+  for (const url of request.urls) {
+    try {
+      await downloads.download({
+        url,
+        filename: imageFilename(url, request.pageUrl),
+        conflictAction: 'uniquify',
+      });
+      started += 1;
+    } catch (error) {
+      failed.push({ url, message: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  console.info(
+    `[proc123] image download: ${String(started)} started, ${String(failed.length)} refused`
+  );
+
+  return { started, failed };
+}
+
 runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (isScanRequest(message)) {
     // Already running for this page: say so rather than starting a second
@@ -496,6 +583,34 @@ runtime.onMessage.addListener((message, _sender, sendResponse) => {
       (error: unknown) => {
         const text = error instanceof Error ? error.message : String(error);
         console.error('[proc123] report failed', error);
+        sendResponse({ ok: false, message: text } satisfies ExtensionResponse);
+      }
+    );
+    return true;
+  }
+
+  if (isInspectRequest(message)) {
+    handleInspect(message).then(
+      (inspection) => {
+        sendResponse({ ok: true, kind: 'inspection', inspection } satisfies ExtensionResponse);
+      },
+      (error: unknown) => {
+        const text = error instanceof Error ? error.message : String(error);
+        console.error('[proc123] inspection failed', error);
+        sendResponse({ ok: false, message: text } satisfies ExtensionResponse);
+      }
+    );
+    return true;
+  }
+
+  if (isDownloadImagesRequest(message)) {
+    handleDownloadImages(message).then(
+      (result) => {
+        sendResponse({ ok: true, kind: 'images-downloaded', result } satisfies ExtensionResponse);
+      },
+      (error: unknown) => {
+        const text = error instanceof Error ? error.message : String(error);
+        console.error('[proc123] image download failed', error);
         sendResponse({ ok: false, message: text } satisfies ExtensionResponse);
       }
     );

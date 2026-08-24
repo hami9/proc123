@@ -130,6 +130,127 @@
       li.warning {
         border-color: var(--warn);
       }
+      /*
+       * The inspector. Three views in 360px, which only works because exactly
+       * one of them is on screen at a time — the tab strip is the whole design.
+       * It sits below the scan flow and starts closed, so §18's "the popup is
+       * 360px of necessity" is respected rather than argued with: nothing above
+       * it moved, and the scan is reached in the same click it always was.
+       */
+      .inspect {
+        margin-top: 14px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+        font-size: 11.5px;
+      }
+      .inspect summary {
+        cursor: pointer;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .tabs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        margin: 10px 0 0;
+      }
+      .tabs button {
+        padding: 5px 4px;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-weight: 600;
+      }
+      .tabs button[aria-selected='true'] {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .view {
+        margin-top: 10px;
+        /*
+         * Capped and scrollable: an image list is unbounded and the popup is
+         * not. Without this the browser grows the popup until the list is
+         * off-screen and the download button is unreachable.
+         */
+        max-height: 260px;
+        overflow-y: auto;
+      }
+      .view[hidden] {
+        display: none;
+      }
+      .group {
+        margin: 0 0 8px;
+      }
+      .group h2 {
+        margin: 0 0 3px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .tech {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 2px 0;
+      }
+      .tech .why {
+        color: var(--muted);
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      .font {
+        padding: 3px 0 3px 9px;
+        border-left: 2px solid var(--line);
+        margin-bottom: 4px;
+      }
+      .font .meta {
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .shots {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+      }
+      .shot {
+        position: relative;
+        display: block;
+        aspect-ratio: 1;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        overflow: hidden;
+        cursor: pointer;
+      }
+      .shot img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .shot input {
+        position: absolute;
+        top: 3px;
+        inset-inline-start: 3px;
+        margin: 0;
+      }
+      .shot.checked {
+        border-color: var(--accent);
+        outline: 1px solid var(--accent);
+      }
+      .aside {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 10.5px;
+      }
+      .empty {
+        margin: 6px 0;
+        color: var(--muted);
+      }
+
       .settings {
         margin-top: 14px;
         padding-top: 10px;
@@ -244,6 +365,30 @@
 
       <ul id="issues"></ul>
     </section>
+
+    <details class="inspect" id="inspect">
+      <summary>What is this page made of?</summary>
+
+      <div class="tabs" role="tablist">
+        <button id="tabTech" type="button" role="tab" aria-selected="true">Built with</button>
+        <button id="tabFonts" type="button" role="tab" aria-selected="false">Fonts</button>
+        <button id="tabImages" type="button" role="tab" aria-selected="false">Images</button>
+      </div>
+
+      <p class="aside" id="inspectStatus"></p>
+
+      <div class="view" id="viewTech" role="tabpanel"></div>
+      <div class="view" id="viewFonts" role="tabpanel" hidden></div>
+      <div class="view" id="viewImages" role="tabpanel" hidden>
+        <div class="shots" id="shots"></div>
+      </div>
+
+      <div id="imageActions" hidden>
+        <p class="aside" id="imageCount"></p>
+        <button id="downloadImages" type="button">Download selected</button>
+        <button id="selectAllImages" type="button" class="secondary">Select all photographs</button>
+      </div>
+    </details>
 
     <details class="settings" id="settings">
       <summary>Settings</summary>
