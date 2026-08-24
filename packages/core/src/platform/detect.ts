@@ -13,45 +13,16 @@
 
 import type { CheerioAPI } from '../extract/html.js';
 import type { PageContext } from '../extract/types.js';
+import {
+  type Signal,
+  bodyClass,
+  generator,
+  includes,
+  makeContext,
+  runSignals,
+  selector,
+} from '../inspect/signals.js';
 import type { PlatformDetection, PlatformId } from './types.js';
-
-interface DetectContext {
-  $: CheerioAPI;
-  /** The whole document, lowercased once, for cheap substring probes. */
-  html: string;
-  url: string;
-}
-
-interface Signal {
-  label: string;
-  /** Contribution to confidence. Summed, then clamped to 1. */
-  weight: number;
-  test: (context: DetectContext) => boolean;
-}
-
-const includes =
-  (needle: string) =>
-  (context: DetectContext): boolean =>
-    context.html.includes(needle);
-
-const selector =
-  (query: string) =>
-  (context: DetectContext): boolean =>
-    context.$(query).length > 0;
-
-const bodyClass =
-  (name: string) =>
-  (context: DetectContext): boolean => {
-    const classes = context.$('body').attr('class');
-    return classes !== undefined && classes.toLowerCase().split(/\s+/).includes(name);
-  };
-
-const generator =
-  (name: string) =>
-  (context: DetectContext): boolean => {
-    const content = context.$('meta[name="generator"]').attr('content');
-    return content !== undefined && content.toLowerCase().includes(name);
-  };
 
 /**
  * Adapters exist for these. The rest are detected so the report can say "this is
@@ -125,9 +96,6 @@ const SIGNALS: Readonly<Record<Exclude<PlatformId, 'unknown'>, readonly Signal[]
   ],
 };
 
-/** Below this, the evidence is one weak coincidence and not worth acting on. */
-const MIN_CONFIDENCE = 0.3;
-
 /**
  * Every platform the page shows evidence for, most confident first.
  *
@@ -135,24 +103,18 @@ const MIN_CONFIDENCE = 0.3;
  * reason Layer B exists.
  */
 export function detectPlatforms(page: PageContext, $: CheerioAPI): PlatformDetection[] {
-  const context: DetectContext = { $, html: page.html.toLowerCase(), url: page.url };
+  const context = makeContext(page, $);
   const found: PlatformDetection[] = [];
 
   for (const [platform, signals] of Object.entries(SIGNALS)) {
-    const fired = signals.filter((signal) => signal.test(context));
-    if (fired.length === 0) continue;
-
-    const confidence = Math.min(
-      1,
-      fired.reduce((total, signal) => total + signal.weight, 0)
-    );
-    if (confidence < MIN_CONFIDENCE) continue;
+    const result = runSignals(signals, context);
+    if (result === undefined) continue;
 
     const id = platform as Exclude<PlatformId, 'unknown'>;
     found.push({
       platform: id,
-      confidence: Math.round(confidence * 100) / 100,
-      signals: fired.map((signal) => signal.label),
+      confidence: result.confidence,
+      signals: result.signals,
       adapterAvailable: ADAPTER_AVAILABLE.has(id),
     });
   }

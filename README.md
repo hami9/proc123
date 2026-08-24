@@ -97,8 +97,8 @@ popup is the newest.
 | 10    | Cross-platform packaging                                      | ✅ done |
 | 11    | Release automation                                            | ✅ done |
 | 12    | Additional exporters                                          | ✅ done |
-| 13    | Inspector engine — technologies, fonts, images                | next    |
-| 14    | Inspector in the extension                                    |         |
+| 13    | Inspector engine — technologies, fonts, images                | ✅ done |
+| 14    | Inspector in the extension                                    | next    |
 | 15    | App shell — Windows and Linux (Tauri v2)                      |         |
 | 16    | The app scans on its own                                      |         |
 | 17    | Bridge — app ↔ extension over loopback                        |         |

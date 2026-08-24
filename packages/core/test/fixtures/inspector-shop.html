@@ -1,0 +1,129 @@
+<!doctype html>
+<!--
+  A Persian storefront of the shape this project actually meets: WooCommerce
+  behind a Next.js front end, on a CDN, with the analytics, chat and payment
+  widgets that are ordinary there and absent from every foreign ruleset.
+
+  It exists to exercise the inspector across categories, so it is deliberately
+  busier than a real page: one technology per category rather than the one or
+  two a real shop carries. The images are the important part — the same hero
+  file is preloaded, given as `src`, listed in `srcset` at three widths and
+  art-directed in a `<picture>`, because collapsing those into one entry is the
+  behaviour most likely to regress.
+-->
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="WordPress 6.5.2" />
+    <title>فروشگاه نمونه — گردو</title>
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&family=Open+Sans:ital,wght@0,300;1,600&display=swap"
+    />
+    <link rel="stylesheet" href="/wp-content/themes/ajil/style.css" />
+    <link rel="preload" as="font" href="/fonts/Estedad-Medium.woff2" crossorigin />
+
+    <link rel="preload" as="image" href="/img/hero-1200.jpg" imagesrcset="/img/hero-800.jpg 800w, /img/hero-1200.jpg 1200w" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/img/touch-icon.png" />
+
+    <meta property="og:image" content="https://cdn.example.ir/social/preview.png" />
+
+    <style>
+      @font-face {
+        font-family: 'Estedad';
+        src:
+          url('/fonts/Estedad-Medium.woff2') format('woff2'),
+          url('/fonts/Estedad-Medium.woff') format('woff');
+        font-weight: 500;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'Estedad';
+        src: url('/fonts/Estedad-Bold.woff2') format('woff2');
+        font-weight: 700;
+        font-style: normal;
+      }
+      .hero {
+        background-image: url('/img/pattern.svg');
+      }
+      .badge {
+        background: url("https://cdn.jsdelivr.net/npm/flags/ir.svg") no-repeat;
+      }
+    </style>
+
+    <!-- Analytics, tag manager, error tracking. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4RQ81ZM2XP"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag('config', 'G-4RQ81ZM2XP');
+    </script>
+    <script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+      })(window, document, 'script', 'dataLayer', 'GTM-N7XK4QP');
+    </script>
+    <script src="https://www.googletagmanager.com/gtm.js?id=GTM-N7XK4QP"></script>
+    <script src="https://browser.sentry-cdn.com/7.100.0/bundle.min.js"></script>
+    <script>
+      Sentry.init({ dsn: 'https://abc@o1.ingest.sentry.io/2' });
+    </script>
+    <script src="https://www.clarity.ms/tag/abcd1234"></script>
+  </head>
+
+  <body class="woocommerce woocommerce-page rtl">
+    <script id="__NEXT_DATA__" type="application/json">
+      { "props": {}, "page": "/product/[slug]", "buildId": "a1b2c3" }
+    </script>
+
+    <picture>
+      <source media="(max-width: 600px)" srcset="/img/hero-small.jpg 1x, /img/hero-small@2x.jpg 2x" />
+      <source media="(min-width: 601px)" srcset="/img/hero-1200.jpg" />
+      <img
+        src="/img/hero-1200.jpg"
+        srcset="/img/hero-400.jpg 400w, /img/hero-800.jpg 800w, /img/hero-1200.jpg 1200w"
+        width="1200"
+        height="630"
+        alt="گردوی تازه"
+      />
+    </picture>
+
+    <!-- A resizing CDN that puts commas inside the URL. The candidate splitter
+         has to survive this: a naive comma split makes four broken URLs. -->
+    <img
+      class="product"
+      src="https://cdn.example.ir/c_fill,w_300,h_300/walnut.jpg"
+      srcset="
+        https://cdn.example.ir/c_fill,w_300,h_300/walnut.jpg 300w,
+        https://cdn.example.ir/c_fill,w_600,h_600/walnut.jpg 600w
+      "
+      width="300"
+      height="300"
+      alt="گردو"
+    />
+
+    <!-- Lazy loading: the placeholder is in src, the real file in data-src. -->
+    <img src="/img/placeholder.gif" data-src="/img/pistachio.jpg" alt="پسته" />
+
+    <div class="tile" style="background-image: url('/img/tile.png'); font-family: 'Vazirmatn', sans-serif; font-weight: 700">
+      تخفیف
+    </div>
+
+    <!-- Payment and chat. -->
+    <a href="https://www.zarinpal.com/webservice/TrustLogo">درگاه پرداخت</a>
+    <script src="https://www.goftino.com/widget/ABCDEF"></script>
+    <script>
+      window.goftino_widget = { id: 'ABCDEF' };
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+      var wc_add_to_cart_params = { ajax_url: '/wp-admin/admin-ajax.php' };
+    </script>
+  </body>
+</html>

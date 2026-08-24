@@ -50,10 +50,31 @@ export const includesAny =
   (context: DetectContext): boolean =>
     needles.some((needle) => context.html.includes(needle));
 
+/**
+ * True when the pattern matches the document as written.
+ *
+ * Reads `raw`, so a pattern may be case-sensitive on purpose. Container ids and
+ * measurement ids are the reason this exists: `gtm-` as a substring appears in
+ * plenty of unrelated class names, while `GTM-` followed by an id is a fact.
+ */
+export const matches =
+  (pattern: RegExp) =>
+  (context: DetectContext): boolean =>
+    pattern.test(context.raw);
+
 export const selector =
   (query: string) =>
   (context: DetectContext): boolean =>
     context.$(query).length > 0;
+
+/**
+ * True only when every test passes. For a marker that is a coincidence alone
+ * and evidence together — a brand name plus the widget it ships with.
+ */
+export const all =
+  (...tests: readonly ((context: DetectContext) => boolean)[]) =>
+  (context: DetectContext): boolean =>
+    tests.every((test) => test(context));
 
 export const bodyClass =
   (name: string) =>
