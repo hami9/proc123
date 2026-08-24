@@ -20,7 +20,13 @@
  * their absence is honest.
  */
 
-import { type CheerioAPI, type Element, attr } from '../extract/html.js';
+import {
+  type CheerioAPI,
+  type Element,
+  LAZY_IMAGE_ATTRS,
+  SRCSET_ATTRS,
+  attr,
+} from '../extract/html.js';
 import type { PageContext } from '../extract/types.js';
 import { resolveUrl } from '../url.js';
 import type { ImageAsset, ImageOriginKind } from './types.js';
@@ -210,15 +216,17 @@ export function inspectImages(page: PageContext, $: CheerioAPI): ImageAsset[] {
 
     // `src`, and the lazy-loading attributes that stand in for it. A lazy image
     // whose `src` is a placeholder has the real file in `data-src`, and a
-    // report that missed those would miss most of a product grid.
-    for (const name of ['src', 'data-src', 'data-original', 'data-lazy-src']) {
+    // report that missed those would miss most of a product grid. The extraction
+    // pipeline reads the same attributes to pick one URL; here every one of them
+    // that resolves is kept, which is the only difference.
+    for (const name of ['src', ...LAZY_IMAGE_ATTRS]) {
       const value = attr(node, name);
       if (value === undefined) continue;
       const url = absolute(value);
       if (url !== undefined) index.add(url, 'img', extra);
     }
 
-    for (const name of ['srcset', 'data-srcset', 'data-lazy-srcset']) {
+    for (const name of SRCSET_ATTRS) {
       const value = attr(node, name);
       if (value === undefined) continue;
       for (const candidate of parseSrcset(value)) {

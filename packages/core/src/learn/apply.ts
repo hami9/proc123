@@ -13,7 +13,13 @@
 
 import type { CanonicalProduct } from '../model.js';
 import type { FieldRule, ProfileField, SiteProfile } from '@proc123/profiles';
-import { type CheerioAPI, type Element, isElement, loadHtml } from '../extract/html.js';
+import {
+  type CheerioAPI,
+  type Element,
+  isElement,
+  loadHtml,
+  readImageUrl,
+} from '../extract/html.js';
 import {
   type ProductDraft,
   createDraft,
@@ -54,7 +60,17 @@ function readRule(
   const attribute = rule.attribute;
   if (attribute === undefined) return undefined;
 
-  const raw = found.attr(attribute);
+  // A profile records `src` for an image, because that is what the element the
+  // user clicked appeared to hold. On a lazy-loading theme it holds a 1x1
+  // `data:` placeholder and the real URL sits in a data attribute, so reading
+  // `src` alone returns either nothing or the same grey pixel for every row.
+  // Resolving that here rather than at learn time repairs profiles that were
+  // already taught and saved, which is most of them.
+  const element = found[0];
+  const raw =
+    attribute === 'src' && element !== undefined && isElement(element)
+      ? readImageUrl(element)
+      : found.attr(attribute);
   if (raw === undefined || raw.trim() === '') return undefined;
 
   // `href` and `src` are relative far more often than not.
