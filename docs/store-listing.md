@@ -126,11 +126,11 @@ to find inside it and nothing to trim off the ends. The fenced copies below are
 the same text, kept here so this document reads on its own; `amo/` is generated
 from them, so edit here and re-generate rather than editing both.
 
-| Field           | File                                             |
-| --------------- | ------------------------------------------------ |
-| Summary         | [`amo/summary.txt`](amo/summary.txt)             |
-| Description     | [`amo/description.txt`](amo/description.txt)     |
-| Privacy Policy  | [`amo/privacy-policy.txt`](amo/privacy-policy.txt) |
+| Field             | File                                               |
+| ----------------- | -------------------------------------------------- |
+| Summary           | [`amo/summary.txt`](amo/summary.txt)               |
+| Description       | [`amo/description.txt`](amo/description.txt)       |
+| Privacy Policy    | [`amo/privacy-policy.txt`](amo/privacy-policy.txt) |
 | Notes to Reviewer | [`amo/reviewer-notes.txt`](amo/reviewer-notes.txt) |
 
 AMO differs from Chrome in three ways that matter when pasting:

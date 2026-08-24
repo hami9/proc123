@@ -82,8 +82,16 @@ export interface InspectFontsOptions {
   computed?: readonly ComputedFontUsage[];
 }
 
-/** Which piece of markup referenced an image. */
-export type ImageOriginKind = 'img' | 'srcset' | 'source' | 'css-background' | 'preload' | 'icon';
+/**
+ * Which piece of markup referenced an image.
+ *
+ * `icon` and `meta` are kept apart from `img` deliberately. A favicon and an
+ * Open Graph preview are images the page references, but a user about to
+ * download "the images on this page" means the photographs — so the surface
+ * can separate them, and only can if the engine did not flatten them together.
+ */
+export type ImageOriginKind =
+  'img' | 'srcset' | 'source' | 'css-background' | 'preload' | 'icon' | 'meta';
 
 export interface ImageAsset {
   /** Absolute. Resolved against the document URL. */
