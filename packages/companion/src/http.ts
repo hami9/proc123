@@ -27,7 +27,7 @@ export interface FetchClientOptions {
 }
 
 const DEFAULT_USER_AGENT =
-  'proc123/1.7.0 (+https://github.com/hami9/proc123) catalogue-migration-tool';
+  'proc123/1.8.0 (+https://github.com/hami9/proc123) catalogue-migration-tool';
 
 const DEFAULT_TIMEOUT_MS = 20_000;
 
