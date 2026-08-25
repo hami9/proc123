@@ -239,6 +239,40 @@ re-cut a release that has already passed.
 
 ---
 
+## Loading a development build, and the flag that no longer works
+
+**Chrome has removed `--load-extension`.** On Chrome 151 the flag is accepted on
+the command line, produces no error, and does nothing — the browser starts, the
+extension is simply not there. `chrome://extensions` lists only Chrome's own
+component extensions, and navigating to the extension's URL gives
+`ERR_BLOCKED_BY_CLIENT`, which reads like the extension crashed rather than like
+it was never loaded.
+
+That failure mode is why this is written down. Every symptom points at a broken
+build: no toolbar icon, a blocked popup URL, an extension id that resolves to
+nothing. The build is fine; the flag is gone. It was removed for security, since
+it was the standard way malware side-loaded an extension into a real profile.
+
+The routes that do work:
+
+| Browser | How                                                                                                                        |
+| ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Chrome  | `chrome://extensions` → **Developer mode** on → **Load unpacked** → pick `packages/extension/dist/chrome` (the folder)     |
+| Firefox | `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → pick `packages/extension/dist/firefox/manifest.json` |
+
+Note the asymmetry, because it catches people: Chrome wants the **directory**,
+Firefox wants the **manifest file** inside it. Firefox's temporary add-on lasts
+until the browser closes; Chrome's unpacked load persists in that profile.
+
+Both are manual, and there is currently no way around that. **Anything that
+wants to drive a browser with this extension pre-loaded — a CI job, an
+end-to-end test, phase 15's app work — cannot use a command-line flag to do it**
+and needs a real automation harness (`web-ext run` for Firefox, or a
+CDP/Playwright session for Chrome) instead. Worth knowing before designing that
+job rather than during it.
+
+---
+
 ## What is already done
 
 - Icons at every size both stores ask for, and a 128 for the listing.
