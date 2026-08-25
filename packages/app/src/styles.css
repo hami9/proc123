@@ -1,0 +1,407 @@
+/*
+ * The app's design system — CLAUDE.md §18.
+ *
+ * The palette is the popup's, deliberately. Three surfaces sharing one engine
+ * should read as one product, so `--accent: #7a3e1d` and the warm neutrals are
+ * carried over unchanged rather than reinvented at a larger size.
+ *
+ * What is NOT carried over is the popup's compression. 360px is a constraint
+ * the popup has and the app does not, and §18 is explicit that the app should
+ * not be a stretched popup: the type is bigger, the spacing is real, and the
+ * views have room to be read rather than skimmed.
+ *
+ * Everything directional uses logical properties — `inline-start`, not `left`.
+ * That is what makes the Persian layout correct rather than mirrored-ish, and
+ * it costs nothing in English.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --fg: #14110f;
+  --fg-muted: #6b6560;
+  --line: #e2ddd7;
+  --bg: #ffffff;
+  --bg-sunken: #f7f4f1;
+  --bg-raised: #ffffff;
+  --accent: #7a3e1d;
+  --accent-fg: #ffffff;
+  --error: #a02020;
+  --warn: #8a6100;
+  --ok: #2f6b32;
+
+  /* A single scale, so spacing is chosen rather than guessed. */
+  --gap-1: 4px;
+  --gap-2: 8px;
+  --gap-3: 12px;
+  --gap-4: 16px;
+  --gap-5: 24px;
+  --gap-6: 32px;
+
+  --radius: 8px;
+  --radius-sm: 5px;
+
+  /*
+   * 44px is the touch target Android needs (§18 — the phone is a first-class
+   * target, not a port). Applying it on desktop too costs nothing and means
+   * phase 18 inherits a layout that already fits a thumb.
+   */
+  --touch: 44px;
+
+  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /*
+   * Persian needs a font stack that actually has Persian glyphs. Vazirmatn is
+   * the common choice on the shops this tool reads; the rest are fallbacks that
+   * ship with the platforms we target. No webfont is downloaded — §15 says the
+   * only outbound requests are to the shop being scanned, and that includes not
+   * fetching a font from a CDN.
+   */
+  --font-fa: Vazirmatn, 'Noto Sans Arabic', Tahoma, system-ui, sans-serif;
+}
+
+/*
+ * Dark is defined once and applied from two places: the OS preference, which is
+ * §18's default, and an explicit `data-theme` the settings pane sets when
+ * somebody overrides it. The override has to win in *both* directions, which is
+ * why light is restated below rather than left to cascade — without it,
+ * choosing Light on a dark-mode desktop would do nothing.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --fg: #f2ede8;
+    --fg-muted: #a8a099;
+    --line: #35302b;
+    --bg: #1b1815;
+    --bg-sunken: #141210;
+    --bg-raised: #241f1b;
+    --accent: #e0956a;
+    --accent-fg: #1b1815;
+    --error: #f08a80;
+    --warn: #e0b45a;
+    --ok: #8ec98f;
+  }
+}
+
+:root[data-theme='dark'] {
+  --fg: #f2ede8;
+  --fg-muted: #a8a099;
+  --line: #35302b;
+  --bg: #1b1815;
+  --bg-sunken: #141210;
+  --bg-raised: #241f1b;
+  --accent: #e0956a;
+  --accent-fg: #1b1815;
+  --error: #f08a80;
+  --warn: #e0b45a;
+  --ok: #8ec98f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.55 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Persian gets its own stack, applied from the root once the language is set. */
+:root[lang='fa'] body {
+  font-family: var(--font-fa);
+}
+
+/*
+ * Persian and Arabic-Indic numerals render as the reader expects while the
+ * *data* stays ASCII-normalised (§7.8). This is a display transform only —
+ * nothing here touches the value that reaches a CSV.
+ */
+:root[lang='fa'] .numeral {
+  font-feature-settings: 'ss01';
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.25;
+  font-weight: 650;
+}
+h1 {
+  font-size: 22px;
+}
+h2 {
+  font-size: 17px;
+}
+h3 {
+  font-size: 15px;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------------ layout */
+
+.shell {
+  display: grid;
+  grid-template-columns: 208px 1fr;
+  height: 100%;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-1);
+  padding: var(--gap-4);
+  background: var(--bg-sunken);
+  /* `inline-end` rather than `right`: in Persian the sidebar is on the right
+     and its border has to move with it. */
+  border-inline-end: 1px solid var(--line);
+  overflow-y: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-2);
+  margin-bottom: var(--gap-4);
+  font-weight: 700;
+}
+
+.main {
+  padding: var(--gap-5);
+  overflow-y: auto;
+}
+
+.view[hidden] {
+  display: none;
+}
+
+/*
+ * One breakpoint, and it is the phone. Below this the sidebar becomes a top
+ * bar — which is the layout phase 18 needs, built now rather than patched on.
+ */
+@media (max-width: 720px) {
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .sidebar {
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    border-inline-end: none;
+    border-block-end: 1px solid var(--line);
+  }
+  .brand {
+    margin-bottom: 0;
+  }
+  .main {
+    padding: var(--gap-4);
+  }
+}
+
+/* ----------------------------------------------------------------- controls */
+
+button {
+  min-height: var(--touch);
+  padding: 0 var(--gap-4);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+button.quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--fg-muted);
+  font-weight: 500;
+  text-align: start;
+}
+
+.nav-item {
+  min-height: var(--touch);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--fg-muted);
+  font-weight: 600;
+  text-align: start;
+  padding: 0 var(--gap-3);
+  cursor: pointer;
+}
+
+.nav-item[aria-current='page'] {
+  background: var(--bg-raised);
+  border-color: var(--line);
+  color: var(--accent);
+}
+
+select,
+input[type='text'],
+input[type='number'] {
+  min-height: var(--touch);
+  padding: 0 var(--gap-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+/* -------------------------------------------------------------------- cards */
+
+.card {
+  padding: var(--gap-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-4);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-3);
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: var(--fg-muted);
+}
+
+.small {
+  font-size: 13px;
+}
+
+/* --------------------------------------------------------------- the table */
+
+.table-wrap {
+  /* Wide content scrolls inside its own box; the page never scrolls sideways. */
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: var(--gap-2) var(--gap-3);
+  text-align: start;
+  border-block-end: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+th {
+  background: var(--bg-sunken);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+tr:last-child td {
+  border-block-end: none;
+}
+
+td.variation {
+  /* A variation belongs to the row above it, and the indent is how you see
+     that at a glance (§7.4 puts them in exactly that order). */
+  padding-inline-start: var(--gap-5);
+  color: var(--fg-muted);
+}
+
+/* ------------------------------------------------------- the currency step */
+
+/*
+ * §7.8 and §18. Reading toman as rial is a silent 10x price error and the worst
+ * thing this project can produce, so the confirmation is a deliberate step with
+ * its own visual weight — never a checkbox someone can skip past.
+ */
+.currency {
+  border: 2px solid var(--warn);
+  border-radius: var(--radius);
+  padding: var(--gap-4);
+  background: color-mix(in srgb, var(--warn) 8%, var(--bg));
+}
+
+.currency h2 {
+  color: var(--warn);
+}
+
+.currency .choices {
+  display: flex;
+  gap: var(--gap-3);
+  flex-wrap: wrap;
+  margin-block-start: var(--gap-3);
+}
+
+.choice {
+  flex: 1 1 220px;
+  min-height: var(--touch);
+  padding: var(--gap-3);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.choice[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+}
+
+.choice .example {
+  display: block;
+  margin-block-start: var(--gap-1);
+  color: var(--fg-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px var(--gap-2);
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--fg-muted);
+}

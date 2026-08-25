@@ -21,6 +21,16 @@ coverage/
 *.crx
 *.xpi
 
+# Rust build output. `Cargo.lock` is deliberately NOT ignored: packages/app is a
+# binary rather than a library, so the lockfile is what makes a build
+# reproducible and is committed on purpose.
+target/
+
+# Tauri regenerates these from tauri.conf.json on every build. Committing them
+# means a generated file that Prettier and Tauri disagree about the formatting
+# of, which is a fight with no winner and no value.
+packages/app/src-tauri/gen/
+
 # Release artifacts collected from the per-platform build jobs
 artifacts/
 

@@ -1,0 +1,38 @@
+<!doctype html>
+<!--
+  `lang` and `dir` are set by `main.ts` on load and whenever the language
+  changes. They start as English so there is no flash of the wrong direction
+  before the script runs.
+-->
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>proc123</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <nav class="sidebar">
+        <div class="brand"><span data-i18n="brand">proc123</span></div>
+        <button class="nav-item" type="button" data-route="scan" aria-current="page">
+          <span data-i18n="navScan">Scan</span>
+        </button>
+        <button class="nav-item" type="button" data-route="inspect">
+          <span data-i18n="navInspect">Inspect</span>
+        </button>
+        <button class="nav-item" type="button" data-route="settings">
+          <span data-i18n="navSettings">Settings</span>
+        </button>
+      </nav>
+
+      <main class="main">
+        <section class="view stack" id="view-scan"></section>
+        <section class="view stack" id="view-inspect" hidden></section>
+        <section class="view stack" id="view-settings" hidden></section>
+      </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
