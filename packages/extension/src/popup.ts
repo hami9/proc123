@@ -22,12 +22,19 @@ import {
   type ContentMode,
   type CurrencyUnit,
   type ExporterName,
+  type FontFamily,
+  type ImageAsset,
+  type PageInspection,
   type Proc123Config,
   type ProductKind,
   type TargetField,
+  type Technology,
+  type TechnologyCategory,
+  groupTechnologies,
 } from '@proc123/core';
 
 import { type Tab, permissions, runtime, tabs } from './browser.js';
+import { isPhotograph } from './images.js';
 import { loadApiKey, loadSettings, saveApiKey, saveSettings } from './settings.js';
 
 import { EXPORTER_LABELS } from '@proc123/exporters';
@@ -570,6 +577,334 @@ async function teach(): Promise<void> {
 
 teachButton.addEventListener('click', () => {
   void teach();
+});
+
+/* ---------------------------------------------------------------- inspector */
+
+/**
+ * The inspector's three views (CLAUDE.md §16).
+ *
+ * All read-only, and all over the page as it stands right now rather than over
+ * a saved scan — you can inspect a page you have never scanned, which is most
+ * of the point. Every rule lives in `core`; nothing here decides what a
+ * technology *is*, because a rule written in the popup could not be used by the
+ * app in phase 15 and would end up written twice.
+ */
+const inspectBox = element<HTMLDetailsElement>('inspect');
+const inspectStatus = element('inspectStatus');
+const viewTech = element('viewTech');
+const viewFonts = element('viewFonts');
+const viewImages = element('viewImages');
+const shots = element('shots');
+const imageActions = element('imageActions');
+const imageCount = element('imageCount');
+const downloadImagesButton = element<HTMLButtonElement>('downloadImages');
+const selectAllButton = element<HTMLButtonElement>('selectAllImages');
+
+const TABS = [
+  { button: element<HTMLButtonElement>('tabTech'), view: viewTech },
+  { button: element<HTMLButtonElement>('tabFonts'), view: viewFonts },
+  { button: element<HTMLButtonElement>('tabImages'), view: viewImages },
+];
+
+/** Names a person would recognise, in the order a report reads best in. */
+const CATEGORY_LABELS: Record<TechnologyCategory, string> = {
+  ecommerce: 'Storefront',
+  cms: 'CMS',
+  framework: 'Framework',
+  analytics: 'Analytics',
+  'tag-manager': 'Tag manager',
+  cdn: 'CDN',
+  payment: 'Payments',
+  chat: 'Chat',
+  'font-service': 'Font service',
+  'error-tracking': 'Error tracking',
+};
+
+const CATEGORY_ORDER: TechnologyCategory[] = [
+  'ecommerce',
+  'cms',
+  'framework',
+  'analytics',
+  'tag-manager',
+  'cdn',
+  'payment',
+  'chat',
+  'font-service',
+  'error-tracking',
+];
+
+let inspection: PageInspection | undefined;
+/** URLs the user has ticked, kept across tab switches and re-renders. */
+const selectedImages = new Set<string>();
+
+function empty(message: string): HTMLElement {
+  const p = document.createElement('p');
+  p.className = 'empty';
+  p.textContent = message;
+  return p;
+}
+
+function renderTechnologies(technologies: readonly Technology[]): void {
+  viewTech.replaceChildren();
+
+  if (technologies.length === 0) {
+    // An answer, not a failure. Most of the web is a hand-written page and
+    // §16 asks for an honest nothing over a confident guess.
+    viewTech.append(empty('Nothing recognisable. This page carries no marker the detector knows.'));
+    return;
+  }
+
+  // `groupTechnologies` omits empty categories, so this renders what came back
+  // rather than ten headings with two entries between them.
+  const grouped = groupTechnologies(technologies);
+  for (const category of CATEGORY_ORDER) {
+    const found = grouped.get(category);
+    if (found === undefined) continue;
+
+    const group = document.createElement('div');
+    group.className = 'group';
+
+    const heading = document.createElement('h2');
+    heading.textContent = CATEGORY_LABELS[category];
+    group.append(heading);
+
+    for (const technology of found) {
+      const row = document.createElement('div');
+      row.className = 'tech';
+
+      const name = document.createElement('span');
+      name.textContent =
+        technology.version === undefined
+          ? technology.name
+          : `${technology.name} ${technology.version}`;
+
+      const why = document.createElement('span');
+      why.className = 'why';
+      why.textContent = `${String(Math.round(technology.confidence * 100))}%`;
+      // The signals are the "why did it say that?" §11 asks for. There is no
+      // room for them at 360px, so they are the row's tooltip rather than
+      // absent.
+      why.title = technology.signals.join('\n');
+
+      row.append(name, why);
+      group.append(row);
+    }
+    viewTech.append(group);
+  }
+}
+
+function renderFonts(fonts: readonly FontFamily[]): void {
+  viewFonts.replaceChildren();
+
+  if (fonts.length === 0) {
+    viewFonts.append(empty('This page states no font of its own.'));
+    return;
+  }
+
+  for (const font of fonts) {
+    const item = document.createElement('div');
+    item.className = 'font';
+
+    const name = document.createElement('div');
+    name.textContent = font.family;
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+
+    const parts: string[] = [];
+    if (font.weights.length > 0) parts.push(font.weights.join(', '));
+    if (font.styles.some((style) => style !== 'normal')) {
+      parts.push(font.styles.filter((style) => style !== 'normal').join(', '));
+    }
+
+    const services = [...new Set(font.origins.map((origin) => origin.service))].filter(
+      (service): service is string => service !== undefined
+    );
+    parts.push(services.length > 0 ? services.join(', ') : 'self-hosted');
+
+    // Only ever present when the probe measured it. Its absence means "not
+    // measured", never "unused", so nothing is said in that case.
+    if (font.usedBy !== undefined && font.usedBy.length > 0) {
+      parts.push(`used by ${font.usedBy.slice(0, 4).join(', ')}`);
+    }
+
+    meta.textContent = parts.join(' · ');
+    item.append(name, meta);
+    viewFonts.append(item);
+  }
+}
+
+function updateImageCount(): void {
+  const photographs = (inspection?.images ?? []).filter(isPhotograph).length;
+  const other = (inspection?.images ?? []).length - photographs;
+
+  imageCount.textContent =
+    `${String(selectedImages.size)} of ${String(photographs)} selected` +
+    (other === 0 ? '' : ` · ${String(other)} icon/preview not shown`);
+  downloadImagesButton.disabled = selectedImages.size === 0;
+}
+
+function renderImages(images: readonly ImageAsset[]): void {
+  shots.replaceChildren();
+
+  const photographs = images.filter(isPhotograph);
+  if (photographs.length === 0) {
+    viewImages.replaceChildren(empty('No images on this page.'));
+    imageActions.hidden = true;
+    return;
+  }
+
+  imageActions.hidden = false;
+
+  for (const asset of photographs) {
+    const label = document.createElement('label');
+    label.className = 'shot';
+    // Dimensions where the markup stated them; `alt` otherwise. Byte size is
+    // deliberately not here — phase 13 never fetches, so it does not know.
+    label.title =
+      (asset.alt ?? asset.url) +
+      (asset.width === undefined || asset.height === undefined
+        ? ''
+        : ` (${String(asset.width)}×${String(asset.height)})`);
+
+    const tick = document.createElement('input');
+    tick.type = 'checkbox';
+    tick.checked = selectedImages.has(asset.url);
+
+    const thumb = document.createElement('img');
+    thumb.src = asset.url;
+    thumb.alt = asset.alt ?? '';
+    thumb.loading = 'lazy';
+
+    const sync = (): void => {
+      if (tick.checked) selectedImages.add(asset.url);
+      else selectedImages.delete(asset.url);
+      label.classList.toggle('checked', tick.checked);
+      updateImageCount();
+    };
+    tick.addEventListener('change', sync);
+    label.classList.toggle('checked', tick.checked);
+
+    label.append(tick, thumb);
+    shots.append(label);
+  }
+
+  updateImageCount();
+}
+
+function showTab(index: number): void {
+  TABS.forEach((tab, position) => {
+    const selected = position === index;
+    tab.button.setAttribute('aria-selected', selected ? 'true' : 'false');
+    tab.view.hidden = !selected;
+  });
+  // The download controls belong to the images view alone.
+  imageActions.hidden = index !== 2 || (inspection?.images ?? []).filter(isPhotograph).length === 0;
+}
+
+TABS.forEach((tab, index) => {
+  tab.button.addEventListener('click', () => {
+    showTab(index);
+  });
+});
+
+/**
+ * Run the inspection when the section is first opened, not on popup open.
+ *
+ * Reading a large category page and measuring its computed fonts costs real
+ * time, and most popup openings are somebody about to press Scan. Doing it
+ * lazily keeps the scan flow exactly as fast as it was.
+ */
+let inspected = false;
+
+async function inspect(): Promise<void> {
+  const tab = currentTab;
+  if (tab?.id === undefined) {
+    inspectStatus.textContent = 'No page to inspect.';
+    return;
+  }
+
+  inspectStatus.textContent = 'Reading the page…';
+  try {
+    const response = await runtime.sendMessage<unknown, ExtensionResponse>({
+      kind: 'inspect',
+      tabId: tab.id,
+    });
+
+    if (!response.ok) {
+      inspectStatus.textContent = response.message;
+      return;
+    }
+    if (response.kind !== 'inspection') return;
+
+    inspection = response.inspection;
+    inspectStatus.textContent = '';
+    renderTechnologies(inspection.technologies);
+    renderFonts(inspection.fonts);
+    renderImages(inspection.images);
+    showTab(TABS.findIndex((tab) => tab.button.getAttribute('aria-selected') === 'true') || 0);
+  } catch (error) {
+    inspectStatus.textContent = error instanceof Error ? error.message : String(error);
+  }
+}
+
+inspectBox.addEventListener('toggle', () => {
+  if (!inspectBox.open || inspected) return;
+  inspected = true;
+  void inspect();
+});
+
+selectAllButton.addEventListener('click', () => {
+  const photographs = (inspection?.images ?? []).filter(isPhotograph);
+  // A second press clears, so this is never a one-way door.
+  const selectingAll = selectedImages.size < photographs.length;
+  selectedImages.clear();
+  if (selectingAll) for (const asset of photographs) selectedImages.add(asset.url);
+  renderImages(inspection?.images ?? []);
+});
+
+/**
+ * Hand the selection to the worker.
+ *
+ * The popup does not download these itself: it is destroyed the moment it loses
+ * focus, and the browser's own download UI takes focus. A twenty-image download
+ * started here would lose its opener partway through, every time.
+ */
+async function downloadSelectedImages(): Promise<void> {
+  if (inspection === undefined || selectedImages.size === 0) return;
+
+  downloadImagesButton.disabled = true;
+  inspectStatus.textContent = 'Saving…';
+
+  try {
+    const response = await runtime.sendMessage<unknown, ExtensionResponse>({
+      kind: 'download-images',
+      urls: [...selectedImages],
+      pageUrl: inspection.url,
+    });
+
+    if (!response.ok) {
+      inspectStatus.textContent = response.message;
+      return;
+    }
+    if (response.kind !== 'images-downloaded') return;
+
+    const { started, failed } = response.result;
+    inspectStatus.textContent =
+      failed.length === 0
+        ? `Saved ${String(started)} image${started === 1 ? '' : 's'}.`
+        : `Saved ${String(started)}, but ${String(failed.length)} were refused — ` +
+          'usually an image on another domain this add-on has no permission for.';
+  } catch (error) {
+    inspectStatus.textContent = error instanceof Error ? error.message : String(error);
+  } finally {
+    downloadImagesButton.disabled = false;
+  }
+}
+
+downloadImagesButton.addEventListener('click', () => {
+  void downloadSelectedImages();
 });
 
 scanButton.addEventListener('click', () => {

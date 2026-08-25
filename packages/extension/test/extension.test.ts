@@ -8,13 +8,22 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { CanonicalProduct, CrawlState, HttpClient } from '@proc123/core';
+import type {
+  CanonicalProduct,
+  CrawlState,
+  HttpClient,
+  ImageAsset,
+  ImageOriginKind,
+} from '@proc123/core';
 import { DEFAULT_CONFIG, createMemoryCrawlStore } from '@proc123/core';
 
 import { isFirefox, permissions, storage } from '../src/browser.js';
 import { createFetchClient } from '../src/http.js';
+import { imageFilename, isPhotograph } from '../src/images.js';
 import {
+  isDownloadImagesRequest,
   isExportRequest,
+  isInspectRequest,
   isLastResultRequest,
   isScanRequest,
   isScanStatusRequest,
@@ -482,5 +491,120 @@ describe('the browser shim', () => {
       };
       await expect(permissions.requestOrigin('https://shop.example/*')).resolves.toBe(false);
     });
+  });
+});
+
+/* --------------------------------------------------------------- phase 14 */
+
+describe('inspector message guards', () => {
+  it('accepts the inspect and download messages the popup sends', () => {
+    expect(isInspectRequest({ kind: 'inspect', tabId: 7 })).toBe(true);
+    expect(
+      isDownloadImagesRequest({
+        kind: 'download-images',
+        urls: ['https://shop.example/a.jpg'],
+        pageUrl: 'https://shop.example/c',
+      })
+    ).toBe(true);
+    // An empty selection is well-formed; the popup disables the button rather
+    // than sending a malformed message.
+    expect(
+      isDownloadImagesRequest({ kind: 'download-images', urls: [], pageUrl: 'https://x.example/' })
+    ).toBe(true);
+  });
+
+  it('rejects anything malformed', () => {
+    expect(isInspectRequest({ kind: 'inspect' })).toBe(false);
+    expect(isInspectRequest({ kind: 'inspect', tabId: '7' })).toBe(false);
+    expect(isInspectRequest(null)).toBe(false);
+    // A non-string in `urls` would reach `downloads.download` as a URL.
+    expect(
+      isDownloadImagesRequest({
+        kind: 'download-images',
+        urls: ['ok', 42],
+        pageUrl: 'https://x.example/',
+      })
+    ).toBe(false);
+    expect(isDownloadImagesRequest({ kind: 'download-images', urls: 'nope', pageUrl: 'x' })).toBe(
+      false
+    );
+  });
+});
+
+describe('which images are offered', () => {
+  const asset = (origins: ImageOriginKind[]): ImageAsset => ({
+    url: 'https://shop.example/p.jpg',
+    origins,
+  });
+
+  it('offers the photographs', () => {
+    expect(isPhotograph(asset(['img']))).toBe(true);
+    expect(isPhotograph(asset(['srcset']))).toBe(true);
+    expect(isPhotograph(asset(['source']))).toBe(true);
+    expect(isPhotograph(asset(['preload']))).toBe(true);
+  });
+
+  it('keeps favicons and social previews out of a select-all', () => {
+    expect(isPhotograph(asset(['icon']))).toBe(false);
+    expect(isPhotograph(asset(['meta']))).toBe(false);
+    expect(isPhotograph(asset(['css-background']))).toBe(false);
+  });
+
+  it('offers a file that is also referenced as a photograph', () => {
+    // A hero image is routinely both preloaded and named in og:image. It is
+    // still a photograph.
+    expect(isPhotograph(asset(['meta', 'img']))).toBe(true);
+  });
+});
+
+describe('naming a downloaded image', () => {
+  const PAGE = 'https://www.ajil.example/shop/nuts';
+
+  it('keeps the name the shop gave it, under a folder named after the shop', () => {
+    expect(imageFilename('https://cdn.ajil.example/img/walnut.jpg', PAGE)).toBe(
+      'proc123-ajil.example/walnut.jpg'
+    );
+  });
+
+  it('keeps a Persian filename readable rather than hashing it', () => {
+    expect(imageFilename('https://cdn.ajil.example/img/%DA%AF%D8%B1%D8%AF%D9%88.jpg', PAGE)).toBe(
+      'proc123-ajil.example/گردو.jpg'
+    );
+  });
+
+  it('cannot be talked out of the downloads folder', () => {
+    // Every one of these is a path escape if the name is used as given.
+    const escapes = [
+      'https://evil.example/..%2F..%2F..%2Fetc%2Fpasswd.jpg',
+      'https://evil.example/%2E%2E%2F%2E%2E%2Fshell.jpg',
+      'https://evil.example/....//....//x.jpg',
+    ];
+    for (const url of escapes) {
+      const name = imageFilename(url, PAGE);
+      expect(name.startsWith('proc123-ajil.example/')).toBe(true);
+      expect(name).not.toContain('..');
+      expect(name.split('/').length).toBe(2);
+    }
+  });
+
+  it('never lets a malformed page URL become the folder', () => {
+    const name = imageFilename('https://cdn.example/a.jpg', 'not a url');
+    expect(name).toBe('proc123-images/a.jpg');
+  });
+
+  it('gives an extensionless image a unique name rather than a colliding one', () => {
+    const first = imageFilename('https://cdn.example/photo/1234', PAGE);
+    const second = imageFilename('https://cdn.example/photo/5678', PAGE);
+
+    expect(first).not.toBe(second);
+    expect(first.endsWith('.jpg')).toBe(true);
+  });
+
+  it('trims a very long name but keeps its extension', () => {
+    const long = `https://cdn.example/${'walnut'.repeat(40)}.jpeg`;
+    const name = imageFilename(long, PAGE).split('/')[1] ?? '';
+
+    expect(name.length).toBeLessThanOrEqual(100);
+    expect(name.endsWith('.jpeg')).toBe(true);
   });
 });

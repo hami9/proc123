@@ -6,7 +6,13 @@
  * its own rather than relying on a live conversation.
  */
 
-import type { CrawlStatus, CurrencyUnit, ExporterName, ExtractionIssue } from '@proc123/core';
+import type {
+  CrawlStatus,
+  CurrencyUnit,
+  ExporterName,
+  ExtractionIssue,
+  PageInspection,
+} from '@proc123/core';
 import { isExporterName } from '@proc123/exporters';
 
 export interface ScanRequest {
@@ -79,13 +85,58 @@ export interface ReportRequest {
   tabId?: number;
 }
 
+/**
+ * "What is this page made of?" (§16).
+ *
+ * Answered from the tab as it stands right now rather than from a saved scan,
+ * because that is the question being asked — and because the inspector makes no
+ * requests of its own, asking is free. `activeTab` covers reading the page, so
+ * this needs no permission the scan did not already have.
+ */
+export interface InspectRequest {
+  kind: 'inspect';
+  tabId: number;
+}
+
+/**
+ * Download the images the user ticked.
+ *
+ * The worker does this rather than the popup, and the reason is not tidiness: a
+ * popup is destroyed the moment it loses focus, and the browser's own download
+ * shelf takes focus. A twenty-image download started in the popup would lose
+ * its opener partway through every time.
+ */
+export interface DownloadImagesRequest {
+  kind: 'download-images';
+  /** Absolute URLs, already resolved by the engine. */
+  urls: string[];
+  /** The page they came from, so the sub-folder can be named after the shop. */
+  pageUrl: string;
+}
+
 export type ExtensionRequest =
   | ScanRequest
   | ScanStatusRequest
   | LastResultRequest
   | ExportRequest
   | TeachRequest
-  | ReportRequest;
+  | ReportRequest
+  | InspectRequest
+  | DownloadImagesRequest;
+
+/** What came back from downloading a selection of images. */
+export interface ImageDownloadResult {
+  /** Downloads the browser accepted and started. */
+  started: number;
+  /**
+   * URLs the browser refused, with why.
+   *
+   * A refusal is usually a cross-origin image the user has not granted the
+   * host permission for, and it is reported rather than swallowed — "seven of
+   * twenty saved" is an answer, a silent partial success is not.
+   */
+  failed: { url: string; message: string }[];
+}
 
 export interface ExportedReport {
   filename: string;
@@ -164,6 +215,8 @@ export type ExtensionResponse =
   | { ok: true; kind: 'download'; download: ExportedCsv }
   | { ok: true; kind: 'taught'; taught: TeachResult }
   | { ok: true; kind: 'report'; report: ExportedReport }
+  | { ok: true; kind: 'inspection'; inspection: PageInspection }
+  | { ok: true; kind: 'images-downloaded'; result: ImageDownloadResult }
   | { ok: false; message: string };
 
 export function isScanRequest(message: unknown): message is ScanRequest {
@@ -207,6 +260,23 @@ export function isScanStatusRequest(message: unknown): message is ScanStatusRequ
   if (typeof message !== 'object' || message === null) return false;
   const candidate = message as Partial<ScanStatusRequest>;
   return candidate.kind === 'scan-status' && typeof candidate.url === 'string';
+}
+
+export function isInspectRequest(message: unknown): message is InspectRequest {
+  if (typeof message !== 'object' || message === null) return false;
+  const candidate = message as Partial<InspectRequest>;
+  return candidate.kind === 'inspect' && typeof candidate.tabId === 'number';
+}
+
+export function isDownloadImagesRequest(message: unknown): message is DownloadImagesRequest {
+  if (typeof message !== 'object' || message === null) return false;
+  const candidate = message as Partial<DownloadImagesRequest>;
+  return (
+    candidate.kind === 'download-images' &&
+    typeof candidate.pageUrl === 'string' &&
+    Array.isArray(candidate.urls) &&
+    candidate.urls.every((url) => typeof url === 'string')
+  );
 }
 
 export function isLastResultRequest(message: unknown): message is LastResultRequest {

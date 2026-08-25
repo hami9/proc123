@@ -14,7 +14,7 @@
 [![CI](https://github.com/hami9/proc123/actions/workflows/ci.yml/badge.svg)](https://github.com/hami9/proc123/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-7a3e1d)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520.11-7a3e1d)](https://nodejs.org)
-[![tests](https://img.shields.io/badge/tests-800-7a3e1d)](#getting-started)
+[![tests](https://img.shields.io/badge/tests-813-7a3e1d)](#getting-started)
 
 [Install on Windows](docs/install-windows.md) &nbsp;·&nbsp; [How it works](#scanning-a-page) &nbsp;·&nbsp; [What it will not do](#what-proc123-will-not-do) &nbsp;·&nbsp; [Contributing](CONTRIBUTING.md)
 
@@ -98,8 +98,8 @@ popup is the newest.
 | 11    | Release automation                                            | ✅ done |
 | 12    | Additional exporters                                          | ✅ done |
 | 13    | Inspector engine — technologies, fonts, images                | ✅ done |
-| 14    | Inspector in the extension                                    | next    |
-| 15    | App shell — Windows and Linux (Tauri v2)                      |         |
+| 14    | Inspector in the extension                                    | ✅ done |
+| 15    | App shell — Windows and Linux (Tauri v2)                      | next    |
 | 16    | The app scans on its own                                      |         |
 | 17    | Bridge — app ↔ extension over loopback                        |         |
 | 18    | Android                                                       |         |
@@ -118,12 +118,15 @@ with the extension kept and improved rather than replaced.
 A, an HTTP client; the extension and the companion own the network. What exists
 is the part everything else is validated against: the canonical product model,
 the normalizers, all four extraction layers, three exporters, a browser
-extension for Chrome and Firefox, and a command-line companion, with 800 tests
+extension for Chrome and Firefox, and a command-line companion, with 813 tests
 behind them.
 
-Phase 13 added the inspector's engine to `core`, so it is there to build on but
-**not yet something you can click** — the three views reach the popup in phase 14. It reads a document you already have and makes no requests of its own
-either.
+The **inspector** is the newest part, and it works today: open the extension on
+any page and "What is this page made of?" answers three questions — what built
+this site, what it sets in type, and every image it references, which you can
+download a selection of. Like the rest of `core`, it reads a document you
+already have and makes no requests of its own, so asking costs the shop
+nothing.
 
 ## Packages
 

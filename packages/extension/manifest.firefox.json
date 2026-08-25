@@ -34,6 +34,6 @@
     "scripts": ["background.js"],
     "type": "module"
   },
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "scripting", "storage", "downloads"],
   "optional_host_permissions": ["*://*/*"]
 }
