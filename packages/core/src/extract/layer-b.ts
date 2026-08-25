@@ -17,6 +17,7 @@ import { extractJsonLd } from './jsonld.js';
 import { extractMicrodata } from './microdata.js';
 import { extractOpenGraph } from './opengraph.js';
 import { trimSelfCrumb } from './schema-product.js';
+import { readVariationForm } from './variations.js';
 import {
   CONFIDENCE,
   type ExtractionIssue,
@@ -95,8 +96,18 @@ export function extractStructured(
   const $ = loadHtml(page.html);
 
   // Priority order. JSON-LD is the most explicit, OpenGraph the least.
+  //
+  // The variation form sits second, and the placement is deliberate. It carries
+  // the shop's own per-variation prices, SKUs and stock — better data than
+  // anything below it — but `mergeDraftInto` refuses to reconcile two sources'
+  // variant lists, so whichever source is reached first owns them outright.
+  // Leaving JSON-LD ahead of it means a page that already published a
+  // `ProductGroup` keeps behaving exactly as it did, and the form fills the far
+  // more common case where JSON-LD described the parent and said nothing about
+  // its variations.
   const readings: SourceReading[] = [
     extractJsonLd($, page, options),
+    readVariationForm(page, options, $),
     extractMicrodata($, page, options),
     extractOpenGraph($, page, options),
   ];

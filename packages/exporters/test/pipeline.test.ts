@@ -285,3 +285,82 @@ describe('scanning several pages into one export', () => {
     expect(new Set(skus).size).toBe(7);
   });
 });
+
+describe('a WooCommerce variation form becomes importable variation rows', () => {
+  // Phase 5. The shop published JSON-LD for the parent and nothing about its
+  // variations; every variation here came out of the add-to-cart form. The
+  // trap is §7.6 — the form keys attributes by term slug (`500g`) while the
+  // parent lists term names (`۵۰۰ گرم`), and WooCommerce silently drops every
+  // variation on import unless the two match character-for-character.
+  const URL_ = 'https://ajil.example/product/walnut/';
+
+  it('writes the parent followed immediately by its own variations — §7.4', () => {
+    const { table } = pipeline('woo-variable-form.html', URL_);
+    const types = table.records.map((record) => record['Type']);
+
+    expect(types).toEqual(['variable', 'variation', 'variation', 'variation']);
+  });
+
+  it('links the variations to the parent by SKU, never by ID — §7.2', () => {
+    const { table } = pipeline('woo-variable-form.html', URL_);
+    const [parent, ...variations] = table.records;
+
+    expect(parent?.['SKU']).toBeTruthy();
+    for (const variation of variations) {
+      expect(variation['Parent']).toBe(parent?.['SKU']);
+    }
+    // The importer assigns its own IDs; ours must not be relied on.
+    expect(table.records.every((record) => record['ID'] === '')).toBe(true);
+  });
+
+  it('spells the attribute values identically on parent and variation — §7.6', () => {
+    const { table } = pipeline('woo-variable-form.html', URL_);
+    const [parent, ...variations] = table.records;
+
+    expect(parent?.['Attribute 1 name']).toBe('وزن');
+    const offered = (parent?.['Attribute 1 value(s)'] ?? '').split(',').map((v) => v.trim());
+    expect(offered).toEqual(['۵۰۰ گرم', '۱ کیلوگرم', '۲ کیلوگرم']);
+
+    for (const variation of variations) {
+      const value = variation['Attribute 1 value(s)'] ?? '';
+      // Exactly one value per variation row, and it must be one the parent offers.
+      expect(value).not.toContain(',');
+      expect(offered).toContain(value);
+    }
+  });
+
+  it('leaves the parent price cells empty rather than zero — §7.5', () => {
+    const { table } = pipeline('woo-variable-form.html', URL_);
+    const [parent] = table.records;
+
+    expect(parent?.['Regular price']).toBe('');
+    expect(parent?.['Sale price']).toBe('');
+  });
+
+  it('carries each variation its own price, SKU and stock', () => {
+    const { table } = pipeline('woo-variable-form.html', URL_);
+    const half = table.records.find((record) => record['SKU'] === 'WAL-500');
+    const heaviest = table.records.find((record) => record['SKU'] === 'WAL-2000');
+
+    // ASCII digits in the data even though the page quoted Persian ones (§7.8).
+    expect(half?.['Regular price']).toBe('460000');
+    expect(half?.['Sale price']).toBe('420000');
+    expect(half?.['In stock?']).toBe('1');
+    expect(heaviest?.['In stock?']).toBe('0');
+  });
+
+  it('defaults the attribute to a local one — §7.7', () => {
+    const { table } = pipeline('woo-variable-form.html', URL_);
+    for (const record of table.records) {
+      expect(record['Attribute 1 global']).toBe('0');
+    }
+  });
+
+  it('gives every row a unique SKU', () => {
+    const { table } = pipeline('woo-variable-form.html', URL_);
+    const skus = table.records.map((record) => record['SKU']);
+
+    expect(skus.every((sku) => sku !== '')).toBe(true);
+    expect(new Set(skus).size).toBe(skus.length);
+  });
+});
