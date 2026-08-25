@@ -46,6 +46,11 @@ The bridge (17) comes after the app can stand alone, so that "both work alone"
 is a property the code has from the start rather than one retrofitted onto a
 dependency.
 
+**Android (18) is deferred until Windows and Linux are finished** — so the
+working order is 16, 17, 20, then 18. The phase numbers do not move, because
+they are cited from commits, prompt files and `phases.json`; only the order they
+are worked in does. The reasoning is on phase 18 below.
+
 ---
 
 ## Phases
@@ -104,13 +109,32 @@ process that outlives a popup.
 **Done when** a scan started in the extension finishes in the app with the
 popup closed — and both still work with the other uninstalled, under test.
 
-### 18 · Android
+### 18 · Android — **deferred until the desktop targets are finished**
 
 Same codebase, same UI. WebView-based scanning, share-sheet entry so a URL
 shared from a browser opens a scan. Touch targets and layout that were designed
 for this in §18 rather than patched for it now.
 
 **Done when** a debug APK scans a shop on a real device and exports to storage.
+
+> **Sequencing, decided after phase 15 shipped.** Windows and Linux get finished
+> first — 16, 17 and 20 — and Android starts after them. Two reasons, and the
+> second is the real one.
+>
+> Android brings a whole second toolchain (the SDK, the NDK, a signing story)
+> and a distribution question that is genuinely unresolved, so starting it now
+> means two half-finished platforms instead of one finished one.
+>
+> More importantly, the desktop UI is about to be worked on directly rather than
+> scaffolded. Designing once against a shipped desktop app and then porting is a
+> different job from designing for two form factors at once with neither
+> settled. What phase 15 already put in — the 44px touch target, the single
+> phone breakpoint, the logical properties — is what keeps this a deferral
+> rather than a decision to un-make later.
+>
+> Nothing here is cancelled. §15 still has Android as a first-class target, and
+> the constraint that keeps it one is that no desktop-only shortcut gets taken
+> in 16, 17 or 20 on the grounds that Android is far away.
 
 > **Distribution risk, worth knowing now:** a general-purpose extraction tool
 > may not survive Google Play review. A sideloaded APK and F-Droid are the
