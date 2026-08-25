@@ -74,12 +74,12 @@
     {
       "phase": 14,
       "title": "Inspector in the extension",
-      "status": "next"
+      "status": "done"
     },
     {
       "phase": 15,
       "title": "App shell — Windows and Linux (Tauri v2)",
-      "status": "planned"
+      "status": "next"
     },
     {
       "phase": 16,
