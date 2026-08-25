@@ -19,6 +19,8 @@ import {
   formatLog,
   formatReport,
   inspectPage,
+  crawlIdFor,
+  runScan,
   learnProfile,
   loadHtml,
   shortHash,
@@ -57,7 +59,6 @@ import type {
 import { PICKER_STEPS, pickerScript } from './picker.js';
 import { loadProfile, saveProfile } from './profiles.js';
 import { loadApiKey, loadSettings } from './settings.js';
-import { crawlIdFor, runScan } from './scan.js';
 import { createChromeCrawlStore, loadLastResult, saveLastResult } from './storage.js';
 
 /**

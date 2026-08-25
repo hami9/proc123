@@ -15,7 +15,13 @@ import type {
   ImageAsset,
   ImageOriginKind,
 } from '@proc123/core';
-import { DEFAULT_CONFIG, createMemoryCrawlStore } from '@proc123/core';
+import {
+  DEFAULT_CONFIG,
+  countCurrencyUnits,
+  crawlIdFor,
+  createMemoryCrawlStore,
+  runScan,
+} from '@proc123/core';
 
 import { isFirefox, permissions, storage } from '../src/browser.js';
 import { createFetchClient } from '../src/http.js';
@@ -28,7 +34,6 @@ import {
   isScanRequest,
   isScanStatusRequest,
 } from '../src/messages.js';
-import { countCurrencyUnits, crawlIdFor, runScan } from '../src/scan.js';
 import { importSettings, loadSettings, saveSettings } from '../src/settings.js';
 import { createChromeCrawlStore, loadLastResult, saveLastResult } from '../src/storage.js';
 import { type FakeChrome, installFakeChrome } from './fake-chrome.js';

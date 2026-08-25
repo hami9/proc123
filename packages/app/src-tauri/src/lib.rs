@@ -11,8 +11,11 @@
 //! toman price as rial (§7.8) — is exactly the kind of rule that would be
 //! tempting to "just handle" natively and must not be.
 //!
-//! Phase 15 is the shell only. There is deliberately no HTTP here yet: fetching
-//! is phase 16, and the bridge is phase 17.
+//! Phase 16 adds HTTP (`http.rs`) — a transport and nothing more. The bridge is
+//! still phase 17.
+
+mod files;
+mod http;
 
 use tauri::Manager;
 
@@ -47,14 +50,16 @@ fn host_info() -> HostInfo {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            // Nothing to do yet beyond proving the window exists. When phase 16
-            // adds the HTTP client it is set up here, once, rather than per
-            // command.
             let _ = app.get_webview_window("main");
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![host_info])
+        .invoke_handler(tauri::generate_handler![
+            host_info,
+            http::http_fetch,
+            files::save_text_file
+        ])
         .run(tauri::generate_context!())
         .expect("the proc123 window could not be created");
 }

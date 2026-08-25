@@ -1,33 +1,81 @@
 /**
- * The scan, with its dependencies handed in.
+ * One scan, with its dependencies handed in.
  *
- * Everything Chrome-specific stays in `background.ts`; this is the part that
- * can be tested without a browser, which is the part where the decisions are.
+ * This was the extension's, and it moved here when the app needed it too.
+ * CLAUDE.md §2: a feature that lands in only one surface is a design failure
+ * unless there is a stated reason it cannot exist in the others, and there is
+ * no such reason here — the surfaces differ in *how they fetch*, which is
+ * already the injected `HttpClient`, and in nothing else that matters to a
+ * scan.
+ *
+ * `countCurrencyUnits` is the part that made the move non-negotiable rather
+ * than merely tidy. It is what lets a surface ask §7.8's toman/rial question
+ * before writing a file, and a second copy of that rule is exactly the way this
+ * project produces a silent ten-times price error.
+ *
+ * Nothing platform-specific may enter this file. The extension's Chrome calls
+ * stay in `background.ts`, the app's Tauri calls stay in its own layer, and
+ * both hand in a client.
  */
-
-import {
-  type CanonicalProduct,
-  type CrawlProgress,
-  type CrawlStore,
-  type ExtractionIssue,
-  type HttpClient,
-  type PageContext,
-  type Money,
-  type Proc123Config,
-  applyConfig,
-  canonicalizeUrl,
-  configToCrawlOptions,
-  crawlCategory,
-  createProvider,
-  enrichWithAI,
-  isIranianCurrency,
-  isResumable,
-  shortHash,
-} from '@proc123/core';
 
 import type { SiteProfile } from '@proc123/profiles';
 
-import type { ScanSummary } from './messages.js';
+import { enrichWithAI } from '../ai/layer-d.js';
+import { createProvider } from '../ai/providers/index.js';
+import { applyConfig } from '../config/filter.js';
+import { configToCrawlOptions } from '../config/options.js';
+import type { Proc123Config } from '../config/types.js';
+import { crawlCategory } from '../crawl/crawl.js';
+import type { CrawlProgress } from '../crawl/crawl.js';
+import { isResumable } from '../crawl/state.js';
+import type { CrawlStatus, CrawlStore } from '../crawl/state.js';
+import type { ExtractionIssue, PageContext } from '../extract/types.js';
+import type { CanonicalProduct, Money } from '../model.js';
+import { isIranianCurrency } from '../money.js';
+import type { HttpClient } from '../platform/http.js';
+import { shortHash } from '../sha256.js';
+import { canonicalizeUrl } from '../url.js';
+
+/**
+ * What a surface shows after a scan. Deliberately small — it is written to
+ * storage as well as rendered, so it has to survive a JSON round trip.
+ */
+export interface ScanSummary {
+  url: string;
+  title: string;
+  /** Which layer answered: the store's own API, the page's markup, or a profile. */
+  layer: 'A' | 'B' | 'C';
+  platform: string;
+  /** Rows that would be written, variations included. */
+  rowCount: number;
+  /** Products a person would recognise as products. */
+  productCount: number;
+  variationCount: number;
+  duplicates: number;
+  pagesScanned: number;
+  requests: number;
+  status: CrawlStatus;
+  /** Worth showing: errors and warnings, most severe first. */
+  issues: ExtractionIssue[];
+  /** True when a saved crawl was picked up rather than started. */
+  resumed: boolean;
+  /**
+   * How the prices were quoted, e.g. `{ toman: 42, unknown: 5 }`. Shown before
+   * export so the user can confirm the unit rather than discover it afterwards
+   * in the target store (CLAUDE.md §7.8).
+   */
+  currencyUnits: Record<string, number>;
+  finishedAt: string;
+}
+
+/** Where a scan has got to, as a surface renders it. */
+export interface ScanProgress {
+  pagesScanned: number;
+  productCount: number;
+  /** Pages found and not yet read. */
+  queued: number;
+  status: CrawlStatus;
+}
 
 export interface ScanDeps {
   /** Absent when the user declined the host permission: first page only. */

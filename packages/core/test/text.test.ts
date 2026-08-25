@@ -77,3 +77,36 @@ describe('hasNonAscii', () => {
     expect(hasNonAscii('walnut')).toBe(false);
   });
 });
+
+describe('HTML entities in scraped text', () => {
+  // Found by a real scan. An SEO plugin writes the product name into JSON-LD
+  // with HTML escapes intact, and `JSON.parse` has no reason to undo them — so
+  // the en-dash reached the CSV as seven literal characters.
+  it('decodes a numeric entity that JSON-LD carried through', () => {
+    expect(cleanText('تک سیم کارت فیزیکی &#8211; Not Active')).toBe(
+      'تک سیم کارت فیزیکی – Not Active'
+    );
+  });
+
+  it('decodes the named entities a storefront actually emits', () => {
+    expect(cleanText('Tea &amp; Nuts')).toBe('Tea & Nuts');
+    expect(cleanText('50&nbsp;گرم')).toBe('50 گرم');
+    expect(cleanText('&quot;ویژه&quot;')).toBe('"ویژه"');
+  });
+
+  it('leaves text that merely looks like an entity alone', () => {
+    expect(cleanText('price & up')).toBe('price & up');
+    expect(cleanText('R&D')).toBe('R&D');
+  });
+
+  it('decodes parent options and variation values identically — §7.6', () => {
+    // The rule this must not break: both sides pass through `cleanText`, so a
+    // decoded variation value still matches the decoded parent option
+    // character-for-character. Decoding only one side would be worse than
+    // decoding neither.
+    const parentOption = cleanText('رجیستر شده &#43; گارانتی');
+    const variationValue = cleanText('رجیستر شده &#43; گارانتی');
+    expect(variationValue).toBe(parentOption);
+    expect(parentOption).toContain('+');
+  });
+});
