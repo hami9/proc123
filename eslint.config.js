@@ -16,6 +16,12 @@ export default tseslint.config(
       // because those are keyed on paths starting `packages/`. CI never sees
       // this, which is exactly what makes it worth pinning down here.
       '.claude/**',
+      // Cargo's build directory, for the same reason: it is gitignored, but it
+      // contains generated JavaScript that Tauri emits for its own use and that
+      // nothing here wrote or can fix.
+      '**/target/**',
+      // Regenerated from tauri.conf.json on every build.
+      'packages/app/src-tauri/gen/**',
     ],
   },
   js.configs.recommended,

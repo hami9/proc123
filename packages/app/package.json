@@ -1,0 +1,26 @@
+{
+  "name": "@proc123/app",
+  "version": "0.0.0",
+  "private": true,
+  "description": "proc123 desktop and mobile application — Windows, Linux, Android",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:watch": "node scripts/build.mjs --watch",
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "app:build": "tauri build",
+    "rust:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check",
+    "rust:lint": "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings",
+    "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml"
+  },
+  "dependencies": {
+    "@proc123/core": "*",
+    "@proc123/exporters": "*"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.0",
+    "esbuild": "^0.25.0"
+  }
+}

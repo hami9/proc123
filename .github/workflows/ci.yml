@@ -42,3 +42,68 @@ jobs:
       # next release silently reverts it.
       - name: Generated sections are in step
         run: npm run release:check
+
+  # Rust is a separate job rather than a step inside `npm run check`, and the
+  # reasoning is worth stating because phase 15 asked the question directly.
+  #
+  # `npm run check` is what a contributor runs on every save. Folding the Rust
+  # build into it would put a ten-minute cold `cargo build` — and a hard
+  # requirement on rustup plus webkit2gtk, gtk3 and libayatana-appindicator —
+  # in front of somebody fixing a typo in an exporter. Most of this repository
+  # is TypeScript and most changes never touch `packages/app`.
+  #
+  # What phase 15 actually requires is that a Rust failure fails the run, and it
+  # does: this job gates the same pull request, so a broken `packages/app`
+  # blocks a merge exactly as a broken test does. The gate is the workflow, not
+  # one npm script.
+  app:
+    name: App (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Tauri's Linux build links against the system WebView. Without these the
+      # failure is a screenful of pkg-config errors that reads like a Rust
+      # problem and is not.
+      - name: System dependencies for Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            build-essential \
+            file \
+            libssl-dev \
+            libxdo-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/app/src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The front end has to exist before the Rust build: `tauri.conf.json`
+      # points `frontendDist` at `../dist`, and its absence fails the build in a
+      # way that does not obviously say so.
+      - name: Build the front end
+        run: npm run build -w @proc123/app
+
+      - name: Rust format
+        run: npm run rust:fmt -w @proc123/app
+
+      - name: Rust lint
+        run: npm run rust:lint -w @proc123/app
+
+      - name: Rust tests
+        run: npm run rust:test -w @proc123/app

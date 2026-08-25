@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "proc123",
+  "version": "0.0.0",
+  "identifier": "com.github.hami9.proc123",
+  "build": {
+    "frontendDist": "../dist",
+    "beforeDevCommand": "npm run build:watch",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "proc123",
+        "width": 1000,
+        "height": 720,
+        "minWidth": 360,
+        "minHeight": 480,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data: https: http:; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb", "appimage", "msi"],
+    "icon": ["icons/icon-32.png", "icons/icon-128.png", "icons/icon.png"],
+    "category": "Utility",
+    "shortDescription": "Scan a store's category page and export a CSV another store can import.",
+    "longDescription": "proc123 reads a category or collection page on any e-commerce platform, extracts every product on it, and exports a CSV built for the shop you are moving to. No account, no server, no telemetry."
+  }
+}

@@ -1,0 +1,43 @@
+[package]
+name = "proc123-app"
+version = "0.0.0"
+description = "proc123 desktop and mobile application"
+authors = ["proc123 contributors"]
+license = "MIT"
+edition = "2021"
+# Tauri v2 needs this floor; nothing here reaches past it.
+rust-version = "1.77"
+
+# The binary is `proc123`, not `proc123-app`: it is what a person types and what
+# a desktop entry names.
+[[bin]]
+name = "proc123"
+path = "src/main.rs"
+
+[lib]
+# `_lib` because a Windows build cannot have a lib and a bin sharing one name.
+# Tauri's own template does this; the mobile entry point in phase 18 needs the
+# lib target to exist.
+name = "proc123_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+# Tauri's custom protocol on the desktop side. Enabled by `tauri build`.
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+# A scraper does not need to be a 20MB binary. These are Tauri's recommended
+# release settings and cost nothing but build time.
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
