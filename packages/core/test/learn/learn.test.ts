@@ -189,6 +189,56 @@ describe('applying a learned profile', () => {
     expect(result.products[0]?.images).toEqual(['https://dastsaz.example/img/walnut.jpg']);
   });
 
+  it('looks past a lazy-loading placeholder, the same as every other layer', () => {
+    // A profile always records `src`, because that is the attribute the clicked
+    // element appeared to hold. A lazy theme keeps a 1x1 grey pixel there and
+    // the real URL somewhere else, which used to export three identical
+    // placeholders — or three empty cells — for three different products.
+    const lazy = html
+      .replace(
+        '<img class="tile-image" src="/img/walnut.jpg"',
+        '<img class="tile-image" src="data:image/gif;base64,R0lGOD" data-src="/img/walnut.jpg"'
+      )
+      .replace(
+        '<img class="tile-image" src="/img/pistachio.jpg"',
+        '<img class="tile-image" data-lazy-src="/img/pistachio.jpg"'
+      )
+      .replace(
+        '<img class="tile-image" src="/img/almond.jpg"',
+        '<img class="tile-image" src="" srcset="/img/almond.jpg 1x, /img/almond@2x.jpg 2x"'
+      );
+
+    const scanned = extractWithProfile({ url: URL_, html: lazy }, profile, {
+      scannedAt: SCANNED_AT,
+      defaultCurrencyUnit: 'toman',
+    });
+
+    expect(scanned.products.map((product) => product.images)).toEqual([
+      ['https://dastsaz.example/img/walnut.jpg'],
+      ['https://dastsaz.example/img/pistachio.jpg'],
+      ['https://dastsaz.example/img/almond.jpg'],
+    ]);
+  });
+
+  it('never exports a data: placeholder as a product image', () => {
+    // No real URL anywhere on the element. An empty cell is the honest answer;
+    // a grey pixel imported into a shop is not.
+    const placeholderOnly = html.replace(
+      /src="\/img\/[a-z]+\.jpg"/g,
+      'src="data:image/gif;base64,R0lGOD"'
+    );
+
+    const scanned = extractWithProfile({ url: URL_, html: placeholderOnly }, profile, {
+      scannedAt: SCANNED_AT,
+      defaultCurrencyUnit: 'toman',
+    });
+
+    expect(scanned.products.length).toBe(3);
+    for (const product of scanned.products) {
+      expect(product.images ?? []).toEqual([]);
+    }
+  });
+
   it('marks the rows as Layer C, below what markup would have earned', () => {
     for (const product of result.products) {
       expect(product.extractionMeta.layer).toBe('C');

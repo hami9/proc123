@@ -14,6 +14,7 @@ import {
   childElements,
   hasAttr,
   indexElementIds,
+  readImageUrl,
   tagName,
 } from './html.js';
 import type { JsonObject, JsonValue } from './json.js';
@@ -30,42 +31,6 @@ import {
 const SRC_ELEMENTS = new Set(['audio', 'embed', 'iframe', 'img', 'source', 'track', 'video']);
 const HREF_ELEMENTS = new Set(['a', 'area', 'link']);
 
-/** Attributes a lazy-loading theme puts the real image URL in. */
-const LAZY_IMAGE_ATTRS = ['data-src', 'data-lazy-src', 'data-original', 'data-lazy'];
-
-function firstFromSrcset(value: string): string | undefined {
-  const first = value.split(',')[0]?.trim();
-  const url = first?.split(/\s+/)[0];
-  return url === undefined || url === '' ? undefined : url;
-}
-
-/**
- * The URL of an image element.
- *
- * `src` first, but a lazy-loading theme parks a 1x1 `data:` placeholder there
- * and keeps the real URL in a data attribute. Falling through to those is the
- * difference between exporting a catalogue with images and one without.
- */
-function imageUrl(node: Element): string | undefined {
-  const src = attr(node, 'src');
-  if (src !== undefined && src !== '' && !/^data:/i.test(src)) return src;
-
-  for (const name of LAZY_IMAGE_ATTRS) {
-    const value = attr(node, name);
-    if (value !== undefined && value !== '') return value;
-  }
-
-  for (const name of ['srcset', 'data-srcset']) {
-    const value = attr(node, name);
-    if (value !== undefined && value !== '') {
-      const first = firstFromSrcset(value);
-      if (first !== undefined) return first;
-    }
-  }
-
-  return src;
-}
-
 /**
  * The value of one `itemprop` element.
  *
@@ -81,7 +46,7 @@ function propertyValue($: CheerioAPI, node: Element, pageUrl: string): JsonValue
   const tag = tagName(node);
 
   if (tag === 'img') {
-    const url = imageUrl(node);
+    const url = readImageUrl(node);
     return url === undefined ? '' : resolveAgainst(url, pageUrl);
   }
   if (SRC_ELEMENTS.has(tag)) {
