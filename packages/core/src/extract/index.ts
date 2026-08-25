@@ -10,3 +10,4 @@ export * from './schema-product.js';
 export * from './schema-values.js';
 export * from './sitemap.js';
 export * from './types.js';
+export * from './variations.js';

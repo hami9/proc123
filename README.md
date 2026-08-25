@@ -89,7 +89,7 @@ popup is the newest.
 | 2     | Layer B — structured markup (JSON-LD → Microdata → OpenGraph) | ✅ done |
 | 3     | Layer A — WooCommerce Store API, then Shopify                 | ✅ done |
 | 4     | Category traversal / pagination                               | ✅ done |
-| 5     | Variable products & variations                                | partial |
+| 5     | Variable products & variations                                | ✅ done |
 | 6     | Layer C — Selector Learning Mode                              | ✅ done |
 | 7     | Filtering & field selection                                   | ✅ done |
 | 8     | Layer D — pluggable AI providers                              | ✅ done |
