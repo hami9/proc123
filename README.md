@@ -8,7 +8,7 @@
 
 <!-- version-badge:start -->
 
-[![version](https://img.shields.io/badge/version-1.7.0-7a3e1d)](https://github.com/hami9/proc123/releases/tag/v1.7.0)
+[![version](https://img.shields.io/badge/version-1.8.0-7a3e1d)](https://github.com/hami9/proc123/releases/tag/v1.8.0)
 <!-- version-badge:end -->
 
 [![CI](https://github.com/hami9/proc123/actions/workflows/ci.yml/badge.svg)](https://github.com/hami9/proc123/actions/workflows/ci.yml)
@@ -101,6 +101,7 @@ popup is the newest.
 | 14    | Inspector in the extension                                    | ✅ done |
 | 15    | App shell — Windows and Linux (Tauri v2)                      | ✅ done |
 | 16    | The app scans on its own                                      | next    |
+| 16.5  | Design pass — the desktop app                                 |         |
 | 17    | Bridge — app ↔ extension over loopback                        |         |
 | 18    | Android                                                       |         |
 | 19    | Visual picker for any field                                   |         |

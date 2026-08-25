@@ -87,6 +87,11 @@
       "status": "next"
     },
     {
+      "phase": 16.5,
+      "title": "Design pass — the desktop app",
+      "status": "planned"
+    },
+    {
       "phase": 17,
       "title": "Bridge — app ↔ extension over loopback",
       "status": "planned"
