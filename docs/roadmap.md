@@ -159,6 +159,21 @@ into the release workflow that already cuts versions and uploads assets.
 **Done when** a tagged release produces installable artefacts for all three
 targets without a manual step.
 
+> **This phase also owns the first real Windows build.** Phase 15 shipped the
+> shell verified on Linux only; rather than hold it open for a check that a
+> build matrix performs anyway, the Windows verification moved here. Two
+> concrete things it has to do, both already known:
+>
+> - Make the CI job a matrix over `ubuntu-latest` and `windows-latest`. The npm
+>   scripts are already platform-neutral, so this is the `runs-on` line.
+> - Generate `src-tauri/icons/icon.ico`. The MSI bundle will not build without
+>   it and the directory has PNGs only. `npx tauri icon <square png>` produces
+>   the whole set.
+>
+> If the Windows build turns out to need more than that, it is a finding for
+> this phase to record rather than one phase 15 should have caught — nothing
+> about the shell is Linux-specific by design.
+
 ---
 
 ## What is deliberately not here

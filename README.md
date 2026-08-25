@@ -14,7 +14,7 @@
 [![CI](https://github.com/hami9/proc123/actions/workflows/ci.yml/badge.svg)](https://github.com/hami9/proc123/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-7a3e1d)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520.11-7a3e1d)](https://nodejs.org)
-[![tests](https://img.shields.io/badge/tests-813-7a3e1d)](#getting-started)
+[![tests](https://img.shields.io/badge/tests-831-7a3e1d)](#getting-started)
 
 [Install on Windows](docs/install-windows.md) &nbsp;·&nbsp; [How it works](#scanning-a-page) &nbsp;·&nbsp; [What it will not do](#what-proc123-will-not-do) &nbsp;·&nbsp; [Contributing](CONTRIBUTING.md)
 
@@ -99,8 +99,8 @@ popup is the newest.
 | 12    | Additional exporters                                          | ✅ done |
 | 13    | Inspector engine — technologies, fonts, images                | ✅ done |
 | 14    | Inspector in the extension                                    | ✅ done |
-| 15    | App shell — Windows and Linux (Tauri v2)                      | next    |
-| 16    | The app scans on its own                                      |         |
+| 15    | App shell — Windows and Linux (Tauri v2)                      | ✅ done |
+| 16    | The app scans on its own                                      | next    |
 | 17    | Bridge — app ↔ extension over loopback                        |         |
 | 18    | Android                                                       |         |
 | 19    | Visual picker for any field                                   |         |
@@ -118,7 +118,7 @@ with the extension kept and improved rather than replaced.
 A, an HTTP client; the extension and the companion own the network. What exists
 is the part everything else is validated against: the canonical product model,
 the normalizers, all four extraction layers, three exporters, a browser
-extension for Chrome and Firefox, and a command-line companion, with 813 tests
+extension for Chrome and Firefox, and a command-line companion, with 831 tests
 behind them.
 
 The **inspector** is the newest part, and it works today: open the extension on
@@ -137,6 +137,7 @@ nothing.
 | `packages/extension` | Manifest V3 extension: popup, service worker, CSV download                                        |
 | `packages/profiles`  | Site profile schema — the JSON Layer C learns and a person can edit                               |
 | `packages/companion` | Command-line runner: the same pipeline, no browser                                                |
+| `packages/app`       | Tauri v2 desktop app for Windows and Linux — the shell so far, no scanning yet                    |
 
 ## Running the extension
 

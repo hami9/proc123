@@ -10,7 +10,23 @@ scripting.
 
 > **Phase 15 is the shell.** It renders a saved scan and does not fetch
 > anything — that is phase 16. The bridge to the extension is phase 17, and
-> Android is phase 18.
+> Android is deferred until Windows and Linux are finished.
+
+> **The visual design is not settled here, and should not be settled here.**
+> What is in `styles.css` is a working neutral: the popup's palette so the three
+> surfaces read as one product, a spacing scale, and a plain table. The actual
+> design is being done separately.
+>
+> The structure exists to make that cheap. Every colour, radius and gap is a CSS
+> custom property in one `:root` block, and `main.ts` hard-codes no colour and
+> no spacing at all — it sets class names and lets the stylesheet decide. So a
+> redesign is a change to one file rather than a rewrite of the views.
+>
+> Two things a redesign must not quietly drop, because they are §18 requirements
+> rather than taste: the currency step has to keep its own visual weight and
+> never become a checkbox someone can skip past (§7.8), and every directional
+> rule has to stay a logical property — `inline-start`, not `left` — or the
+> Persian layout silently stops being right.
 
 ---
 

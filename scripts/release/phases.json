@@ -79,12 +79,12 @@
     {
       "phase": 15,
       "title": "App shell — Windows and Linux (Tauri v2)",
-      "status": "next"
+      "status": "done"
     },
     {
       "phase": 16,
       "title": "The app scans on its own",
-      "status": "planned"
+      "status": "next"
     },
     {
       "phase": 17,
