@@ -95,7 +95,16 @@ pub async fn http_fetch(request: FetchRequest) -> Result<FetchResponse, String> 
         outgoing = outgoing.body(body);
     }
 
-    let response = outgoing.send().await.map_err(|error| error.to_string())?;
+    let response = match outgoing.send().await {
+        Ok(response) => response,
+        Err(error) => {
+            // The app had no way to see this at all, which is how a scan that
+            // silently found nothing looked identical to a scan that never got
+            // off the ground. §11: a failure should be able to explain itself.
+            eprintln!("[proc123] fetch failed {}: {error}", request.url);
+            return Err(error.to_string());
+        }
+    };
 
     let status = response.status().as_u16();
     let final_url = response.url().to_string();
@@ -108,6 +117,12 @@ pub async fn http_fetch(request: FetchRequest) -> Result<FetchResponse, String> 
     }
 
     let body = response.text().await.map_err(|error| error.to_string())?;
+    eprintln!(
+        "[proc123] fetch {} {} ({} bytes)",
+        status,
+        request.url,
+        body.len()
+    );
 
     Ok(FetchResponse {
         status,

@@ -48,6 +48,10 @@ interface State {
   currencyAnswer: CurrencyUnit | undefined;
   products: CanonicalProduct[];
   summary: ScanSummary | undefined;
+  /** Which read answered — §18 wants a slower scan to explain itself. */
+  path: 'static' | 'rendered' | undefined;
+  /** How big each read was. The cheapest test of whether rendering did anything. */
+  bytes: { static: number; rendered?: number } | undefined;
   url: string;
   busy: boolean;
   /** What to tell the user right now: progress, an error, or where a file went. */
@@ -63,6 +67,8 @@ const state: State = {
   currencyAnswer: undefined,
   products: [],
   summary: undefined,
+  path: undefined,
+  bytes: undefined,
   url: '',
   busy: false,
   message: '',
@@ -76,6 +82,8 @@ const element = <T extends HTMLElement>(id: string): T => {
 };
 
 const t = (key: MessageKey): string => translate(state.language, key);
+/** Sizes in KB. Bytes are noise at this scale; the ratio is the whole signal. */
+const kb = (bytes: number): string => `${n(Math.round(bytes / 1024))} KB`;
 /** Numbers in the reader's digits. Display only — §7.8. */
 const n = (value: number | string): string => localiseDigits(String(value), state.language);
 
@@ -202,7 +210,35 @@ function summaryLine(): HTMLElement | undefined {
     el('span', 'badge', `${t('readFrom')}: ${summary.platform} · ${summary.layer}`),
     el('span', 'badge', `${t('pages')}: ${n(summary.pagesScanned)}`)
   );
+  if (state.path !== undefined) {
+    counts.append(
+      el(
+        'span',
+        'badge',
+        `${t('readVia')}: ${state.path === 'rendered' ? t('readRendered') : t('readStatic')}`
+      )
+    );
+  }
+
+  // How big each read was. This is the cheapest possible answer to "did
+  // rendering actually do anything?", and without it a scan that finds nothing
+  // is indistinguishable from a renderer that silently handed back the shell.
+  const bytes = state.bytes;
+  if (bytes !== undefined) {
+    const sizes =
+      bytes.rendered === undefined
+        ? kb(bytes.static)
+        : `${kb(bytes.static)} → ${kb(bytes.rendered)}`;
+    counts.append(el('span', 'badge', `${t('markupSize')}: ${sizes}`));
+  }
   card.append(counts);
+
+  // Equal sizes mean the WebView returned what the fetch already had, so
+  // whatever is missing is missing for a reason that has nothing to do with
+  // JavaScript. Saying so beats letting the user conclude rendering is broken.
+  if (bytes?.rendered !== undefined && bytes.rendered <= bytes.static) {
+    card.append(el('p', 'small muted', t('renderAddedNothing')));
+  }
 
   // §18 asks for honest progress and honest outcomes — what was skipped and
   // why belongs on screen, not only in a log.
@@ -368,12 +404,22 @@ async function startScan(): Promise<void> {
   state.currencyAnswer = undefined;
   state.products = [];
   state.summary = undefined;
+  // Otherwise a static scan after a rendered one keeps the old badge and tells
+  // the user the page was rendered when it was not.
+  state.path = undefined;
+  state.bytes = undefined;
   renderScan();
 
   try {
     const result = await scanCategory({
       url,
       config: state.config,
+      onRenderFallback: () => {
+        // Rendering takes seconds and looks like a hang otherwise. Saying what
+        // is happening, and why, is §18's honest-progress rule.
+        state.message = t('rendering');
+        renderScan();
+      },
       onProgress: (progress: ScanProgress) => {
         state.message =
           `${t('scanning')} ${t('pages')} ${n(progress.pagesScanned)} · ` +
@@ -384,6 +430,8 @@ async function startScan(): Promise<void> {
 
     state.summary = result.summary;
     state.products = result.products;
+    state.path = result.path;
+    state.bytes = result.bytes;
     state.message = '';
   } catch (error) {
     // The wording of a block comes from `core`'s own error (§2); this only

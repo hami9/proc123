@@ -16,6 +16,7 @@
 
 mod files;
 mod http;
+mod render;
 
 use tauri::Manager;
 
@@ -58,7 +59,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             host_info,
             http::http_fetch,
-            files::save_text_file
+            files::save_text_file,
+            render::rendered_html,
+            render::evaluate
         ])
         .run(tauri::generate_context!())
         .expect("the proc123 window could not be created");

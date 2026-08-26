@@ -91,12 +91,38 @@ has PNGs only, and the MSI bundle will not build without it. `npx tauri icon
 
 ## Done when
 
-- [ ] The app scans a static shop end to end and writes a CSV to disk.
-- [ ] The app scans a JS-built shop through the embedded WebView.
-- [ ] Politeness is applied and no request path bypasses `core`'s paced client.
-- [ ] A blocked site stops the scan and says so.
-- [ ] `npm run check` passes; the Rust CI job passes.
-- [ ] `scripts/release/phases.json` says `done` for phase 16.
+- [x] The app scans a static shop end to end and writes a CSV to disk.
+- [x] The app scans a JS-built shop through the embedded WebView.
+- [x] Politeness is applied and no request path bypasses `core`'s paced client.
+- [x] A blocked site stops the scan and says so.
+- [x] `npm run check` passes; the Rust CI job passes.
+- [x] `scripts/release/phases.json` says `done` for phase 16.
+
+## What it actually did, on real shops
+
+Verified against live Persian storefronts rather than fixtures:
+
+| Shop                    | Result                                                       |
+| ----------------------- | ------------------------------------------------------------ |
+| kgkala.ir (WooCommerce) | 43 CSV rows via **Layer A**, 3 products with every variation |
+| digikala.com (Next.js)  | rendered **415 KB**, 379 products                            |
+| technolife.com          | rendered **1.25 MB**, **zero** products                      |
+| zitu.ir                 | rendered **414 KB**, 2 products                              |
+
+**Rendering is not extraction, and that is the finding worth carrying forward.**
+technolife renders its whole grid and yields nothing because the rendered page
+carries `ld+json=2` (Organization and Breadcrumb), `itemtype=0` and
+`schema.org/Product=0`. Layer B is behaving correctly — there is no structured
+data to read. Those shops need Layer C (phase 19) applied to the _rendered_ DOM,
+which is the combination this phase makes possible and does not itself deliver.
+
+**Five bugs, all ours.** The WebView took five distinct fixes, each of which
+presented as "this site does not render": wry dropping the eval callback while a
+page loads, an unmapped window never starting its webview, a time budget that
+counted poll turns instead of time, one timeout shared between a cheap probe and
+a megabyte payload, and loading and settling sharing a single allowance. They are
+written up in `packages/app/README.md` so the next session does not rediscover
+them.
 
 ## Hand off
 

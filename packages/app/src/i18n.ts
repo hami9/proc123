@@ -30,6 +30,13 @@ const en = {
   noResults: 'Nothing scanned yet. Paste a category URL and press Scan.',
   politeNote:
     'Requests are paced so as not to burden the shop. A large catalogue takes a few minutes.',
+  rendering: 'The markup listed no products, so the page is being opened in a browser…',
+  readVia: 'Read via',
+  readStatic: 'page markup',
+  readRendered: 'a rendered browser page',
+  markupSize: 'Markup',
+  renderAddedNothing:
+    'Rendering returned the same markup the fetch did, so this page is not waiting on JavaScript — whatever is missing is missing for another reason.',
   resultsTitle: 'Scan result',
   products: 'products',
   rows: 'CSV rows',
@@ -122,6 +129,13 @@ const fa: Catalogue = {
   noResults: 'هنوز چیزی اسکن نشده. نشانی یک دسته‌بندی را بگذارید و اسکن را بزنید.',
   politeNote:
     'درخواست‌ها با فاصله فرستاده می‌شوند تا به فروشگاه فشار نیاید. یک فهرست بزرگ چند دقیقه طول می‌کشد.',
+  rendering: 'در نشانه‌گذاری صفحه محصولی نبود، پس صفحه در یک مرورگر باز می‌شود…',
+  readVia: 'خوانده‌شده از',
+  readStatic: 'نشانه‌گذاری صفحه',
+  readRendered: 'صفحهٔ رندرشده در مرورگر',
+  markupSize: 'حجم نشانه‌گذاری',
+  renderAddedNothing:
+    'رندر همان نشانه‌گذاری‌ای را برگرداند که دریافت ساده برگردانده بود، پس این صفحه منتظر جاوااسکریپت نیست — هرچه کم است، به دلیل دیگری کم است.',
   resultsTitle: 'نتیجهٔ اسکن',
   products: 'محصول',
   rows: 'سطر CSV',

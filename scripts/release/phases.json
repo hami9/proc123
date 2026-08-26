@@ -84,7 +84,7 @@
     {
       "phase": 16,
       "title": "The app scans on its own",
-      "status": "next"
+      "status": "done"
     },
     {
       "phase": 16.5,
@@ -94,7 +94,7 @@
     {
       "phase": 17,
       "title": "Bridge — app ↔ extension over loopback",
-      "status": "planned"
+      "status": "next"
     },
     {
       "phase": 18,
