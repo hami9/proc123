@@ -12,8 +12,13 @@ concurrency:
 
 jobs:
   check:
-    name: Lint, typecheck & test
-    runs-on: ubuntu-latest
+    name: Lint, typecheck & test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # One platform failing should not hide whether the other worked.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -40,6 +45,10 @@ jobs:
       # The README's phase table is generated from scripts/release/phases.json.
       # This catches the version where somebody edited the table by hand and the
       # next release silently reverts it.
+      #
+      # It is also why .gitattributes pins eol=lf: this step compares the README
+      # on disk against text Prettier generates, so a CRLF checkout fails it on
+      # Windows for a drift that does not exist.
       - name: Generated sections are in step
         run: npm run release:check
 
@@ -57,8 +66,12 @@ jobs:
   # blocks a merge exactly as a broken test does. The gate is the workflow, not
   # one npm script.
   app:
-    name: App (Rust)
-    runs-on: ubuntu-latest
+    name: App (Rust, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -69,8 +82,10 @@ jobs:
 
       # Tauri's Linux build links against the system WebView. Without these the
       # failure is a screenful of pkg-config errors that reads like a Rust
-      # problem and is not.
+      # problem and is not. Windows needs no equivalent: the runner ships MSVC,
+      # and WebView2 is part of the OS.
       - name: System dependencies for Tauri
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -89,6 +104,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: packages/app/src-tauri
+          # Without this both matrix legs write to one cache key and each
+          # overwrites the other's artefacts every run.
+          key: ${{ matrix.os }}
 
       - name: Install dependencies
         run: npm ci
@@ -99,7 +117,11 @@ jobs:
       - name: Build the front end
         run: npm run build -w @proc123/app
 
+      # Formatting is a property of the text, not the platform, so one run
+      # answers it. Lint and tests compile, which is exactly what differs
+      # between MSVC and gcc, so those run on both.
       - name: Rust format
+        if: runner.os == 'Linux'
         run: npm run rust:fmt -w @proc123/app
 
       - name: Rust lint

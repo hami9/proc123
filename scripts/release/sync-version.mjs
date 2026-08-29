@@ -36,6 +36,10 @@ const JSON_FILES = [
   'package.json',
   'packages/extension/manifest.chrome.json',
   'packages/extension/manifest.firefox.json',
+  // The installer carries this one. Left unsynced every MSI built as 0.0.0,
+  // and Windows reads that as the *installed* version: the next install never
+  // looks newer, so upgrading silently does nothing.
+  'packages/app/src-tauri/tauri.conf.json',
 ];
 
 const USER_AGENT_FILE = 'packages/companion/src/http.ts';

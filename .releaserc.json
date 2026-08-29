@@ -21,7 +21,9 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "node scripts/release/sync-version.mjs ${nextRelease.version} && npm run build -w @proc123/extension -- --zip"
+        "$comment": "`successCmd` hands the version to the workflow. The installers are built after the release exists, from the tag it created, because that commit is the only place tauri.conf.json carries the right version — and an MSI stamped with the wrong one makes Windows treat an upgrade as already-installed.",
+        "prepareCmd": "node scripts/release/sync-version.mjs ${nextRelease.version} && npm run build -w @proc123/extension -- --zip",
+        "successCmd": "echo \"version=${nextRelease.version}\" >> \"$GITHUB_OUTPUT\""
       }
     ],
     [
@@ -33,7 +35,8 @@
           "package.json",
           "packages/extension/manifest.chrome.json",
           "packages/extension/manifest.firefox.json",
-          "packages/companion/src/http.ts"
+          "packages/companion/src/http.ts",
+          "packages/app/src-tauri/tauri.conf.json"
         ],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }

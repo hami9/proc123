@@ -69,6 +69,10 @@ jobs:
     name: Tag, changelog and GitHub Release
     needs: [check, binaries]
     runs-on: ubuntu-latest
+    # Empty when every commit since the last tag was a `docs:`/`chore:` and
+    # nothing was released. The installers job keys off that to skip itself.
+    outputs:
+      version: ${{ steps.release.outputs.version }}
     permissions:
       # semantic-release commits the changelog and version bump, and creates
       # the release. Nothing here needs `packages: write`: every workspace is
@@ -99,6 +103,94 @@ jobs:
           merge-multiple: true
 
       - name: Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
+
+  # Deliberately after `release` rather than beside `binaries`, and the ordering
+  # is the whole point.
+  #
+  # `binaries` builds from the pushed commit, which still carries the *previous*
+  # version — harmless for a CLI that only prints it. An installer is different:
+  # Windows keys upgrade detection on the version inside the MSI, so one built
+  # before the bump would tell every existing install it was already current.
+  # semantic-release writes the real version during `prepare` and commits it, so
+  # the tag it creates is the first tree that states it. This job checks out
+  # that tag.
+  #
+  # A failure here leaves the release itself intact and merely un-attached,
+  # which is the right way round: the tag, the changelog and the extension zips
+  # have all published by the time this runs.
+  installers:
+    name: App installer (${{ matrix.os }})
+    needs: release
+    if: needs.release.outputs.version != ''
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.version }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # The same list as ci.yml's app job. Windows needs no equivalent: the
+      # runner ships MSVC and WebView2 is part of the OS.
+      - name: System dependencies for Tauri
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            build-essential \
+            file \
+            libssl-dev \
+            libxdo-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/app/src-tauri
+          # Without this both matrix legs share one cache key and each
+          # overwrites the other's artefacts every run.
+          key: ${{ matrix.os }}
+
+      - run: npm ci
+
+      # `tauri build` runs `beforeBuildCommand`, which builds the front end, so
+      # that needs no step of its own here.
+      - name: Build the installer
+        run: npm run app:build -w @proc123/app
+
+      # These are unsigned. Signing needs a certificate that costs money and is
+      # issued to a person, so it is the project owner's call rather than
+      # something CI can arrange for itself. Windows will show SmartScreen on
+      # first run until then; docs/roadmap.md's phase 20 records the decision.
+      - name: Attach to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          bundle=packages/app/src-tauri/target/release/bundle
+          found=$(find "$bundle" -type f \( -name '*.msi' -o -name '*.deb' -o -name '*.AppImage' \) | sort)
+          if [ -z "$found" ]; then
+            echo "no installer was produced under $bundle" >&2
+            find "$bundle" -type f >&2 || true
+            exit 1
+          fi
+          echo "$found"
+          echo "$found" | tr '\n' '\0' \
+            | xargs -0 gh release upload "v${{ needs.release.outputs.version }}" --clobber

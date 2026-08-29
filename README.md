@@ -105,7 +105,7 @@ popup is the newest.
 | 17    | Bridge — app ↔ extension over loopback                        | next    |
 | 18    | Android                                                       |         |
 | 19    | Visual picker for any field                                   |         |
-| 20    | Packaging and distribution                                    |         |
+| 20    | Packaging and distribution                                    | partial |
 
 <!-- phase-table:end -->
 
