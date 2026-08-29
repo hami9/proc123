@@ -12,6 +12,10 @@
  * copy/paste nor review, and a stray one would silently change behaviour.
  */
 
+// `entities` is already in the tree as one of Cheerio's own dependencies, so
+// this costs nothing that was not being shipped anyway.
+import { decodeHTML } from 'entities';
+
 type CodePointRange = readonly [start: number, end: number];
 
 function charClass(ranges: readonly CodePointRange[]): string {
@@ -71,12 +75,27 @@ const WHITESPACE = /\s+/g;
 /**
  * Clean scraped display text without changing what it says.
  *
- * Safe for values that end up in the export: it normalizes Unicode to NFC,
- * drops invisible control characters, collapses runs of whitespace (including
- * the non-breaking spaces price widgets love) and trims.
+ * Safe for values that end up in the export: it decodes HTML entities,
+ * normalizes Unicode to NFC, drops invisible control characters, collapses runs
+ * of whitespace (including the non-breaking spaces price widgets love) and
+ * trims.
+ *
+ * **Why the entity decode is here rather than left to the parser.** Text read
+ * through Cheerio is decoded already — `.text()` does it. Text read out of
+ * JSON-LD is not: the SEO plugin writes the product name into the JSON with
+ * HTML escapes intact, and `JSON.parse` has no reason to touch them. A real
+ * scan of a Persian shop is what surfaced this, exporting a product called
+ * `… تک سیم کارت فیزیکی &#8211; Not Active` — an en-dash that reached the CSV
+ * as seven literal characters and would have imported that way.
+ *
+ * Decoding here rather than at each call site is what keeps §7.6 safe: parent
+ * options and variation values both pass through this function, so they are
+ * decoded identically and still match character-for-character afterwards.
+ * Decoding in only one of the two paths would have been worse than not
+ * decoding at all.
  */
 export function cleanText(input: string): string {
-  return input.normalize('NFC').replace(INVISIBLE, '').replace(WHITESPACE, ' ').trim();
+  return decodeHTML(input).normalize('NFC').replace(INVISIBLE, '').replace(WHITESPACE, ' ').trim();
 }
 
 /**

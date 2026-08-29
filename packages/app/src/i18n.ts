@@ -21,9 +21,23 @@ const en = {
   navInspect: 'Inspect',
   navSettings: 'Settings',
 
+  scanTitle: 'Scan a category',
+  urlLabel: 'Category or collection URL',
+  urlPlaceholder: 'https://shop.example/product-category/nuts/',
+  startScan: 'Scan',
+  scanning: 'Scanning…',
+  scanFailed: 'The scan did not finish',
+  noResults: 'Nothing scanned yet. Paste a category URL and press Scan.',
+  politeNote:
+    'Requests are paced so as not to burden the shop. A large catalogue takes a few minutes.',
+  rendering: 'The markup listed no products, so the page is being opened in a browser…',
+  readVia: 'Read via',
+  readStatic: 'page markup',
+  readRendered: 'a rendered browser page',
+  markupSize: 'Markup',
+  renderAddedNothing:
+    'Rendering returned the same markup the fetch did, so this page is not waiting on JavaScript — whatever is missing is missing for another reason.',
   resultsTitle: 'Scan result',
-  resultsFixtureNote:
-    'This is a saved example. The app cannot fetch anything yet — that arrives in the next phase.',
   products: 'products',
   rows: 'CSV rows',
   variations: 'variations',
@@ -52,6 +66,10 @@ const en = {
   export: 'Export CSV',
   exportBlocked: 'Confirm the price unit first',
 
+  saving: 'Saving…',
+  saved: 'Saved to',
+  saveCancelled: 'Not saved.',
+
   settingsTitle: 'Settings',
   language: 'Language',
   theme: 'Theme',
@@ -59,6 +77,34 @@ const en = {
   themeLight: 'Light',
   themeDark: 'Dark',
   host: 'Running on',
+
+  settingsScanning: 'Scanning',
+  exporter: 'Export format',
+  contentMode: 'Descriptions',
+  contentStructured: 'Leave empty (recommended)',
+  contentReference: 'Copy, tagged with the source URL',
+  contentRewrite: 'Rewrite with AI',
+  maxPages: 'Maximum pages',
+  delayMs: 'Delay between requests (ms)',
+  maxConcurrent: 'Requests at once',
+  politeWarning: 'A short delay puts more load on the shop you are reading.',
+  contentWarning: 'Descriptions are the shop’s content, not yours.',
+  displayUnit: 'IRR prices are usually in',
+  displayUnitNote:
+    'A starting point only. Every export still asks, because the shop is what decides.',
+
+  navAbout: 'About',
+  aboutTitle: 'About proc123',
+  aboutWhat:
+    'Reads a category page from a shop and writes a CSV another shop can import. WooCommerce, Shopify, or plain JSON.',
+  aboutPrivacyTitle: 'No account, no server, no telemetry',
+  aboutPrivacy:
+    'There is no sign-up and nothing owned by this project to sign in to. The only requests this app makes are to the shop you point it at — and, if you switch on the AI fallback with your own key, to your own provider. Nothing else leaves this machine.',
+  aboutLimitsTitle: 'What it will not do',
+  aboutLimits:
+    'It does not solve CAPTCHAs, spoof fingerprints, rotate proxies, or retry past a block. When a shop signals that it does not want to be read automatically, the scan stops and says so.',
+  aboutLicence: 'MIT licensed. Source and issues:',
+  version: 'Version',
 
   inspectTitle: 'Inspect a page',
   inspectSoon:
@@ -74,9 +120,23 @@ const fa: Catalogue = {
   navInspect: 'بررسی صفحه',
   navSettings: 'تنظیمات',
 
+  scanTitle: 'اسکن یک دسته‌بندی',
+  urlLabel: 'نشانی دسته‌بندی',
+  urlPlaceholder: 'https://shop.example/product-category/nuts/',
+  startScan: 'اسکن',
+  scanning: 'در حال اسکن…',
+  scanFailed: 'اسکن کامل نشد',
+  noResults: 'هنوز چیزی اسکن نشده. نشانی یک دسته‌بندی را بگذارید و اسکن را بزنید.',
+  politeNote:
+    'درخواست‌ها با فاصله فرستاده می‌شوند تا به فروشگاه فشار نیاید. یک فهرست بزرگ چند دقیقه طول می‌کشد.',
+  rendering: 'در نشانه‌گذاری صفحه محصولی نبود، پس صفحه در یک مرورگر باز می‌شود…',
+  readVia: 'خوانده‌شده از',
+  readStatic: 'نشانه‌گذاری صفحه',
+  readRendered: 'صفحهٔ رندرشده در مرورگر',
+  markupSize: 'حجم نشانه‌گذاری',
+  renderAddedNothing:
+    'رندر همان نشانه‌گذاری‌ای را برگرداند که دریافت ساده برگردانده بود، پس این صفحه منتظر جاوااسکریپت نیست — هرچه کم است، به دلیل دیگری کم است.',
   resultsTitle: 'نتیجهٔ اسکن',
-  resultsFixtureNote:
-    'این یک نمونهٔ ذخیره‌شده است. برنامه هنوز نمی‌تواند چیزی دریافت کند — آن در فاز بعد می‌آید.',
   products: 'محصول',
   rows: 'سطر CSV',
   variations: 'تنوع',
@@ -105,6 +165,10 @@ const fa: Catalogue = {
   export: 'خروجی CSV',
   exportBlocked: 'اول واحد قیمت را تأیید کنید',
 
+  saving: 'در حال ذخیره…',
+  saved: 'ذخیره شد در',
+  saveCancelled: 'ذخیره نشد.',
+
   settingsTitle: 'تنظیمات',
   language: 'زبان',
   theme: 'پوسته',
@@ -112,6 +176,33 @@ const fa: Catalogue = {
   themeLight: 'روشن',
   themeDark: 'تیره',
   host: 'در حال اجرا روی',
+
+  settingsScanning: 'اسکن',
+  exporter: 'قالب خروجی',
+  contentMode: 'توضیحات',
+  contentStructured: 'خالی بگذار (پیشنهادی)',
+  contentReference: 'کپی کن، با نشانی منبع',
+  contentRewrite: 'با هوش مصنوعی بازنویسی کن',
+  maxPages: 'بیشترین تعداد صفحه',
+  delayMs: 'فاصلهٔ بین درخواست‌ها (میلی‌ثانیه)',
+  maxConcurrent: 'درخواست هم‌زمان',
+  politeWarning: 'فاصلهٔ کم، بار بیشتری روی فروشگاهی می‌گذارد که می‌خوانید.',
+  contentWarning: 'توضیحات محتوای فروشگاه است، نه شما.',
+  displayUnit: 'قیمت‌های ریالی معمولاً به',
+  displayUnitNote: 'فقط نقطهٔ شروع. هر خروجی باز هم می‌پرسد، چون فروشگاه است که تعیین می‌کند.',
+
+  navAbout: 'درباره',
+  aboutTitle: 'دربارهٔ proc123',
+  aboutWhat:
+    'صفحهٔ دسته‌بندی یک فروشگاه را می‌خواند و CSV می‌نویسد که فروشگاه دیگری بتواند وارد کند. WooCommerce، Shopify، یا JSON ساده.',
+  aboutPrivacyTitle: 'بدون حساب، بدون سرور، بدون تله‌متری',
+  aboutPrivacy:
+    'ثبت‌نامی وجود ندارد و چیزی متعلق به این پروژه نیست که واردش شوید. تنها درخواست‌هایی که این برنامه می‌فرستد به فروشگاهی است که نشانش می‌دهید — و اگر لایهٔ هوش مصنوعی را با کلید خودتان روشن کنید، به ارائه‌دهندهٔ خودتان. چیز دیگری از این دستگاه بیرون نمی‌رود.',
+  aboutLimitsTitle: 'کاری که نمی‌کند',
+  aboutLimits:
+    'کپچا حل نمی‌کند، اثر انگشت جعل نمی‌کند، پروکسی نمی‌چرخاند، و بعد از بلاک دوباره تلاش نمی‌کند. وقتی فروشگاهی علامت می‌دهد که نمی‌خواهد خودکار خوانده شود، اسکن می‌ایستد و می‌گوید.',
+  aboutLicence: 'با پروانهٔ MIT. کد و مشکلات:',
+  version: 'نسخه',
 
   inspectTitle: 'بررسی صفحه',
   inspectSoon:

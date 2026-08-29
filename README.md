@@ -14,7 +14,7 @@
 [![CI](https://github.com/hami9/proc123/actions/workflows/ci.yml/badge.svg)](https://github.com/hami9/proc123/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-7a3e1d)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520.11-7a3e1d)](https://nodejs.org)
-[![tests](https://img.shields.io/badge/tests-831-7a3e1d)](#getting-started)
+[![tests](https://img.shields.io/badge/tests-835-7a3e1d)](#getting-started)
 
 [Install on Windows](docs/install-windows.md) &nbsp;·&nbsp; [How it works](#scanning-a-page) &nbsp;·&nbsp; [What it will not do](#what-proc123-will-not-do) &nbsp;·&nbsp; [Contributing](CONTRIBUTING.md)
 
@@ -100,8 +100,9 @@ popup is the newest.
 | 13    | Inspector engine — technologies, fonts, images                | ✅ done |
 | 14    | Inspector in the extension                                    | ✅ done |
 | 15    | App shell — Windows and Linux (Tauri v2)                      | ✅ done |
-| 16    | The app scans on its own                                      | next    |
-| 17    | Bridge — app ↔ extension over loopback                        |         |
+| 16    | The app scans on its own                                      | ✅ done |
+| 16.5  | Design pass — the desktop app                                 |         |
+| 17    | Bridge — app ↔ extension over loopback                        | next    |
 | 18    | Android                                                       |         |
 | 19    | Visual picker for any field                                   |         |
 | 20    | Packaging and distribution                                    |         |
@@ -118,7 +119,7 @@ with the extension kept and improved rather than replaced.
 A, an HTTP client; the extension and the companion own the network. What exists
 is the part everything else is validated against: the canonical product model,
 the normalizers, all four extraction layers, three exporters, a browser
-extension for Chrome and Firefox, and a command-line companion, with 831 tests
+extension for Chrome and Firefox, and a command-line companion, with 835 tests
 behind them.
 
 The **inspector** is the newest part, and it works today: open the extension on

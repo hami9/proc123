@@ -100,6 +100,47 @@ a native shell is not a licence to hit a server harder.
 **Done when** the app scans a static shop and a JS-built one end to end and
 writes a CSV directly to disk, with no browser involved.
 
+### 16.5 · Design pass — the desktop app
+
+**A half phase, and numbered like one on purpose.** It does not add a
+capability; it decides what the thing looks like once there is something real to
+look at. Slotting it between 16 and 17 rather than appending it keeps the whole
+numbering below it untouched, which matters because phase numbers are cited from
+commits, prompt files and `phases.json`.
+
+It comes **after** 16 rather than before, because designing against a fixture
+means designing against invented content. Once the app scans for real there are
+real screens — a long scan reporting progress, a shop with eighty products, a
+result with nothing in it, an error — and those are what the design has to hold.
+
+The scaffold in `packages/app/src/styles.css` is a working neutral, not a
+proposal. It exists so the app is legible while the engine is built, and it is
+meant to be replaced. What makes replacing it cheap is already in place: every
+colour, radius and spacing step is a custom property in one `:root` block, and
+`main.ts` hard-codes none of them — it sets class names and lets the stylesheet
+decide.
+
+**Two things a redesign may not drop**, because they are §18 requirements rather
+than taste:
+
+- **The currency confirmation keeps its own visual weight.** §7.8's toman/rial
+  question is the worst silent failure this project can produce, and §18 is
+  explicit that it must never become a checkbox someone can skip past. It may
+  look like anything; it may not become quiet.
+- **Directional rules stay logical properties** — `inline-start`, never `left`.
+  This is what makes the Persian layout correct rather than approximately
+  mirrored, and it fails silently when it is got wrong.
+
+Both languages and both themes are part of the deliverable, not a follow-up.
+
+**Done when** the desktop app has a settled visual design, in Persian and
+English, light and dark, and `styles.css` is that design rather than a
+placeholder.
+
+> The Android design pass is a separate half phase after 18, and is deliberately
+> not specified here — the phone is a different form factor and deserves its own
+> decisions rather than a shrunk desktop.
+
 ### 17 · The bridge
 
 `127.0.0.1`, per-run token, service worker on the extension side. The extension

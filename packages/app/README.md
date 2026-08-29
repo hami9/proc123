@@ -8,9 +8,10 @@ scripting.
 
 `CLAUDE.md` §15 and §18 are the design. This file is how to build it.
 
-> **Phase 15 is the shell.** It renders a saved scan and does not fetch
-> anything — that is phase 16. The bridge to the extension is phase 17, and
-> Android is deferred until Windows and Linux are finished.
+> **The app scans for real as of phase 16.** It fetches through Rust, runs
+> `core`'s pipeline, renders client-rendered shops in an embedded WebView, and
+> writes a CSV to disk — no browser involved. The bridge to the extension is
+> phase 17, and Android is deferred until Windows and Linux are finished.
 
 > **The visual design is not settled here, and should not be settled here.**
 > What is in `styles.css` is a working neutral: the popup's palette so the three
@@ -108,6 +109,75 @@ one.
 
 ---
 
+## The WebView, and five bugs it took to make it work
+
+`src-tauri/src/render.rs` renders a page in a real WebView so a client-rendered
+shop stops reading as zero products. Getting there cost five distinct bugs and
+**every one of them was ours, not the platform's** — which is worth recording,
+because each looked exactly like "this site does not render".
+
+1. **wry drops the callback while the page is loading.** `webkitgtk/mod.rs`
+   pushes the script onto `pending_scripts` and returns `Ok(())` without ever
+   calling back. So an unanswered `eval` means _not loaded yet_, never _broken_ —
+   treating it as a failure and giving up returned the pre-JS shell every time.
+2. **A window that is never mapped never runs its webview.** `visible(false)` is
+   the obvious choice and it silently prevents the page from loading at all. The
+   render windows are shown, then moved off-screen.
+3. **A time budget has to measure time.** Adding `POLL_MS` per iteration counts
+   poll _turns_; an iteration that waits on an unanswered eval takes far longer,
+   so a "15 second" ceiling kept a window on screen for minutes.
+4. **Probe and payload need different timeouts.** `outerHTML.length` answers
+   instantly; `outerHTML` is hundreds of kilobytes through a JSON boundary. One
+   shared two-second timeout made the real read come back **empty**, which reads
+   exactly like a page that rendered nothing.
+5. **Loading and settling need separate budgets.** Sharing one meant a slow first
+   load spent the whole allowance before a single useful measurement — the same
+   page returned 415 KB when it loaded fast and nothing when it did not.
+
+### Rendering is not extraction
+
+Proven on real Persian shops: technolife renders **1.25 MB** and yields **zero**
+products, because the rendered page carries `ld+json=2` (Organization and
+Breadcrumb), `itemtype=0` and `schema.org/Product=0`. The grid is there; the
+markup is not.
+
+So the WebView fixes "the HTML was empty". It does not fix "this shop publishes
+no structured data" — that is Layer C's job (phase 19), and the two are meant to
+work together: render first, then extract from the rendered DOM.
+
+The app logs what it found (`markup in rendered page: …`) precisely so those two
+failures are never confused again.
+
+---
+
+## Two things that fail silently
+
+Both of these cost real time to find, because neither produces an error — the
+app builds, runs, and simply does the wrong thing.
+
+**`npm run build` alone does not change the running app.** Tauri embeds
+`frontendDist` into the binary at _Rust_ compile time, via
+`generate_context!()`. So after editing anything in `src/` you must rebuild the
+binary too, or you will be looking at the previous front end and concluding your
+change did nothing:
+
+```bash
+npm run build -w @proc123/app && cargo build --manifest-path packages/app/src-tauri/Cargo.toml
+```
+
+`npm run dev` does not have this problem — it watches — but a hand-built binary
+does.
+
+**`window.__TAURI__` does not exist unless `withGlobalTauri` is on.** Tauri v2
+does not expose the global API by default; without `"withGlobalTauri": true` in
+`tauri.conf.json` there is no `invoke`, so every native call fails at runtime
+with nothing at build time to warn you. The symptom is an app that looks
+completely fine and cannot fetch or save. Settings reports **Running on** as
+`browser (no native host)` when this is the case, which is deliberately the
+first place to look.
+
+---
+
 ## Checks
 
 The TypeScript side is covered by the repository's `npm run check` exactly as
@@ -136,10 +206,14 @@ packages/app/
     main.ts             routing and rendering; decides nothing on its own
     currency.ts         §7.8's toman/rial rule, which is the one safety-critical file here
     i18n.ts             Persian and English, and the digits question
-    fixture.ts          a saved CanonicalProduct[] so the shell has something real to draw
+    scan.ts             hands core the two things that differ: a client and a store
+    http.ts             core's HttpClient seam, filled by a call into Rust
+    save.ts             writing a file, through the native side
     styles.css          §18's design system — the popup's palette, with room
   src-tauri/            the native layer, kept thin
     src/lib.rs          setup and commands; Android calls run() from here too
+    src/http.rs         the HTTP transport — a transport and nothing more
+    src/files.rs        the save dialog and the write
     src/main.rs         the desktop entry point and nothing else
   scripts/build.mjs     esbuild, mirroring packages/extension
 ```

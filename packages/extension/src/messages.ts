@@ -6,13 +6,17 @@
  * its own rather than relying on a live conversation.
  */
 
-import type {
-  CrawlStatus,
-  CurrencyUnit,
-  ExporterName,
-  ExtractionIssue,
-  PageInspection,
-} from '@proc123/core';
+import type { CurrencyUnit, ExporterName, PageInspection } from '@proc123/core';
+
+/**
+ * `ScanSummary` and `ScanProgress` moved into `core` when the app needed them
+ * too (CLAUDE.md §2). They are re-exported here because they are still part of
+ * this protocol and every caller in the extension names them from this module.
+ */
+export type { ScanProgress, ScanSummary } from '@proc123/core';
+// Re-exporting does not bind the names locally, and `ExtensionResponse` below
+// names both.
+import type { ScanProgress, ScanSummary } from '@proc123/core';
 import { isExporterName } from '@proc123/exporters';
 
 export interface ScanRequest {
@@ -167,44 +171,6 @@ export interface ExportedCsv {
   rowCount: number;
   /** Every assumption and repair the exporter had to make. */
   warnings: { code: string; message: string }[];
-}
-
-/** What the popup shows. Deliberately small — it is written to storage too. */
-export interface ScanSummary {
-  url: string;
-  title: string;
-  /** Which layer answered: the store's own API, the page's markup, or a profile. */
-  layer: 'A' | 'B' | 'C';
-  platform: string;
-  /** Rows that would be written, variations included. */
-  rowCount: number;
-  /** Products a person would recognise as products. */
-  productCount: number;
-  variationCount: number;
-  duplicates: number;
-  pagesScanned: number;
-  requests: number;
-  status: CrawlStatus;
-  /** Worth showing: errors and warnings, most severe first. */
-  issues: ExtractionIssue[];
-  /** True when a saved crawl was picked up rather than started. */
-  resumed: boolean;
-  /**
-   * How the prices were quoted, e.g. `{ toman: 42, unknown: 5 }`. Shown before
-   * export so the user can confirm the unit rather than discover it afterwards
-   * in the target store (CLAUDE.md §7.8).
-   */
-  currencyUnits: Record<string, number>;
-  finishedAt: string;
-}
-
-/** Where a scan has got to, as the popup renders it. */
-export interface ScanProgress {
-  pagesScanned: number;
-  productCount: number;
-  /** Pages found and not yet read. */
-  queued: number;
-  status: CrawlStatus;
 }
 
 export type ExtensionResponse =
