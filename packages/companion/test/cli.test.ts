@@ -10,6 +10,7 @@
  * tool can make that nobody notices until the products are live in a shop.
  */
 
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { type CliDeps, defaultStateDir, run } from '@proc123/companion';
@@ -300,8 +301,11 @@ describe('scanning', () => {
 
 describe('defaultStateDir', () => {
   it('follows XDG on Linux', () => {
+    // Joined rather than written out, because `join` uses the separator of
+    // whatever platform the suite runs on: the same call yields a backslash
+    // path on Windows, and a literal POSIX string would fail there.
     expect(defaultStateDir({ XDG_STATE_HOME: '/home/x/.local/state' })).toBe(
-      '/home/x/.local/state/proc123'
+      join('/home/x/.local/state', 'proc123')
     );
   });
 
