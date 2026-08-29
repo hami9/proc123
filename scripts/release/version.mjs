@@ -7,10 +7,11 @@
  * a temporary directory.
  *
  * The one rule the whole module serves: **a version must appear in exactly one
- * place per artifact, and nowhere by hand.** Two manifests, a package.json and
- * a User-Agent string are four chances to ship a release where something still
- * claims to be the previous one, and a store will happily accept an upload
- * whose manifest version did not change — which is a slow way to find out.
+ * place per artifact, and nowhere by hand.** Two manifests, a package.json, a
+ * lockfile and a User-Agent string are five chances to ship a release where
+ * something still claims to be the previous one, and a store will happily
+ * accept an upload whose manifest version did not change — which is a slow way
+ * to find out.
  */
 
 /** `1.2.3`, and nothing else. semantic-release never emits a `v` prefix. */
@@ -137,4 +138,58 @@ export function setUserAgentVersion(source, version) {
     throw new Error('no proc123/<version> User-Agent to update');
   }
   return source.replace(pattern, `$1${version}`);
+}
+
+/**
+ * Set the project's own version in `package-lock.json`, in both places npm
+ * writes it: the top-level `version`, and the `packages[""]` entry that
+ * describes this repository as a package.
+ *
+ * Every other `"version"` in the file — thousands of them — belongs to a
+ * dependency, and resolving those is npm's job rather than this script's. So
+ * this is two anchored replacements rather than a global one, and the second is
+ * bounded to the `""` entry's own body: an unbounded search, on a lockfile
+ * whose root entry happened to carry no version, would silently rewrite the
+ * first dependency it found instead. A release that edits a resolved dependency
+ * version is a far worse outcome than one that fails.
+ *
+ * Textual for the same reason as `setJsonVersion`, and with more at stake: the
+ * lockfile is npm's file and nobody reads it by hand, so a release has no
+ * business re-serialising a line of it that it did not mean to change.
+ */
+export function setLockfileVersion(source, version) {
+  assertVersion(version);
+
+  const pattern = /^(\s*"version"\s*:\s*")[^"]*(")/m;
+
+  if (!pattern.test(source)) {
+    throw new Error('lockfile has no top-level "version" field');
+  }
+  const top = source.replace(pattern, `$1${version}$2`);
+
+  const header = /^([ \t]*)""[ \t]*:[ \t]*\{[ \t]*\r?$/m.exec(top);
+  if (!header) {
+    throw new Error('lockfile has no packages[""] entry');
+  }
+
+  /*
+   * The entry ends at the first line that closes a brace at the entry's own
+   * indentation. Everything nested inside it — `workspaces`, `dependencies` —
+   * closes deeper than that, so this cannot run past the end of the entry and
+   * into the first dependency. Plain `indexOf` rather than a built regex: the
+   * needle starts with `\n`, which matches the `\n` of a `\r\n` just as well,
+   * so this holds on a Windows checkout where git hands the file over as CRLF.
+   */
+  const bodyStart = header.index + header[0].length;
+  const bodyEnd = top.indexOf(`\n${header[1]}}`, bodyStart);
+  if (bodyEnd === -1) {
+    throw new Error('lockfile\'s packages[""] entry is not closed');
+  }
+
+  const body = top.slice(bodyStart, bodyEnd);
+  if (!pattern.test(body)) {
+    throw new Error('lockfile\'s packages[""] entry has no "version" field');
+  }
+
+  return top.slice(0, bodyStart) + body.replace(pattern, `$1${version}$2`) + top.slice(bodyEnd);
 }

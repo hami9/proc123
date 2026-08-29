@@ -3,7 +3,11 @@
  *
  * Run by semantic-release's `prepare` step, before the changelog is committed
  * and the release is published — so the tag, the GitHub Release, the two store
- * manifests, and the User-Agent a shop sees in its logs all say the same thing.
+ * manifests, the lockfile, and the User-Agent a shop sees in its logs all say
+ * the same thing.
+ *
+ * Every file written here also has to be listed in `.releaserc.json`'s
+ * `@semantic-release/git` assets, or the sync happens and is never committed.
  *
  *   node scripts/release/sync-version.mjs 1.4.0
  *   node scripts/release/sync-version.mjs --check      # verify, change nothing
@@ -24,6 +28,7 @@ import {
   assertVersion,
   readJsonVersion,
   setJsonVersion,
+  setLockfileVersion,
   setUserAgentVersion,
   updateReadme,
 } from './version.mjs';
@@ -37,6 +42,18 @@ const JSON_FILES = [
   'packages/extension/manifest.chrome.json',
   'packages/extension/manifest.firefox.json',
 ];
+
+/**
+ * The lockfile is its own case: it states the version twice — at the top level
+ * and again in the `packages[""]` entry — and every other `"version"` in it
+ * belongs to a dependency. `setLockfileVersion` is the one that knows the
+ * difference; the plain JSON transform would update the first and leave the
+ * second stale.
+ *
+ * It is not run through Prettier on the way out, and must not be: it is listed
+ * in `.prettierignore`, because it is generated, enormous, and npm's to format.
+ */
+const LOCKFILE = 'package-lock.json';
 
 const USER_AGENT_FILE = 'packages/companion/src/http.ts';
 const README = 'README.md';
@@ -57,8 +74,13 @@ const version = check
   : assertVersion(requested);
 
 const changed = [];
+// Counted rather than computed from `JSON_FILES.length` plus a literal: the
+// literal is what goes stale when a file is added here, and the whole point of
+// this script is that nothing states a fact twice.
+let visited = 0;
 
 async function apply(file, transform) {
+  visited += 1;
   const path = resolve(root, file);
   const before = await readFile(path, 'utf8');
   // `await` because the README's transform runs Prettier, which is async in
@@ -73,6 +95,7 @@ async function apply(file, transform) {
 for (const file of JSON_FILES) {
   await apply(file, (source) => setJsonVersion(source, version));
 }
+await apply(LOCKFILE, (source) => setLockfileVersion(source, version));
 await apply(USER_AGENT_FILE, (source) => setUserAgentVersion(source, version));
 
 /**
@@ -100,7 +123,7 @@ if (check) {
     );
     process.exitCode = 1;
   } else {
-    console.log(`version ${version} is consistent across ${JSON_FILES.length + 2} file(s).`);
+    console.log(`version ${version} is consistent across ${visited} file(s).`);
   }
 } else {
   console.log(

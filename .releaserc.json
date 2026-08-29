@@ -27,10 +27,12 @@
     [
       "@semantic-release/git",
       {
+        "$comment": "One entry per file `scripts/release/sync-version.mjs` writes. A file missing from this list is still synced during `prepare` and then thrown away when the release checkout is discarded, which is how package-lock.json sat four versions behind package.json.",
         "assets": [
           "CHANGELOG.md",
           "README.md",
           "package.json",
+          "package-lock.json",
           "packages/extension/manifest.chrome.json",
           "packages/extension/manifest.firefox.json",
           "packages/companion/src/http.ts"

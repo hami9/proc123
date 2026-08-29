@@ -17,6 +17,7 @@ import {
   renderVersionBadge,
   replaceBetween,
   setJsonVersion,
+  setLockfileVersion,
   setUserAgentVersion,
   updateReadme,
 } from './version.mjs';
@@ -28,7 +29,7 @@ describe('assertVersion', () => {
     expect(assertVersion('2.0.0-beta.1')).toBe('2.0.0-beta.1');
   });
 
-  it('refuses anything else rather than writing it into four files', () => {
+  it('refuses anything else rather than writing it into five files', () => {
     // The `v` prefix is the likely mistake: it is how the tag is spelled, and
     // it is not how the manifests are.
     expect(() => assertVersion('v1.0.0')).toThrow();
@@ -181,5 +182,100 @@ describe('updateReadme', () => {
   it('is idempotent', () => {
     const once = updateReadme(readme, { version: '1.4.0', phases });
     expect(updateReadme(once, { version: '1.4.0', phases })).toBe(once);
+  });
+});
+
+describe('setLockfileVersion', () => {
+  /**
+   * Shaped like npm's own output: the version at the top, again in the
+   * `packages[""]` entry, and then dependencies whose versions are npm's to
+   * resolve and nobody else's to touch.
+   */
+  const lockfile = `{
+  "name": "proc123",
+  "version": "1.6.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "proc123",
+      "version": "1.6.0",
+      "license": "MIT",
+      "workspaces": [
+        "packages/*"
+      ],
+      "devDependencies": {
+        "prettier": "^3.5.0"
+      }
+    },
+    "node_modules/prettier": {
+      "version": "3.5.0",
+      "resolved": "https://registry.npmjs.org/prettier/-/prettier-3.5.0.tgz",
+      "dev": true
+    }
+  }
+}
+`;
+
+  it('writes the version into both places npm states it', () => {
+    const next = setLockfileVersion(lockfile, '1.9.0');
+
+    expect(next.match(/"version": "1\.9\.0"/g)).toHaveLength(2);
+    expect(next).not.toContain('"version": "1.6.0"');
+  });
+
+  it('leaves every dependency version alone', () => {
+    const next = setLockfileVersion(lockfile, '1.9.0');
+
+    expect(next).toContain('"version": "3.5.0"');
+    expect(next).toContain('"prettier": "^3.5.0"');
+    expect(next).toContain('prettier-3.5.0.tgz');
+  });
+
+  it('changes two lines and not one byte more', () => {
+    const next = setLockfileVersion(lockfile, '1.9.0');
+
+    // A release touching a lockfile has to be reviewable at a glance, and the
+    // only way to prove that is to put the old version back and compare.
+    expect(next.replaceAll('"version": "1.9.0"', '"version": "1.6.0"')).toBe(lockfile);
+  });
+
+  it('is idempotent, so a re-run is a no-op', () => {
+    const once = setLockfileVersion(lockfile, '1.9.0');
+    expect(setLockfileVersion(once, '1.9.0')).toBe(once);
+  });
+
+  it('holds on a CRLF checkout, which is what git hands over on Windows', () => {
+    const crlf = lockfile.replaceAll('\n', '\r\n');
+    const next = setLockfileVersion(crlf, '1.9.0');
+
+    expect(next.match(/"version": "1\.9\.0"/g)).toHaveLength(2);
+    expect(next).toContain('"version": "3.5.0"');
+    // No line ending was rewritten on the way through.
+    expect(next.match(/\r\n/g)).toHaveLength(crlf.match(/\r\n/g).length);
+  });
+
+  it('refuses rather than rewriting a dependency when the root entry has no version', () => {
+    // The failure this guards against: with the `""` entry's version gone, an
+    // unbounded search for the next `"version"` finds prettier's and quietly
+    // corrupts the lockfile. Throwing is the only acceptable outcome.
+    const rootless = lockfile.replace(/^ {6}"version": "1\.6\.0",\n/m, '');
+
+    expect(() => setLockfileVersion(rootless, '1.9.0')).toThrow(/packages\[""\] entry has no/);
+    expect(rootless).toContain('"version": "3.5.0"');
+  });
+
+  it('fails loudly when there is no packages[""] entry at all', () => {
+    const flat = `{\n  "version": "1.6.0",\n  "lockfileVersion": 3\n}\n`;
+
+    expect(() => setLockfileVersion(flat, '1.9.0')).toThrow(/no packages\[""\] entry/);
+  });
+
+  it('fails loudly when there is no top-level version', () => {
+    expect(() => setLockfileVersion('{ "name": "x" }', '1.9.0')).toThrow(/no top-level "version"/);
+  });
+
+  it('refuses a version it cannot release before touching the file', () => {
+    expect(() => setLockfileVersion(lockfile, 'v1.9.0')).toThrow();
   });
 });
