@@ -215,6 +215,48 @@ targets without a manual step.
 > this phase to record rather than one phase 15 should have caught — nothing
 > about the shell is Linux-specific by design.
 
+**Partially done.** The desktop half is wired; the rest waits on things this
+phase cannot decide for itself.
+
+Landed:
+
+- CI is a matrix over `ubuntu-latest` and `windows-latest`, for the npm checks
+  and for the Rust job — the first real Windows build.
+- `src-tauri/icons/icon.ico`, generated from `docs/logo.png`. `tauri icon` also
+  emits macOS and iOS sets; those are not committed, because §15 rules both out
+  and a half-present icon set invites a half-built target.
+- An `installers` job builds the MSI, `.deb` and AppImage and attaches them to
+  the GitHub Release. It runs *after* `release` and checks out the tag that
+  semantic-release just created, which is the first tree carrying the new
+  version. A failure leaves the release published and merely un-attached.
+
+Three findings the Windows build turned up, exactly as this phase was told to
+expect:
+
+- **`tauri.conf.json` carried `"version": "0.0.0"` and nothing synced it.**
+  Every MSI would have installed as version 0.0.0, and Windows reads that as
+  the installed version — so no later release would ever look like an upgrade.
+  It is in `sync-version.mjs`'s file list now, and in the release commit's
+  assets so the tag states it.
+- **`.gitattributes` was missing.** With Git's Windows default
+  (`core.autocrlf=true`) every text file checks out as CRLF, and
+  `release:check` compares the README it reads against text Prettier generates,
+  which is LF. It failed on a drift that did not exist. Pinning `eol=lf` fixes
+  it and renormalises nothing — every committed blob was already LF.
+- **One test asserted a POSIX path literal**, so `defaultStateDir` failed on
+  Windows while the implementation was correct. Fixed alongside this.
+
+Still open, and none of it is a matter of writing more YAML:
+
+- **APK** waits on phase 18. Android is not started, so there is nothing to
+  package.
+- **Signing** needs a certificate that costs money and is issued to a person.
+  Until then both installers are unsigned, and Windows will show SmartScreen on
+  first run. That is the project owner's call, not CI's.
+- **Auto-update** needs a signing keypair and an endpoint to serve the manifest.
+  The keypair is the same decision as signing; the endpoint would be the GitHub
+  release itself, so this unblocks as soon as signing does.
+
 ---
 
 ## What is deliberately not here

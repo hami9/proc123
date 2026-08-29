@@ -1,0 +1,25 @@
+# Line endings are LF everywhere, matching .editorconfig's `end_of_line = lf`.
+#
+# Without this, a clone made with Git's Windows default (`core.autocrlf=true`)
+# checks every text file out as CRLF. Nothing in the repository is stored that
+# way — every committed blob is already LF — so the difference is invisible
+# until something compares a file it read against text it generated.
+#
+# `scripts/release/sync-version.mjs --check` does exactly that: it reads the
+# README and compares it to what Prettier would emit, which is LF. On a Windows
+# clone the two never match and the check reports a README/phases.json drift
+# that does not exist. CI only ever ran ubuntu-latest, so it was never seen
+# until phase 20 added windows-latest to the matrix.
+* text=auto eol=lf
+
+# Binaries must never be line-ending converted. `text=auto` detects most of
+# these on content, but naming them is cheaper than trusting the heuristic with
+# an icon that a corrupted byte would silently break.
+*.png binary
+*.ico binary
+*.icns binary
+*.zip binary
+*.exe binary
+*.msi binary
+*.AppImage binary
+*.deb binary
