@@ -2,6 +2,28 @@
 
 Every release, newest first. Generated from Conventional Commits — see CONTRIBUTING.md.
 
+# [1.10.0](https://github.com/hami9/proc123/compare/v1.9.0...v1.10.0) (2026-08-29)
+
+
+### Features
+
+* **release:** build and attach desktop installers from CI ([417a56b](https://github.com/hami9/proc123/commit/417a56b80c36c5747efb9d8199129baca9e73d76))
+
+
+---
+
+## Installing
+
+**Chrome · Edge · Brave** — unzip `proc123-chrome-1.10.0.zip`, open `chrome://extensions`, turn on **Developer mode**, then **Load unpacked** and pick the unzipped folder.
+
+**Firefox** — open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…**, and select `proc123-firefox-1.10.0.zip` directly. No need to unzip.
+
+> Do **not** use `about:addons` → Install Add-on From File. That screen only accepts a Mozilla-signed file and rejects the zip as "not verified". Firefox has required signatures since version 48, and `xpinstall.signatures.required` is ignored on release builds, so no setting changes it. A temporary add-on lasts until you close the browser.
+
+**A terminal, no browser** — download `proc123-win32-x64.exe` or `proc123-linux-x64`, then `proc123 <category-url> -o products.csv`.
+
+proc123 is not in the Chrome Web Store or listed on addons.mozilla.org yet, which is why the install is a folder rather than a button — [publishing.md](https://github.com/hami9/proc123/blob/main/docs/publishing.md) covers what that takes.
+
 # [1.9.0](https://github.com/hami9/proc123/compare/v1.8.0...v1.9.0) (2026-08-29)
 
 
