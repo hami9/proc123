@@ -75,6 +75,19 @@ export const storage = {
   get local(): chrome.storage.StorageArea {
     return api().storage.local;
   },
+
+  /**
+   * Memory-backed, and that is the point.
+   *
+   * `session` is cleared when the browser closes and is never written to disk,
+   * which is the only place the bridge token may live on this side (§17): the
+   * app generates it per run and never persists it, so an extension that wrote
+   * it into `local` would be the half of the pair that broke the promise. It
+   * still has to survive a service-worker restart, which rules out a variable.
+   */
+  get session(): chrome.storage.StorageArea {
+    return api().storage.session;
+  },
 };
 
 export const permissions = {

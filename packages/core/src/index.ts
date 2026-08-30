@@ -1,4 +1,5 @@
 export * from './ai/index.js';
+export * from './bridge/index.js';
 export * from './config/index.js';
 export * from './crawl/index.js';
 export * from './extract/index.js';

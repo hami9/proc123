@@ -58,6 +58,8 @@ declare namespace chrome {
       remove(keys: string | string[]): Promise<void>;
     }
     const local: StorageArea;
+    /** Memory only, cleared when the browser closes. Holds the bridge token. */
+    const session: StorageArea;
   }
 
   namespace permissions {
