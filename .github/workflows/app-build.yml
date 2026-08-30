@@ -1,0 +1,75 @@
+name: App build (manual)
+
+# Run by hand, from any branch, when somebody needs a real installer to test
+# with rather than a release to publish.
+#
+# This exists because phase 20's whole point is that using the app requires no
+# Rust toolchain — and that applies to the person testing a branch as much as to
+# anyone who downloads a release. The installers land as workflow artefacts, so
+# nothing here tags, publishes, or touches a release.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: app-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    name: Installer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # One platform failing should not hide whether the other worked.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # The same list as ci.yml's app job. Windows needs no equivalent: the
+      # runner ships MSVC and WebView2 is part of the OS.
+      - name: System dependencies for Tauri
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            build-essential \
+            file \
+            libssl-dev \
+            libxdo-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/app/src-tauri
+          key: ${{ matrix.os }}
+
+      - run: npm ci
+
+      # `tauri build` runs `beforeBuildCommand`, which builds the front end.
+      - name: Build the installer
+        run: npm run app:build -w @proc123/app
+
+      # Unsigned, exactly as the release ones are. Windows will show
+      # SmartScreen on first run; that is expected, not a failure.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proc123-app-${{ matrix.os }}
+          path: |
+            packages/app/src-tauri/target/release/bundle/msi/*.msi
+            packages/app/src-tauri/target/release/bundle/deb/*.deb
+            packages/app/src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 7
