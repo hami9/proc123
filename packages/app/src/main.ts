@@ -26,6 +26,7 @@ import { ALL_EXPORTERS, DEFAULT_CONFIG } from '@proc123/core';
 import { EXPORTER_EXTENSIONS, EXPORTER_LABELS, exportProducts } from '@proc123/exporters';
 
 import { canExport, currencyQuestion, readingsOf } from './currency.js';
+import { bridgeIdentity, listenForOffers, runOffer, type BridgeIdentity } from './bridge.js';
 import { saveTextFile } from './save.js';
 import { scanCategory } from './scan.js';
 import {
@@ -722,6 +723,31 @@ function renderAbout(): void {
   card.append(meta);
   view.append(card);
 
+  // §17's pairing, and the only place the token is ever shown. The card is
+  // present either way: an app with no bridge has to say so rather than leave
+  // a user wondering where the pairing step went.
+  const bridgeCard = el('div', 'card stack');
+  bridgeCard.append(el('h2', undefined, t('bridgeTitle')));
+  if (bridge === undefined) {
+    bridgeCard.append(el('p', 'small', t('bridgeOffline')));
+  } else {
+    bridgeCard.append(el('p', 'small', t('bridgeWhat')));
+    const code = `${String(bridge.port)}-${bridge.token}`;
+    const row = el('div', 'row');
+    const field = el('code', 'badge', code);
+    row.append(field);
+    const copy = el('button', 'ghost', t('bridgeCopy'));
+    copy.addEventListener('click', () => {
+      void navigator.clipboard.writeText(code).then(() => {
+        copy.textContent = t('bridgeCopied');
+      });
+    });
+    row.append(copy);
+    bridgeCard.append(row);
+    if (bridgeBusy) bridgeCard.append(el('p', 'small', t('bridgeWorking')));
+  }
+  view.append(bridgeCard);
+
   // §15's promise, stated where a user can read it rather than only in a
   // repository nobody opens.
   const privacy = el('div', 'card stack');
@@ -757,6 +783,16 @@ function renderAbout(): void {
  * exist. Failing to read it is not worth an error — the label simply says so.
  */
 let hostLabel = '—';
+/**
+ * The pairing code for this run, or `undefined` when the bridge did not start.
+ *
+ * Held in a module variable and never written anywhere: §17 says the token is
+ * per-run and never persisted, and `localStorage` would break that as surely
+ * as a file would.
+ */
+let bridge: BridgeIdentity | undefined;
+/** What the extension last handed over, so the About card can say so. */
+let bridgeBusy = false;
 /** From the native side, so one number governs — `Cargo.toml`'s. */
 let appVersion = '—';
 
@@ -799,5 +835,19 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('[data-route]'
 
 void (async (): Promise<void> => {
   await readHost();
+  bridge = await bridgeIdentity();
+
+  // Offers arrive whether or not the About tab is open — the point of the
+  // bridge is that a scan outlives the popup that started it, so the listener
+  // is installed once at startup rather than by whichever view is showing.
+  await listenForOffers((offer) => {
+    bridgeBusy = true;
+    renderAbout();
+    void runOffer(offer, state.config).finally(() => {
+      bridgeBusy = false;
+      renderAbout();
+    });
+  });
+
   renderAll();
 })();

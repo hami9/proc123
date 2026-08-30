@@ -34,6 +34,11 @@ tauri-plugin-dialog = "2"
 # Tauri already pulls tokio in — this only makes the dependency honest.
 tokio = { version = "1", features = ["rt", "time", "sync"] }
 tauri = { version = "2", features = [] }
+# The bridge token, and the only randomness in the project (§17). The OS
+# CSPRNG rather than anything seeded from the clock: a token guessable from
+# when the app started is not a token. 0.2 is pinned because 0.3 renamed the
+# entry point, and this is the one call site.
+getrandom = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

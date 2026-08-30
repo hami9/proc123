@@ -11,9 +11,11 @@
 //! toman price as rial (§7.8) — is exactly the kind of rule that would be
 //! tempting to "just handle" natively and must not be.
 //!
-//! Phase 16 adds HTTP (`http.rs`) — a transport and nothing more. The bridge is
-//! still phase 17.
+//! Phase 16 adds HTTP (`http.rs`) — a transport and nothing more. Phase 17 adds
+//! `bridge.rs`, which carries pages and results between this app and the
+//! extension and interprets neither.
 
+mod bridge;
 mod files;
 mod http;
 mod render;
@@ -54,6 +56,19 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let _ = app.get_webview_window("main");
+
+            // A bridge that will not bind must not stop the app starting: §17
+            // says both surfaces work alone, and an app that refuses to launch
+            // because a port was unavailable has made the bridge mandatory.
+            // The UI reads `bridge_info` and reports the failure in words.
+            match bridge::Bridge::start(app.handle().clone()) {
+                Ok(started) => {
+                    app.manage(started);
+                }
+                Err(error) => {
+                    eprintln!("the bridge could not start, continuing without it: {error}");
+                }
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -61,7 +76,9 @@ pub fn run() {
             http::http_fetch,
             files::save_text_file,
             render::rendered_html,
-            render::evaluate
+            render::evaluate,
+            bridge::bridge_info,
+            bridge::bridge_report
         ])
         .run(tauri::generate_context!())
         .expect("the proc123 window could not be created");

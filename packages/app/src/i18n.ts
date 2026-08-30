@@ -97,6 +97,15 @@ const en = {
   aboutTitle: 'About proc123',
   aboutWhat:
     'Reads a category page from a shop and writes a CSV another shop can import. WooCommerce, Shopify, or plain JSON.',
+  bridgeTitle: 'Connect the browser extension',
+  bridgeWhat:
+    'The extension can read a shop you are signed in to; this app cannot. Paste this code into the extension to let it hand pages over. The code changes every time the app starts and is never saved.',
+  bridgeCopy: 'Copy',
+  bridgeCopied: 'Copied',
+  bridgeOffline:
+    'The bridge did not start, so pairing is unavailable. Everything else in the app works normally.',
+  bridgeWorking: 'Scanning a page the extension handed over…',
+
   aboutPrivacyTitle: 'No account, no server, no telemetry',
   aboutPrivacy:
     'There is no sign-up and nothing owned by this project to sign in to. The only requests this app makes are to the shop you point it at — and, if you switch on the AI fallback with your own key, to your own provider. Nothing else leaves this machine.',
@@ -195,6 +204,14 @@ const fa: Catalogue = {
   aboutTitle: 'دربارهٔ proc123',
   aboutWhat:
     'صفحهٔ دسته‌بندی یک فروشگاه را می‌خواند و CSV می‌نویسد که فروشگاه دیگری بتواند وارد کند. WooCommerce، Shopify، یا JSON ساده.',
+  bridgeTitle: 'اتصال افزونهٔ مرورگر',
+  bridgeWhat:
+    'افزونه می‌تواند فروشگاهی را بخواند که در آن وارد شده‌اید؛ این برنامه نمی‌تواند. این کد را در افزونه بچسبانید تا صفحه‌ها را تحویل بدهد. کد با هر بار اجرای برنامه عوض می‌شود و هیچ‌جا ذخیره نمی‌شود.',
+  bridgeCopy: 'رونوشت',
+  bridgeCopied: 'رونوشت شد',
+  bridgeOffline: 'پل راه‌اندازی نشد، پس اتصال ممکن نیست. بقیهٔ برنامه عادی کار می‌کند.',
+  bridgeWorking: 'در حال اسکن صفحه‌ای که افزونه تحویل داد…',
+
   aboutPrivacyTitle: 'بدون حساب، بدون سرور، بدون تله‌متری',
   aboutPrivacy:
     'ثبت‌نامی وجود ندارد و چیزی متعلق به این پروژه نیست که واردش شوید. تنها درخواست‌هایی که این برنامه می‌فرستد به فروشگاهی است که نشانش می‌دهید — و اگر لایهٔ هوش مصنوعی را با کلید خودتان روشن کنید، به ارائه‌دهندهٔ خودتان. چیز دیگری از این دستگاه بیرون نمی‌رود.',
