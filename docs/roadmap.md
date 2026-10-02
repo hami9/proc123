@@ -100,7 +100,7 @@ a native shell is not a licence to hit a server harder.
 **Done when** the app scans a static shop and a JS-built one end to end and
 writes a CSV directly to disk, with no browser involved.
 
-### 16.5 · Design pass — the desktop app
+### 16.5 · Design pass — the desktop app — **done**
 
 **A half phase, and numbered like one on purpose.** It does not add a
 capability; it decides what the thing looks like once there is something real to
@@ -136,6 +136,36 @@ Both languages and both themes are part of the deliverable, not a follow-up.
 **Done when** the desktop app has a settled visual design, in Persian and
 English, light and dark, and `styles.css` is that design rather than a
 placeholder.
+
+Landed as a minimal, Swiss-leaning design: one bundled typeface (Vazirmatn,
+which carries Latin and Persian in one family, so the two languages finally look
+like the same app), Lucide icons in one stroke weight, stat tiles for a result,
+an empty state that says where to start, a progress bar paired with a sentence
+saying what it is doing, and an Android-shaped tab bar below 720px. Verified by
+screenshot in English and Persian, light and dark, at 1180px and 375px, against
+the real pipeline over a Persian WooCommerce fixture.
+
+The starting point came from the UI/UX Pro Max skill, and three of its
+recommendations were overruled by this repository's own rules: its teal palette
+(§18 keeps the brand's), its Google Fonts link (§15 forbids the request and the
+CSP would refuse it), and its GSAP motion (a 150ms colour change needs CSS).
+
+> **The design pass found a §7.8 bug, and it was not a design bug.** The
+> currency card would not render against a Persian fixture whose prices were
+> IRR with no unit stated — which is exactly the case it exists for. The cause
+> was in `core`: `configToScanOptions` passed `displayUnit` (default `toman`) as
+> the unit prices were *quoted* in, so every unstated price was silently read as
+> toman and no surface ever had anything to ask. The CLI's `--unit` never reached
+> extraction at all, so `--unit rial` multiplied a rial shop's prices by ten.
+> Fixed separately (`fix(core)`), with regression tests that fail on the old
+> code. Worth knowing for anyone designing a safety step: the first test of one
+> is whether it can be made to *appear*.
+>
+> **One CSS trap worth knowing.** The primary button's hover is
+> `button:hover:not(:disabled)`, specificity (0,2,1), which outranks a plain
+> `.nav-item:hover` (0,2,0) — every hovered nav item turned solid brown. Any
+> component built on `<button>` that wants its own hover needs the same
+> `:not(:disabled)` to win.
 
 > The Android design pass is a separate half phase after 18, and is deliberately
 > not specified here — the phone is a different form factor and deserves its own

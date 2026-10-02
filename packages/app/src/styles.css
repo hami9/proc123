@@ -1,100 +1,164 @@
 /*
- * The app's design system — CLAUDE.md §18.
+ * The app's design system — CLAUDE.md §18, phase 16.5.
  *
- * The palette is the popup's, deliberately. Three surfaces sharing one engine
- * should read as one product, so `--accent: #7a3e1d` and the warm neutrals are
- * carried over unchanged rather than reinvented at a larger size.
+ * Direction: minimal, Swiss-leaning, warm. Generated as a starting point with
+ * the UI/UX Pro Max skill ("Minimalism & Swiss Style": clean, functional, white
+ * space, clear hierarchy) and then constrained by this repository's own rules,
+ * which win wherever the two disagree:
  *
- * What is NOT carried over is the popup's compression. 360px is a constraint
- * the popup has and the app does not, and §18 is explicit that the app should
- * not be a stretched popup: the type is bigger, the spacing is real, and the
- * views have room to be read rather than skimmed.
+ * - **The palette is the brand's, not the skill's.** The skill proposed teal and
+ *   orange. §18 requires the popup's `#7a3e1d` and warm neutrals so the three
+ *   surfaces read as one product, so only the skill's token *structure* was
+ *   kept — background, surface, foreground, muted, border, primary, ring —
+ *   and filled with the brand.
+ * - **The typeface is bundled, not linked.** The skill pointed at Google Fonts.
+ *   §15 allows the app no outbound request except to the shop being scanned,
+ *   and the CSP refuses a font CDN anyway. Vazirmatn is the skill's own match for
+ *   "minimal, RTL, Arabic script, English" and carries both languages in one
+ *   family, so English and Persian finally look like the same app.
+ * - **No animation library.** The skill offered GSAP; a 150ms colour transition
+ *   needs CSS, and `prefers-reduced-motion` switches even that off.
  *
- * Everything directional uses logical properties — `inline-start`, not `left`.
- * That is what makes the Persian layout correct rather than mirrored-ish, and
- * it costs nothing in English.
+ * Two rules here are requirements, not taste, and a later redesign may not
+ * drop them (roadmap, phase 16.5):
+ *
+ * - **The currency confirmation keeps its own visual weight.** §7.8's toman/rial
+ *   question is the worst silent failure this project can produce. In a
+ *   minimal interface everything else got quieter; that one got no quieter.
+ * - **Directional rules are logical properties** — `inline-start`, never `left`.
+ *   That is what makes the Persian layout correct rather than mirrored-ish.
+ *
+ * Every colour, radius and spacing step is a custom property in `:root`, and
+ * `main.ts` hard-codes none of them: it sets class names and lets this file
+ * decide.
  */
+
+/* ------------------------------------------------------------------ type */
+
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('fonts/vazirmatn-arabic.woff2') format('woff2-variations');
+  unicode-range:
+    U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E,
+    U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('fonts/vazirmatn-latin.woff2') format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------------------------------------------------------------- tokens */
 
 :root {
   color-scheme: light dark;
 
-  --fg: #14110f;
-  --fg-muted: #6b6560;
-  --line: #e2ddd7;
-  --bg: #ffffff;
-  --bg-sunken: #f7f4f1;
-  --bg-raised: #ffffff;
-  --accent: #7a3e1d;
-  --accent-fg: #ffffff;
-  --error: #a02020;
-  --warn: #8a6100;
+  /* Surfaces, from the back of the window to the front. */
+  --bg: #faf8f6;
+  --surface: #ffffff;
+  --surface-sunken: #f3efeb;
+
+  --fg: #1c1714;
+  /* 5.6:1 on the surface — muted, never illegible. */
+  --fg-muted: #6f6760;
+  --border: #e9e3dd;
+  --border-strong: #d6cec6;
+
+  /* The brand. Shared with the popup on purpose (§18). */
+  --primary: #7a3e1d;
+  --on-primary: #ffffff;
+  --primary-soft: color-mix(in srgb, var(--primary) 9%, var(--surface));
+
+  --warn: #8a5a00;
+  --warn-soft: color-mix(in srgb, var(--warn) 9%, var(--surface));
+  --error: #b42318;
+  --error-soft: color-mix(in srgb, var(--error) 8%, var(--surface));
   --ok: #2f6b32;
 
-  /* A single scale, so spacing is chosen rather than guessed. */
-  --gap-1: 4px;
-  --gap-2: 8px;
-  --gap-3: 12px;
-  --gap-4: 16px;
-  --gap-5: 24px;
-  --gap-6: 32px;
+  /* One spacing scale, so space is chosen rather than guessed. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
 
-  --radius: 8px;
-  --radius-sm: 5px;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  /* Barely there. Hierarchy comes from space and type, not from depth. */
+  --shadow: 0 1px 2px rgb(28 23 20 / 0.04), 0 1px 1px rgb(28 23 20 / 0.03);
 
   /*
    * 44px is the touch target Android needs (§18 — the phone is a first-class
-   * target, not a port). Applying it on desktop too costs nothing and means
+   * target, not a port). Applying it on the desktop costs nothing and means
    * phase 18 inherits a layout that already fits a thumb.
    */
   --touch: 44px;
+  --icon: 18px;
 
-  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  /*
-   * Persian needs a font stack that actually has Persian glyphs. Vazirmatn is
-   * the common choice on the shops this tool reads; the rest are fallbacks that
-   * ship with the platforms we target. No webfont is downloaded — §15 says the
-   * only outbound requests are to the shop being scanned, and that includes not
-   * fetching a font from a CDN.
-   */
-  --font-fa: Vazirmatn, 'Noto Sans Arabic', Tahoma, system-ui, sans-serif;
+  --font: 'Vazirmatn', system-ui, 'Segoe UI', 'Noto Sans Arabic', Tahoma, sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', 'DejaVu Sans Mono', monospace;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --fast: 150ms;
+
+  --sidebar: 232px;
+  --content: 1040px;
 }
 
 /*
  * Dark is defined once and applied from two places: the OS preference, which is
- * §18's default, and an explicit `data-theme` the settings pane sets when
- * somebody overrides it. The override has to win in *both* directions, which is
- * why light is restated below rather than left to cascade — without it,
- * choosing Light on a dark-mode desktop would do nothing.
+ * §18's default, and an explicit `data-theme` that Settings sets when somebody
+ * overrides it. Light is restated under its own selector so the override wins in
+ * *both* directions — without it, choosing Light on a dark desktop does nothing.
  */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --fg: #f2ede8;
-    --fg-muted: #a8a099;
-    --line: #35302b;
-    --bg: #1b1815;
-    --bg-sunken: #141210;
-    --bg-raised: #241f1b;
-    --accent: #e0956a;
-    --accent-fg: #1b1815;
-    --error: #f08a80;
-    --warn: #e0b45a;
-    --ok: #8ec98f;
+    --bg: #161311;
+    --surface: #1e1a17;
+    --surface-sunken: #12100e;
+    --fg: #f3eee9;
+    --fg-muted: #a69d95;
+    --border: #2e2823;
+    --border-strong: #3f3731;
+    --primary: #e39a6f;
+    --on-primary: #1a1310;
+    --warn: #e8b85c;
+    --error: #f2877c;
+    --ok: #8fcf90;
+    --shadow: none;
   }
 }
 
 :root[data-theme='dark'] {
-  --fg: #f2ede8;
-  --fg-muted: #a8a099;
-  --line: #35302b;
-  --bg: #1b1815;
-  --bg-sunken: #141210;
-  --bg-raised: #241f1b;
-  --accent: #e0956a;
-  --accent-fg: #1b1815;
-  --error: #f08a80;
-  --warn: #e0b45a;
-  --ok: #8ec98f;
+  --bg: #161311;
+  --surface: #1e1a17;
+  --surface-sunken: #12100e;
+  --fg: #f3eee9;
+  --fg-muted: #a69d95;
+  --border: #2e2823;
+  --border-strong: #3f3731;
+  --primary: #e39a6f;
+  --on-primary: #1a1310;
+  --warn: #e8b85c;
+  --error: #f2877c;
+  --ok: #8fcf90;
+  --shadow: none;
 }
+
+/* ------------------------------------------------------------------ base */
 
 * {
   box-sizing: border-box;
@@ -109,76 +173,118 @@ body {
 body {
   background: var(--bg);
   color: var(--fg);
-  font: 15px/1.55 var(--font);
+  font: 15px/1.6 var(--font);
   -webkit-font-smoothing: antialiased;
-}
-
-/* Persian gets its own stack, applied from the root once the language is set. */
-:root[lang='fa'] body {
-  font-family: var(--font-fa);
-}
-
-/*
- * Persian and Arabic-Indic numerals render as the reader expects while the
- * *data* stays ASCII-normalised (§7.8). This is a display transform only —
- * nothing here touches the value that reaches a CSV.
- */
-:root[lang='fa'] .numeral {
-  font-feature-settings: 'ss01';
+  text-rendering: optimizeLegibility;
 }
 
 h1,
 h2,
-h3 {
+h3,
+p {
   margin: 0;
+}
+
+h1 {
+  font-size: 24px;
   line-height: 1.25;
   font-weight: 650;
+  letter-spacing: -0.01em;
 }
-h1 {
-  font-size: 22px;
-}
+
 h2 {
-  font-size: 17px;
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 620;
 }
-h3 {
-  font-size: 15px;
+
+/* Letter-spacing is a Latin habit. In Persian it breaks the joins. */
+:root[lang='fa'] h1 {
+  letter-spacing: 0;
 }
 
 a {
-  color: var(--accent);
+  color: var(--primary);
+  text-underline-offset: 3px;
 }
 
-/* ------------------------------------------------------------------ layout */
+/*
+ * Numbers line up. A column of prices that wobbles is harder to check against
+ * the shop, and checking against the shop is what the currency step asks for.
+ */
+.numeral,
+.stat-value,
+td.numeral {
+  font-variant-numeric: tabular-nums;
+}
+
+.icon {
+  inline-size: var(--icon);
+  block-size: var(--icon);
+  flex: none;
+}
+
+/*
+ * The focus ring is never removed, only styled — keyboard users get the same
+ * app as everyone else. `:focus-visible` keeps it off mouse clicks.
+ */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- layout */
 
 .shell {
   display: grid;
-  grid-template-columns: 208px 1fr;
+  grid-template-columns: var(--sidebar) 1fr;
   height: 100%;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-1);
-  padding: var(--gap-4);
-  background: var(--bg-sunken);
-  /* `inline-end` rather than `right`: in Persian the sidebar is on the right
-     and its border has to move with it. */
-  border-inline-end: 1px solid var(--line);
+  gap: var(--space-1);
+  padding: var(--space-5) var(--space-3);
+  background: var(--surface-sunken);
+  /* `inline-end`, not `right`: in Persian the sidebar is on the right and its
+     border has to move with it. */
+  border-inline-end: 1px solid var(--border);
   overflow-y: auto;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: var(--gap-2);
-  margin-bottom: var(--gap-4);
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+  margin-block-end: var(--space-5);
+  font-size: 17px;
   font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.brand img {
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: 7px;
+}
+
+.sidebar-foot {
+  margin-block-start: auto;
+  padding: var(--space-3);
+  color: var(--fg-muted);
+  font-size: 12px;
 }
 
 .main {
-  padding: var(--gap-5);
   overflow-y: auto;
+}
+
+.view {
+  max-inline-size: var(--content);
+  margin-inline: auto;
+  padding: var(--space-6) var(--space-6) var(--space-7);
 }
 
 .view[hidden] {
@@ -186,8 +292,8 @@ a {
 }
 
 /*
- * One breakpoint, and it is the phone. Below this the sidebar becomes a top
- * bar — which is the layout phase 18 needs, built now rather than patched on.
+ * One breakpoint, and it is the phone. Below it the sidebar becomes a top bar —
+ * the layout phase 18 needs, built now rather than patched on later.
  */
 @media (max-width: 720px) {
   .shell {
@@ -197,101 +303,71 @@ a {
   .sidebar {
     flex-direction: row;
     align-items: center;
+    padding: var(--space-2) var(--space-3);
     overflow-x: auto;
     border-inline-end: none;
-    border-block-end: 1px solid var(--line);
+    border-block-end: 1px solid var(--border);
   }
   .brand {
-    margin-bottom: 0;
+    margin-block-end: 0;
+    padding-inline-end: var(--space-2);
   }
-  .main {
-    padding: var(--gap-4);
+  /* The phone gets a tab bar and nothing else in it: the logo cost four
+     labels their last few letters at 375px, and a tab bar is not where a
+     brand needs to be. */
+  .brand,
+  .sidebar-foot {
+    display: none;
+  }
+  /* A tab bar: four equal targets with the icon over a short label, so all of
+     them fit at 375px instead of the last one scrolling off the edge. */
+  .nav-item {
+    flex: 1 1 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-inline-size: 0;
+    padding: var(--space-1) var(--space-1);
+    font-size: 11.5px;
+  }
+  .nav-item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-inline-size: 100%;
+  }
+  .view {
+    padding: var(--space-5) var(--space-4) var(--space-6);
   }
 }
 
-/* ----------------------------------------------------------------- controls */
-
-button {
-  min-height: var(--touch);
-  padding: 0 var(--gap-4);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: var(--accent-fg);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-button.secondary {
-  background: transparent;
-  color: var(--accent);
-  font-weight: 500;
-}
-
-button.quiet {
-  border-color: transparent;
-  background: transparent;
-  color: var(--fg-muted);
-  font-weight: 500;
-  text-align: start;
-}
-
-.nav-item {
-  min-height: var(--touch);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--fg-muted);
-  font-weight: 600;
-  text-align: start;
-  padding: 0 var(--gap-3);
-  cursor: pointer;
-}
-
-.nav-item[aria-current='page'] {
-  background: var(--bg-raised);
-  border-color: var(--line);
-  color: var(--accent);
-}
-
-select,
-input[type='text'],
-input[type='number'] {
-  min-height: var(--touch);
-  padding: 0 var(--gap-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  color: var(--fg);
-  font: inherit;
-}
-
-/* -------------------------------------------------------------------- cards */
-
-.card {
-  padding: var(--gap-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--bg-raised);
-}
+/* ------------------------------------------------------------ composition */
 
 .stack {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-4);
+  gap: var(--space-4);
+}
+
+.view.stack {
+  gap: var(--space-5);
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: var(--gap-3);
+  gap: var(--space-3);
   flex-wrap: wrap;
+}
+
+.page-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.lede {
+  color: var(--fg-muted);
+  max-inline-size: 62ch;
 }
 
 .muted {
@@ -302,36 +378,335 @@ input[type='number'] {
   font-size: 13px;
 }
 
-/* --------------------------------------------------------------- the table */
+.tone-warn {
+  color: var(--warn);
+}
+
+.tone-error {
+  color: var(--error);
+}
+
+.tone-ok {
+  color: var(--ok);
+}
+
+/* ------------------------------------------------------------- navigation */
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  /* Overrides the centring every other button gets: a nav label reads from
+     the start edge, like the list it is. */
+  justify-content: flex-start;
+  gap: var(--space-3);
+  min-height: var(--touch);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--fg-muted);
+  font: inherit;
+  font-weight: 550;
+  text-align: start;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+/*
+ * `:not(:disabled)` is here for specificity, not logic. The primary button's
+ * hover is `button:hover:not(:disabled)`, which outranks a plain
+ * `.nav-item:hover` — and did, painting every hovered nav item solid brown.
+ */
+.nav-item:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fg) 5%, transparent);
+  color: var(--fg);
+}
+
+.nav-item[aria-current='page'],
+.nav-item[aria-current='page']:hover:not(:disabled) {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow:
+    var(--shadow),
+    inset 0 0 0 1px var(--border);
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--on-primary);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--fast) var(--ease),
+    border-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 88%, var(--fg));
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--fg);
+  font-weight: 550;
+}
+
+button.secondary:hover:not(:disabled) {
+  background: var(--surface-sunken);
+}
+
+/* ------------------------------------------------------------------ inputs */
+
+select,
+input[type='text'],
+input[type='number'] {
+  min-height: var(--touch);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  transition: border-color var(--fast) var(--ease);
+}
+
+select:hover,
+input:hover {
+  border-color: color-mix(in srgb, var(--fg) 30%, var(--border-strong));
+}
+
+input::placeholder {
+  color: color-mix(in srgb, var(--fg-muted) 75%, transparent);
+}
+
+/* The scan field: the one input the app exists for, so it is the largest. */
+.scanbar {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.scanbar .field-wrap {
+  position: relative;
+  flex: 1 1 320px;
+  display: flex;
+  align-items: center;
+  /* The field is LTR because a URL is (main.ts), so its icon and its padding
+     have to agree on which side "start" is. Without this, in Persian the icon
+     went to the right while the padding stayed on the left, and a long URL
+     ran underneath the icon. */
+  direction: ltr;
+}
+
+.scanbar .field-wrap .icon {
+  position: absolute;
+  inset-inline-start: var(--space-3);
+  color: var(--fg-muted);
+  pointer-events: none;
+}
+
+.scanbar input {
+  inline-size: 100%;
+  min-height: 48px;
+  padding-inline-start: calc(var(--space-3) + var(--icon) + var(--space-2));
+  font-size: 15px;
+}
+
+.scanbar button {
+  min-height: 48px;
+}
+
+/* ---------------------------------------------------------------- surfaces */
+
+.card {
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* --------------------------------------------------------------- progress */
+
+/*
+ * §18: a long scan must say what it is doing. The bar shows that something is
+ * happening; the line under it says what. An indeterminate bar on its own would
+ * be exactly the silent spinner §18 forbids.
+ */
+.progress {
+  position: relative;
+  block-size: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--primary-soft);
+}
+
+.progress::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inline-size: 35%;
+  border-radius: inherit;
+  background: var(--primary);
+  animation: progress 1.4s var(--ease) infinite;
+}
+
+@keyframes progress {
+  from {
+    inset-inline-start: -35%;
+  }
+  to {
+    inset-inline-start: 100%;
+  }
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 14px;
+}
+
+/* ------------------------------------------------------------------- stats */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.stat-label {
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--fg-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.issues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.issues li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 14px;
+}
+
+.issues .icon {
+  --icon: 16px;
+  margin-block-start: 3px;
+}
+
+/* ---------------------------------------------------------------- the table */
 
 .table-wrap {
   /* Wide content scrolls inside its own box; the page never scrolls sideways. */
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  overflow: auto;
+  max-block-size: 60vh;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 table {
   border-collapse: collapse;
-  width: 100%;
+  inline-size: 100%;
   font-size: 14px;
 }
 
 th,
 td {
-  padding: var(--gap-2) var(--gap-3);
+  padding: var(--space-3) var(--space-4);
   text-align: start;
-  border-block-end: 1px solid var(--line);
+  border-block-end: 1px solid var(--border);
   white-space: nowrap;
 }
 
 th {
-  background: var(--bg-sunken);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  background: var(--surface-sunken);
   color: var(--fg-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+tbody tr {
+  transition: background-color var(--fast) var(--ease);
+}
+
+tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
 }
 
 tr:last-child td {
@@ -341,22 +716,28 @@ tr:last-child td {
 td.variation {
   /* A variation belongs to the row above it, and the indent is how you see
      that at a glance (§7.4 puts them in exactly that order). */
-  padding-inline-start: var(--gap-5);
+  padding-inline-start: calc(var(--space-4) + var(--space-5));
   color: var(--fg-muted);
+}
+
+td.kind {
+  color: var(--fg-muted);
+  font-size: 13px;
 }
 
 /* ------------------------------------------------------- the currency step */
 
 /*
- * §7.8 and §18. Reading toman as rial is a silent 10x price error and the worst
- * thing this project can produce, so the confirmation is a deliberate step with
- * its own visual weight — never a checkbox someone can skip past.
+ * §7.8 and §18. Reading toman as rial is a silent ten-times price error, and the
+ * worst thing this project can produce. Everything else in this design got
+ * quieter; this did not. A 2px warning border, its own tint, its own icon, and
+ * two choices that each show what the first price *becomes* — never a checkbox.
  */
 .currency {
+  padding: var(--space-5);
   border: 2px solid var(--warn);
-  border-radius: var(--radius);
-  padding: var(--gap-4);
-  background: color-mix(in srgb, var(--warn) 8%, var(--bg));
+  border-radius: var(--radius-lg);
+  background: var(--warn-soft);
 }
 
 .currency h2 {
@@ -364,44 +745,163 @@ td.variation {
 }
 
 .currency .choices {
-  display: flex;
-  gap: var(--gap-3);
-  flex-wrap: wrap;
-  margin-block-start: var(--gap-3);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+  margin-block-start: var(--space-2);
 }
 
 .choice {
-  flex: 1 1 220px;
-  min-height: var(--touch);
-  padding: var(--gap-3);
-  border: 2px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
   color: var(--fg);
-  font: inherit;
+  font-weight: 600;
   text-align: start;
-  cursor: pointer;
+  white-space: normal;
+}
+
+.choice:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--primary);
 }
 
 .choice[aria-pressed='true'] {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--fg);
 }
 
 .choice .example {
-  display: block;
-  margin-block-start: var(--gap-1);
   color: var(--fg-muted);
   font-size: 13px;
   font-weight: 400;
 }
 
-.badge {
+/* ------------------------------------------------------------- export bar */
+
+.export-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+/* -------------------------------------------------------------- empty state */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-5);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.empty .halo {
+  display: grid;
+  place-items: center;
+  inline-size: 56px;
+  block-size: 56px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.empty .halo .icon {
+  --icon: 24px;
+}
+
+.empty p {
+  max-inline-size: 46ch;
+}
+
+/* ---------------------------------------------------------------- settings */
+
+.field {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(0, 320px);
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+  padding-block: var(--space-3);
+  border-block-start: 1px solid var(--border);
+}
+
+.field:first-of-type {
+  border-block-start: 0;
+}
+
+.field label {
+  font-weight: 550;
+}
+
+.field-note {
+  grid-column: 2;
+  font-size: 13px;
+  max-inline-size: 46ch;
+}
+
+@media (max-width: 720px) {
+  .field {
+    grid-template-columns: 1fr;
+  }
+  .field-note {
+    grid-column: 1;
+  }
+}
+
+/* ------------------------------------------------------------------ about */
+
+/* The pairing code is read off one screen and typed into another. */
+.code {
   display: inline-block;
-  padding: 2px var(--gap-2);
-  border-radius: 999px;
-  background: var(--bg-sunken);
-  border: 1px solid var(--line);
-  font-size: 12px;
-  color: var(--fg-muted);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  direction: ltr;
+  user-select: all;
+}
+
+/* ------------------------------------------------------------------ motion */
+
+/*
+ * Reduced motion turns everything off, not just the large things. The progress
+ * bar becomes a static band: it still says "working", it just stops moving.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+  .progress::after {
+    inset-inline-start: 0;
+    inline-size: 100%;
+    opacity: 0.6;
+  }
+}
+
+/* A card without `.stack` (Settings) spaces its own heading from the fields. */
+.card:not(.stack) > h2 {
+  margin-block-end: var(--space-2);
 }

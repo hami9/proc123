@@ -21,6 +21,15 @@ Including the desktop and mobile application, when it exists. The whole thing is
 free, for any use, including commercial use, including forking it and shipping
 your own.
 
+### Bundled work by others
+
+Two things inside `packages/app` were made by other people and keep their own
+licences, both permissive and both compatible with shipping inside an MIT app:
+
+- **Vazirmatn** — the typeface, under the SIL Open Font License 1.1. The licence
+  ships beside the font files (`src/fonts/OFL.txt`), which is what the OFL asks.
+- **Lucide** — the icon paths in `src/icons.ts`, under the ISC licence.
+
 ## A two-tier model was considered and declined
 
 Written down so nobody re-proposes it in six months without knowing it was

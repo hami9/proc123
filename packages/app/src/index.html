@@ -3,30 +3,44 @@
   `lang` and `dir` are set by `main.ts` on load and whenever the language
   changes. They start as English so there is no flash of the wrong direction
   before the script runs.
+
+  Icons are filled in by `main.ts` from `[data-icon]`, so there is one icon set
+  in one file (`icons.ts`) rather than SVG pasted into markup.
 -->
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>proc123</title>
+    <link
+      rel="preload"
+      href="fonts/vazirmatn-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="shell">
-      <nav class="sidebar">
-        <div class="brand"><span data-i18n="brand">proc123</span></div>
+      <nav class="sidebar" aria-label="Main">
+        <div class="brand">
+          <img src="assets/logo.png" alt="" width="28" height="28" />
+          <span data-i18n="brand">proc123</span>
+        </div>
         <button class="nav-item" type="button" data-route="scan" aria-current="page">
-          <span data-i18n="navScan">Scan</span>
+          <span data-icon="scan"></span><span data-i18n="navScan">Scan</span>
         </button>
         <button class="nav-item" type="button" data-route="inspect">
-          <span data-i18n="navInspect">Inspect</span>
+          <span data-icon="inspect"></span><span data-i18n="navInspect">Inspect</span>
         </button>
         <button class="nav-item" type="button" data-route="settings">
-          <span data-i18n="navSettings">Settings</span>
+          <span data-icon="settings"></span><span data-i18n="navSettings">Settings</span>
         </button>
         <button class="nav-item" type="button" data-route="about">
-          <span data-i18n="navAbout">About</span>
+          <span data-icon="about"></span><span data-i18n="navAbout">About</span>
         </button>
+        <div class="sidebar-foot" id="sidebar-foot"></div>
       </nav>
 
       <main class="main">

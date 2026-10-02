@@ -79,6 +79,7 @@ const en = {
   host: 'Running on',
 
   settingsScanning: 'Scanning',
+  settingsAppearance: 'Appearance',
   exporter: 'Export format',
   contentMode: 'Descriptions',
   contentStructured: 'Leave empty (recommended)',
@@ -116,6 +117,14 @@ const en = {
     'The bridge is not listening, so the extension cannot hand pages over. Everything else works as usual.',
   bridgeHandoffReceived: 'A page arrived from the extension — scanning it here.',
 
+  scanLede:
+    'Paste the address of a category or collection. proc123 reads every product on it and builds a CSV the shop you are moving to can import.',
+  emptyTitle: 'No scan yet',
+  statProducts: 'Products',
+  statVariations: 'Variations',
+  statRows: 'CSV rows',
+  statPages: 'Pages read',
+
   inspectTitle: 'Inspect a page',
   inspectSoon:
     'The inspector reads a page the app has fetched. Fetching arrives in the next phase, so this view is waiting on it.',
@@ -127,7 +136,7 @@ type Catalogue = Record<keyof typeof en, string>;
 const fa: Catalogue = {
   brand: 'proc123',
   navScan: 'اسکن',
-  navInspect: 'بررسی صفحه',
+  navInspect: 'بررسی',
   navSettings: 'تنظیمات',
 
   scanTitle: 'اسکن یک دسته‌بندی',
@@ -188,6 +197,7 @@ const fa: Catalogue = {
   host: 'در حال اجرا روی',
 
   settingsScanning: 'اسکن',
+  settingsAppearance: 'ظاهر',
   exporter: 'قالب خروجی',
   contentMode: 'توضیحات',
   contentStructured: 'خالی بگذار (پیشنهادی)',
@@ -223,6 +233,14 @@ const fa: Catalogue = {
   bridgeOff:
     'پل گوش نمی‌دهد، پس افزونه نمی‌تواند صفحه‌ای تحویل دهد. بقیهٔ چیزها مثل همیشه کار می‌کنند.',
   bridgeHandoffReceived: 'صفحه‌ای از افزونه رسید — همین‌جا اسکن می‌شود.',
+
+  scanLede:
+    'نشانی یک دسته‌بندی یا کالکشن را بگذارید. proc123 همهٔ محصولاتش را می‌خواند و CSV می‌سازد که فروشگاه مقصد بتواند وارد کند.',
+  emptyTitle: 'هنوز اسکنی انجام نشده',
+  statProducts: 'محصول',
+  statVariations: 'تنوع',
+  statRows: 'سطر CSV',
+  statPages: 'صفحهٔ خوانده‌شده',
 
   inspectTitle: 'بررسی صفحه',
   inspectSoon:

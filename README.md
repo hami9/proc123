@@ -101,9 +101,9 @@ popup is the newest.
 | 14    | Inspector in the extension                                    | ✅ done |
 | 15    | App shell — Windows and Linux (Tauri v2)                      | ✅ done |
 | 16    | The app scans on its own                                      | ✅ done |
-| 16.5  | Design pass — the desktop app                                 | next    |
+| 16.5  | Design pass — the desktop app                                 | ✅ done |
 | 17    | Bridge — app ↔ extension over loopback                        | ✅ done |
-| 18    | Android                                                       |         |
+| 18    | Android                                                       | next    |
 | 19    | Visual picker for any field                                   |         |
 | 20    | Packaging and distribution                                    | partial |
 

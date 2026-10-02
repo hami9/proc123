@@ -45,6 +45,13 @@ async function run() {
   await cp(resolve(root, 'src/index.html'), resolve(dist, 'index.html'));
   await cp(resolve(root, 'src/styles.css'), resolve(dist, 'styles.css'));
 
+  // The typeface and the logo ship inside the app rather than being fetched.
+  // §15 allows outbound requests to the shop being scanned and nothing else, and
+  // the CSP's `default-src 'self'` would refuse a font CDN anyway — so a
+  // webfont link would fail closed and silently fall back to Tahoma.
+  await cp(resolve(root, 'src/fonts'), resolve(dist, 'fonts'), { recursive: true });
+  await cp(resolve(root, 'src/assets'), resolve(dist, 'assets'), { recursive: true });
+
   if (watch) {
     const ctx = await context(options);
     await ctx.watch();
