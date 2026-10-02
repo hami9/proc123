@@ -390,6 +390,36 @@
       </div>
     </details>
 
+    <!--
+      The desktop app, if it is running (CLAUDE.md §17).
+
+      A `details` that stays shut, and the summary says the extension works
+      without it. The bridge is an enhancement; a panel that looked like setup
+      would make people think they had to install something before scanning,
+      which is the opposite of true.
+    -->
+    <details class="bridge" id="bridge">
+      <summary>Desktop app (optional)</summary>
+      <p class="aside" id="bridgeStatus">Looking for the proc123 app…</p>
+
+      <div id="bridgePair" hidden>
+        <label for="bridgeToken">Pairing code from the app</label>
+        <input
+          id="bridgeToken"
+          type="text"
+          inputmode="latin"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="ABCD-EFGH"
+          maxlength="12"
+        />
+        <button id="bridgeConnect" type="button" class="secondary">Connect</button>
+      </div>
+
+      <button id="bridgeHandoff" type="button" hidden>Scan this page in the app</button>
+      <p class="aside" id="bridgeHint"></p>
+    </details>
+
     <details class="settings" id="settings">
       <summary>Settings</summary>
 

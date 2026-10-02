@@ -150,9 +150,9 @@ failures are never confused again.
 
 ---
 
-## Two things that fail silently
+## Three things that fail silently
 
-Both of these cost real time to find, because neither produces an error — the
+Each of these cost real time to find, because none produces an error — the
 app builds, runs, and simply does the wrong thing.
 
 **`npm run build` alone does not change the running app.** Tauri embeds
@@ -175,6 +175,18 @@ with nothing at build time to warn you. The symptom is an app that looks
 completely fine and cannot fetch or save. Settings reports **Running on** as
 `browser (no native host)` when this is the case, which is deliberately the
 first place to look.
+
+**Tauri v2's ACL is deny-by-default, and it covers the core plugins.** Commands
+this app registers in `invoke_handler` are not gated — which is why `http_fetch`
+and `save_text_file` worked for two phases with no capability file at all, and
+why the gap went unnoticed. `event.listen` is different: it belongs to the
+`core:event` plugin, so without `capabilities/default.json` granting
+`core:event:default` the subscription is refused at runtime, nothing fails at
+build time, and the app simply never receives a handoff from the extension.
+
+If a future phase has the front end call a _plugin_ command — the dialog plugin
+from TypeScript rather than from Rust, say — it needs its permission added
+there, and the symptom of forgetting will be the same silence.
 
 ---
 

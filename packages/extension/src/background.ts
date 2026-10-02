@@ -33,11 +33,21 @@ import {
 } from '@proc123/exporters';
 import type { ProfileField } from '@proc123/profiles';
 
+import {
+  PROTOCOL_VERSION,
+  discoverBridge,
+  loadBridgeToken,
+  saveBridgeToken,
+  sendPageToApp,
+} from './bridge.js';
 import { downloads, runtime, scripting, storage } from './browser.js';
 import { FONT_PROBE_LIMIT, fontsProbeScript } from './fonts-probe.js';
 import { createFetchClient } from './http.js';
 import { imageFilename } from './images.js';
 import {
+  isBridgeHandoffRequest,
+  isBridgePairRequest,
+  isBridgeStatusRequest,
   isDownloadImagesRequest,
   isExportRequest,
   isInspectRequest,
@@ -48,6 +58,7 @@ import {
   isTeachRequest,
 } from './messages.js';
 import type {
+  BridgeStatus,
   ExportedCsv,
   ExportedReport,
   ExtensionResponse,
@@ -474,7 +485,123 @@ async function handleDownloadImages(request: {
   return { started, failed };
 }
 
+/**
+ * Is the app there, and are we paired with it? (§17)
+ *
+ * Every failure is reported as "not running". That is not sloppiness: from the
+ * popup's point of view a closed port, a refused connection and a machine with
+ * no app installed are the same situation and want the same sentence.
+ */
+async function handleBridgeStatus(): Promise<BridgeStatus> {
+  const [found, token] = await Promise.all([
+    discoverBridge((input, init) => fetch(input, init)),
+    loadBridgeToken(),
+  ]);
+
+  if (found === undefined) return { running: false, paired: token !== undefined };
+  if (found.protocol !== PROTOCOL_VERSION) {
+    return {
+      running: true,
+      port: found.port,
+      version: found.version,
+      protocolMismatch: true,
+      paired: token !== undefined,
+    };
+  }
+  return {
+    running: true,
+    port: found.port,
+    version: found.version,
+    paired: token !== undefined,
+  };
+}
+
+/**
+ * Lend the app the page the user is looking at.
+ *
+ * `readPage` is the same read a local scan does, which is the point — what
+ * crosses the bridge is the rendered DOM of the user's own authenticated
+ * session, and that is the one thing the app cannot obtain for itself.
+ *
+ * The worker's own origin is `chrome-extension://`, so the loopback request is
+ * allowed; the same call from a content script would be blocked as mixed
+ * content and no amount of permission would change that (§3).
+ */
+async function handleBridgeHandoff(request: { tabId: number }): Promise<void> {
+  const page = await readPage(request.tabId);
+  const token = await loadBridgeToken();
+  const outcome = await sendPageToApp((input, init) => fetch(input, init), page, token);
+
+  if (outcome.ok) return;
+
+  // Phrased for the popup rather than for a log. Each of these is a different
+  // thing for the user to do, which is why the outcome is not a boolean.
+  const explanation =
+    outcome.reason === 'unreachable'
+      ? 'The proc123 app is not running. Open it and try again — or just scan here, which needs no app.'
+      : outcome.reason === 'unauthorised'
+        ? 'The app has restarted since you paired, so the code has expired. Copy the new one from the app.'
+        : outcome.reason === 'protocol'
+          ? `The app speaks bridge protocol ${String(outcome.appProtocol)} and this extension speaks ${String(PROTOCOL_VERSION)}. Update whichever is older.`
+          : outcome.message;
+  throw new Error(explanation);
+}
+
 runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (isBridgeStatusRequest(message)) {
+    handleBridgeStatus().then(
+      (status) => {
+        sendResponse({ ok: true, kind: 'bridge-status', status } satisfies ExtensionResponse);
+      },
+      () => {
+        // The status of an optional enhancement is never worth an error. If
+        // asking went wrong, the answer is "no app", which is also the answer
+        // the overwhelming majority of installs will give for ever.
+        sendResponse({
+          ok: true,
+          kind: 'bridge-status',
+          status: { running: false, paired: false },
+        } satisfies ExtensionResponse);
+      }
+    );
+    return true;
+  }
+
+  if (isBridgePairRequest(message)) {
+    discoverBridge((input, init) => fetch(input, init))
+      .then(async (found) => {
+        if (found === undefined) {
+          throw new Error('No proc123 app answered. Make sure it is open, then try again.');
+        }
+        await saveBridgeToken(message.token, found.port);
+        return handleBridgeStatus();
+      })
+      .then(
+        (status) => {
+          sendResponse({ ok: true, kind: 'bridge-status', status } satisfies ExtensionResponse);
+        },
+        (error: unknown) => {
+          const text = error instanceof Error ? error.message : String(error);
+          sendResponse({ ok: false, message: text } satisfies ExtensionResponse);
+        }
+      );
+    return true;
+  }
+
+  if (isBridgeHandoffRequest(message)) {
+    handleBridgeHandoff(message).then(
+      () => {
+        sendResponse({ ok: true, kind: 'handed-off' } satisfies ExtensionResponse);
+      },
+      (error: unknown) => {
+        const text = error instanceof Error ? error.message : String(error);
+        console.error('[proc123] handoff failed', error);
+        sendResponse({ ok: false, message: text } satisfies ExtensionResponse);
+      }
+    );
+    return true;
+  }
+
   if (isScanRequest(message)) {
     // Already running for this page: say so rather than starting a second
     // crawl over the same server.

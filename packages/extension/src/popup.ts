@@ -39,7 +39,7 @@ import { loadApiKey, loadSettings, saveApiKey, saveSettings } from './settings.j
 
 import { EXPORTER_LABELS } from '@proc123/exporters';
 
-import type { ExtensionResponse, ScanProgress, ScanSummary } from './messages.js';
+import type { BridgeStatus, ExtensionResponse, ScanProgress, ScanSummary } from './messages.js';
 
 const element = <T extends HTMLElement>(id: string): T => {
   const found = document.getElementById(id);
@@ -62,6 +62,13 @@ const downloadButton = element<HTMLButtonElement>('download');
 const exporterSelect = element<HTMLSelectElement>('exporter');
 const explainButton = element<HTMLButtonElement>('explain');
 const teachButton = element<HTMLButtonElement>('teach');
+
+const bridgeStatus = element('bridgeStatus');
+const bridgePair = element('bridgePair');
+const bridgeTokenInput = element<HTMLInputElement>('bridgeToken');
+const bridgeConnect = element<HTMLButtonElement>('bridgeConnect');
+const bridgeHandoff = element<HTMLButtonElement>('bridgeHandoff');
+const bridgeHint = element('bridgeHint');
 
 /** The page the rendered summary belongs to, so export targets the right scan. */
 let scannedUrl: string | undefined;
@@ -326,6 +333,95 @@ const tabReady = activeTab().then((tab) => {
   currentTab = tab;
   pageOrigin = tab?.url === undefined ? undefined : originPattern(tab.url);
   return tab;
+});
+
+/* ---------------------------------------------------- the desktop app (§17) */
+
+/**
+ * Show what the bridge can currently do, and offer only that.
+ *
+ * The three states are "no app", "app but not paired" and "paired", and each
+ * one gets a different control rather than a disabled version of the same one.
+ * Nothing here is ever an error: an extension on a machine with no app is the
+ * normal case and the panel says so plainly, because §17 requires this to be an
+ * enhancement that is visibly optional.
+ */
+function renderBridge(status: BridgeStatus): void {
+  if (!status.running) {
+    bridgeStatus.textContent =
+      'No proc123 app found on this computer. Scanning here works exactly as usual — the app just adds longer crawls and saving straight to a file.';
+    bridgePair.hidden = true;
+    bridgeHandoff.hidden = true;
+    return;
+  }
+
+  if (status.protocolMismatch === true) {
+    bridgeStatus.textContent =
+      'The app is running but speaks a different bridge version. Update whichever of the two is older.';
+    bridgePair.hidden = true;
+    bridgeHandoff.hidden = true;
+    return;
+  }
+
+  const where = status.port === undefined ? '' : ` on 127.0.0.1:${String(status.port)}`;
+  if (!status.paired) {
+    bridgeStatus.textContent = `proc123 ${status.version ?? ''} is running${where}. Open its About page and type the pairing code here.`;
+    bridgePair.hidden = false;
+    bridgeHandoff.hidden = true;
+    return;
+  }
+
+  bridgeStatus.textContent = `Connected to proc123 ${status.version ?? ''}${where}.`;
+  bridgePair.hidden = true;
+  bridgeHandoff.hidden = false;
+}
+
+async function refreshBridge(): Promise<void> {
+  const response = await runtime.sendMessage<unknown, ExtensionResponse>({
+    kind: 'bridge-status',
+  });
+  if (response.ok && response.kind === 'bridge-status') renderBridge(response.status);
+}
+
+bridgeConnect.addEventListener('click', () => {
+  void (async (): Promise<void> => {
+    bridgeHint.textContent = '';
+    const response = await runtime.sendMessage<unknown, ExtensionResponse>({
+      kind: 'bridge-pair',
+      token: bridgeTokenInput.value,
+    });
+    if (response.ok && response.kind === 'bridge-status') {
+      renderBridge(response.status);
+      bridgeTokenInput.value = '';
+      return;
+    }
+    bridgeHint.textContent = response.ok ? '' : response.message;
+  })();
+});
+
+bridgeHandoff.addEventListener('click', () => {
+  const tabId = currentTab?.id;
+  if (tabId === undefined) {
+    bridgeHint.textContent = 'No page to hand over.';
+    return;
+  }
+  bridgeHint.textContent = 'Sending this page to the app…';
+  void (async (): Promise<void> => {
+    const response = await runtime.sendMessage<unknown, ExtensionResponse>({
+      kind: 'bridge-handoff',
+      tabId,
+    });
+    if (response.ok) {
+      // The app owns it now, and the popup is free to close — which is the
+      // whole point of handing it over rather than scanning here.
+      bridgeHint.textContent = 'The app is scanning it. You can close this popup.';
+      return;
+    }
+    bridgeHint.textContent = response.message;
+    // A refused handoff usually means the code went stale, and the panel has to
+    // go back to offering the field rather than the button.
+    await refreshBridge();
+  })();
 });
 
 /**
@@ -934,4 +1030,9 @@ void (async (): Promise<void> => {
       statusLine.textContent = `${STATUS_TEXT[response.summary.status] ?? ''} (last scan)`;
     }
   }
+
+  // Last, and never awaited by anything above it. Looking for the app probes
+  // ten loopback ports; that is fast, but it is an optional extra and must not
+  // delay the panel a user actually opened the popup for (§17).
+  await refreshBridge().catch(() => undefined);
 })();

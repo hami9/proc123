@@ -83,6 +83,66 @@ export interface AppScanOptions {
   onRenderFallback?: () => void;
 }
 
+/** A page the extension handed over the bridge (§17). */
+export interface HandedPage {
+  url: string;
+  title: string;
+  html: string;
+}
+
+export interface HandedScanOptions extends HandedPage {
+  config?: Proc123Config;
+  onProgress?: (progress: ScanProgress) => void;
+}
+
+/**
+ * Scan a page the extension already read, instead of fetching it.
+ *
+ * **The first page is not re-fetched, and that is the whole value of the
+ * bridge.** The HTML handed over came out of the user's own browser, in their
+ * own session — a shop behind a login renders there and returns a sign-in form
+ * to anything else. Fetching the same URL from here to "check" it would throw
+ * away the one thing the extension had that this app does not (§17).
+ *
+ * Later pages *are* fetched from here, through the native client, which is the
+ * other half of the trade: the app has no CORS to work around and no popup to
+ * outlive it, so a long crawl finishes where the extension's would have been
+ * killed (§10).
+ *
+ * No render fallback. The page arrived rendered by a real browser; if there are
+ * no products in that, re-rendering it in a WebView with no session would
+ * produce a worse answer, not a better one.
+ */
+export async function scanHandedPage(options: HandedScanOptions): Promise<AppScanResult> {
+  const config = options.config ?? DEFAULT_CONFIG;
+  const store = createMemoryStore();
+
+  const summary = await runScan(
+    {
+      page: { url: options.url, html: options.html },
+      title: options.title === '' ? options.url : options.title,
+      config,
+    },
+    {
+      http: createTauriClient(),
+      store,
+      ...(options.onProgress === undefined ? {} : { onProgress: options.onProgress }),
+    }
+  );
+
+  const state = await store.load(crawlIdFor(options.url));
+
+  return {
+    summary,
+    products: state?.products ?? [],
+    // `rendered` because it was: by the user's browser rather than by this
+    // app's WebView. The badge means "this did not come from raw markup", and
+    // that is exactly as true here.
+    path: 'rendered',
+    bytes: { static: 0, rendered: options.html.length },
+  };
+}
+
 /**
  * Fetch the starting page, then hand the whole thing to `core`.
  *

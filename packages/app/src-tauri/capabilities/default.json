@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The one permission the front end needs beyond this app's own commands: listening for the bridge's handoff event (CLAUDE.md §17). Tauri v2's ACL is deny-by-default and covers core plugins, so without this `event.listen` is refused at runtime with nothing failing at build time — the app looks fine and simply never receives a handoff. Commands registered by this app in `invoke_handler` are not ACL-gated and are deliberately not listed here; adding `core:default` would grant a great deal more than is used.",
+  "windows": ["main"],
+  "permissions": ["core:event:default"]
+}

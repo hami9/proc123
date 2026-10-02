@@ -141,7 +141,7 @@ placeholder.
 > not specified here — the phone is a different form factor and deserves its own
 > decisions rather than a shrunk desktop.
 
-### 17 · The bridge
+### 17 · The bridge — **done**
 
 `127.0.0.1`, per-run token, service worker on the extension side. The extension
 lends its authenticated rendered page; the app lends disk, fetching and a
@@ -149,6 +149,26 @@ process that outlives a popup.
 
 **Done when** a scan started in the extension finishes in the app with the
 popup closed — and both still work with the other uninstalled, under test.
+
+Landed: `packages/app/src-tauri/src/bridge.rs` (the listener), `packages/app/src/bridge.ts`
+and `scanHandedPage`, `packages/extension/src/bridge.ts` and a **Desktop app
+(optional)** panel in the popup. Both "works alone" requirements are tests
+rather than promises, because that property rots silently.
+
+> **Three findings worth carrying forward.**
+>
+> - **The preflight is not optional.** The worker's `fetch` to the app is
+>   cross-origin and carries `Authorization`, so the browser sends `OPTIONS`
+>   first. Before that was answered the symptom was a bare network error in the
+>   extension with *nothing at all* in the app — the real request is never sent,
+>   so the server never sees it. Any future route on the bridge inherits this.
+> - **Only extension origins are echoed in CORS.** An `https://` page cannot
+>   reach `http://127.0.0.1` anyway (mixed content, §3), but an `http://` one
+>   can, and there is no reason to let it try before the token refuses it.
+> - **A stale pairing code is the ordinary case, not an error.** The token dies
+>   with the app's process by design, so every restart invalidates the one the
+>   extension stored. The extension drops it on the first 401 and shows the
+>   field again; anything that treats this as a failure will be wrong daily.
 
 ### 18 · Android — **deferred until the desktop targets are finished**
 

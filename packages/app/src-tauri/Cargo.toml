@@ -32,7 +32,12 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 tauri-plugin-dialog = "2"
 # The renderer waits and blocks on a channel; `rt` and `time` are all it needs.
 # Tauri already pulls tokio in — this only makes the dependency honest.
-tokio = { version = "1", features = ["rt", "time", "sync"] }
+# `net` and `io-util` are the bridge's listener (phase 17).
+tokio = { version = "1", features = ["rt", "time", "sync", "net", "io-util"] }
+# The bridge's per-run token, from the OS CSPRNG (§17). `getrandom` rather than
+# `rand` because this needs random bytes and nothing else — no distributions, no
+# seeding, no generator to hold. It is already in the tree via Tauri.
+getrandom = "0.3"
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -118,6 +118,37 @@ export interface DownloadImagesRequest {
   pageUrl: string;
 }
 
+/**
+ * Is the desktop app running, and is this browser paired with it? (§17)
+ *
+ * Asked by the popup when it opens. It must be answerable in well under a
+ * second and must never fail loudly: "no app" is the ordinary case, not an
+ * error, because the extension is required to be fully usable alone.
+ */
+export interface BridgeStatusRequest {
+  kind: 'bridge-status';
+}
+
+/** Keep the pairing code the user copied out of the app. */
+export interface BridgePairRequest {
+  kind: 'bridge-pair';
+  /** As typed, dashes and all — the worker normalises it. */
+  token: string;
+}
+
+/**
+ * Hand the tab's rendered DOM to the app and let it finish the scan.
+ *
+ * This is the whole point of the bridge in one message. The worker reads the
+ * page — in the user's own session, logged in, fully rendered — and the app
+ * takes it from there, with a process that outlives the popup and a filesystem
+ * to write to.
+ */
+export interface BridgeHandoffRequest {
+  kind: 'bridge-handoff';
+  tabId: number;
+}
+
 export type ExtensionRequest =
   | ScanRequest
   | ScanStatusRequest
@@ -126,7 +157,23 @@ export type ExtensionRequest =
   | TeachRequest
   | ReportRequest
   | InspectRequest
-  | DownloadImagesRequest;
+  | DownloadImagesRequest
+  | BridgeStatusRequest
+  | BridgePairRequest
+  | BridgeHandoffRequest;
+
+/** What the popup shows about the app, and what it offers to do next. */
+export interface BridgeStatus {
+  /** An app answered on loopback. */
+  running: boolean;
+  /** Present when `running`. */
+  port?: number;
+  version?: string;
+  /** The app speaks a wire format this extension does not. */
+  protocolMismatch?: boolean;
+  /** A pairing code is stored, so a handoff can be attempted without typing. */
+  paired: boolean;
+}
 
 /** What came back from downloading a selection of images. */
 export interface ImageDownloadResult {
@@ -183,6 +230,9 @@ export type ExtensionResponse =
   | { ok: true; kind: 'report'; report: ExportedReport }
   | { ok: true; kind: 'inspection'; inspection: PageInspection }
   | { ok: true; kind: 'images-downloaded'; result: ImageDownloadResult }
+  | { ok: true; kind: 'bridge-status'; status: BridgeStatus }
+  /** The page reached the app; it is scanning, and the popup may close. */
+  | { ok: true; kind: 'handed-off' }
   | { ok: false; message: string };
 
 export function isScanRequest(message: unknown): message is ScanRequest {
@@ -251,4 +301,24 @@ export function isLastResultRequest(message: unknown): message is LastResultRequ
     message !== null &&
     (message as Partial<LastResultRequest>).kind === 'last-result'
   );
+}
+
+export function isBridgeStatusRequest(message: unknown): message is BridgeStatusRequest {
+  return (
+    typeof message === 'object' &&
+    message !== null &&
+    (message as Partial<BridgeStatusRequest>).kind === 'bridge-status'
+  );
+}
+
+export function isBridgePairRequest(message: unknown): message is BridgePairRequest {
+  if (typeof message !== 'object' || message === null) return false;
+  const candidate = message as Partial<BridgePairRequest>;
+  return candidate.kind === 'bridge-pair' && typeof candidate.token === 'string';
+}
+
+export function isBridgeHandoffRequest(message: unknown): message is BridgeHandoffRequest {
+  if (typeof message !== 'object' || message === null) return false;
+  const candidate = message as Partial<BridgeHandoffRequest>;
+  return candidate.kind === 'bridge-handoff' && typeof candidate.tabId === 'number';
 }

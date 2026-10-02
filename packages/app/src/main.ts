@@ -25,9 +25,10 @@ import type {
 import { ALL_EXPORTERS, DEFAULT_CONFIG } from '@proc123/core';
 import { EXPORTER_EXTENSIONS, EXPORTER_LABELS, exportProducts } from '@proc123/exporters';
 
+import { type BridgeInfo, bridgeInfo, formatToken, onHandoff } from './bridge.js';
 import { canExport, currencyQuestion, readingsOf } from './currency.js';
 import { saveTextFile } from './save.js';
-import { scanCategory } from './scan.js';
+import { scanCategory, scanHandedPage } from './scan.js';
 import {
   type Language,
   type MessageKey,
@@ -58,6 +59,8 @@ interface State {
   message: string;
   /** §9's config, edited in Settings. The single source of the scan's options. */
   config: Proc123Config;
+  /** Where the bridge is listening and its pairing code, or absent (§17). */
+  bridge: BridgeInfo | undefined;
 }
 
 const state: State = {
@@ -73,6 +76,7 @@ const state: State = {
   busy: false,
   message: '',
   config: DEFAULT_CONFIG,
+  bridge: undefined,
 };
 
 const element = <T extends HTMLElement>(id: string): T => {
@@ -735,6 +739,23 @@ function renderAbout(): void {
   limits.append(el('p', 'small', t('aboutLimits')));
   view.append(limits);
 
+  // §17, where the person who has to type the code can see it. The app does not
+  // need the extension and says so in both states — a pairing panel that reads
+  // like a setup step would make an enhancement look like a requirement.
+  const bridge = el('div', 'card stack');
+  bridge.append(el('h2', undefined, t('bridgeTitle')));
+  bridge.append(el('p', 'small', t('bridgeWhat')));
+  if (state.bridge === undefined) {
+    bridge.append(el('p', 'small', t('bridgeOff')));
+  } else {
+    const code = el('div', 'row');
+    code.append(el('span', 'badge', `${t('bridgePairing')}: ${formatToken(state.bridge.token)}`));
+    code.append(el('span', 'badge', `127.0.0.1:${n(state.bridge.port)}`));
+    bridge.append(code);
+    bridge.append(el('p', 'small', t('bridgeHow')));
+  }
+  view.append(bridge);
+
   const licence = el('div', 'card stack');
   const line = el('p', 'small');
   line.append(document.createTextNode(`${t('aboutLicence')} `));
@@ -780,6 +801,62 @@ async function readHost(): Promise<void> {
   }
 }
 
+/**
+ * A page arrived from the extension (§17).
+ *
+ * It is treated exactly like a scan the user started here — same state, same
+ * currency question, same export path — because it *is* one. The only
+ * difference is where the first page came from, and the user still answers
+ * §7.8's toman/rial question before anything is written. A handoff must never
+ * become a route that skips that; it is the one failure this project most wants
+ * to avoid, and "the extension already looked at it" is not an answer to it.
+ *
+ * A handoff arriving mid-scan is ignored rather than queued. Two crawls at once
+ * would double the load on somebody's shop (§10), and the user can send it
+ * again.
+ */
+async function receiveHandoff(handoff: { url: string; title: string; html: string }) {
+  if (state.busy) return;
+
+  state.busy = true;
+  state.url = handoff.url;
+  state.message = t('bridgeHandoffReceived');
+  state.currencyAnswer = undefined;
+  state.products = [];
+  state.summary = undefined;
+  state.path = undefined;
+  state.bytes = undefined;
+  state.route = 'scan';
+  showRoute();
+  renderScan();
+
+  try {
+    const result = await scanHandedPage({
+      url: handoff.url,
+      title: handoff.title,
+      html: handoff.html,
+      config: state.config,
+      onProgress: (progress: ScanProgress) => {
+        state.message =
+          `${t('scanning')} ${t('pages')} ${n(progress.pagesScanned)} · ` +
+          `${n(progress.productCount)} ${t('products')}`;
+        renderScan();
+      },
+    });
+
+    state.summary = result.summary;
+    state.products = result.products;
+    state.path = result.path;
+    state.bytes = result.bytes;
+    state.message = '';
+  } catch (error) {
+    state.message = `${t('scanFailed')} — ${error instanceof Error ? error.message : String(error)}`;
+  } finally {
+    state.busy = false;
+    renderScan();
+  }
+}
+
 function renderAll(): void {
   applyLanguage();
   applyTheme();
@@ -799,5 +876,13 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('[data-route]'
 
 void (async (): Promise<void> => {
   await readHost();
+  state.bridge = await bridgeInfo();
   renderAll();
+
+  // Subscribed for the life of the window. There is nothing to unsubscribe
+  // from on a page that never navigates, and in a plain browser this is a
+  // no-op — which is what keeps the no-bridge case the ordinary path (§17).
+  await onHandoff((handoff) => {
+    void receiveHandoff(handoff);
+  });
 })();

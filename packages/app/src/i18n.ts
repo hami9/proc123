@@ -106,6 +106,16 @@ const en = {
   aboutLicence: 'MIT licensed. Source and issues:',
   version: 'Version',
 
+  bridgeTitle: 'Connect the browser extension',
+  bridgeWhat:
+    'The extension can hand this app a page you are signed in to, and the app finishes the scan — with the popup closed, straight to a file. Both work perfectly well on their own; this only makes them better together.',
+  bridgePairing: 'Pairing code',
+  bridgeHow:
+    'Open the proc123 extension, go to Connect, and type this code. It is new every time the app starts and is never saved to disk.',
+  bridgeOff:
+    'The bridge is not listening, so the extension cannot hand pages over. Everything else works as usual.',
+  bridgeHandoffReceived: 'A page arrived from the extension — scanning it here.',
+
   inspectTitle: 'Inspect a page',
   inspectSoon:
     'The inspector reads a page the app has fetched. Fetching arrives in the next phase, so this view is waiting on it.',
@@ -203,6 +213,16 @@ const fa: Catalogue = {
     'کپچا حل نمی‌کند، اثر انگشت جعل نمی‌کند، پروکسی نمی‌چرخاند، و بعد از بلاک دوباره تلاش نمی‌کند. وقتی فروشگاهی علامت می‌دهد که نمی‌خواهد خودکار خوانده شود، اسکن می‌ایستد و می‌گوید.',
   aboutLicence: 'با پروانهٔ MIT. کد و مشکلات:',
   version: 'نسخه',
+
+  bridgeTitle: 'اتصال افزونهٔ مرورگر',
+  bridgeWhat:
+    'افزونه می‌تواند صفحه‌ای را که در آن وارد شده‌اید به این برنامه بدهد و برنامه اسکن را تمام کند — با پاپ‌آپ بسته، مستقیم روی فایل. هر دو به‌تنهایی کامل کار می‌کنند؛ این فقط کنار هم بهترشان می‌کند.',
+  bridgePairing: 'کد اتصال',
+  bridgeHow:
+    'افزونهٔ proc123 را باز کنید، به بخش اتصال بروید و این کد را بزنید. هر بار که برنامه اجرا می‌شود کد تازه‌ای ساخته می‌شود و هرگز روی دیسک ذخیره نمی‌شود.',
+  bridgeOff:
+    'پل گوش نمی‌دهد، پس افزونه نمی‌تواند صفحه‌ای تحویل دهد. بقیهٔ چیزها مثل همیشه کار می‌کنند.',
+  bridgeHandoffReceived: 'صفحه‌ای از افزونه رسید — همین‌جا اسکن می‌شود.',
 
   inspectTitle: 'بررسی صفحه',
   inspectSoon:
