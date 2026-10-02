@@ -236,7 +236,12 @@ export async function run(argv: readonly string[], deps: CliDeps = {}): Promise<
     const crawl = await crawlCategory(
       { url: page.url, html: page.html },
       {
-        ...configToCrawlOptions(config),
+        // `--unit` is the user's answer to §7.8's question — how the shop quotes
+        // its prices — so it has to reach extraction, not only the exporter.
+        // Passed to the exporter alone it was a conversion applied to a guess:
+        // the page was read as toman and then multiplied into rial, which on a
+        // rial shop is precisely the ten-times error the flag exists to stop.
+        ...configToCrawlOptions(config, values.unit),
         http: createFetchClient(),
         store,
         id,

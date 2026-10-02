@@ -10,11 +10,15 @@ import { describe, expect, it } from 'vitest';
 
 import {
   type CanonicalProduct,
+  type CrawlState,
+  type CrawlStore,
   DEFAULT_CONFIG,
   type Proc123Config,
   applyConfig,
   applyTargetFields,
   configToScanOptions,
+  crawlIdFor,
+  runScan,
   matchesCategory,
   mergeConfig,
   parseConfig,
@@ -173,8 +177,65 @@ describe('configToScanOptions', () => {
     );
     expect(options.maxPages).toBe(5);
     expect(options.defaultCurrency).toBe('EUR');
-    expect(options.defaultCurrencyUnit).toBe('rial');
     expect(options.politeness?.delayMsBetweenRequests).toBe(800);
+  });
+
+  /**
+   * The regression this exists for. `displayUnit` is what prices are *written
+   * in*; it was being passed as the unit prices were *quoted* in, and since the
+   * default config sets it to toman, every IRR price whose page never said
+   * toman or rial was silently read as toman. The confirmation step then had
+   * nothing to ask, and a rial shop exported every price ten times too high.
+   */
+  it('never lets the display unit answer how the shop quotes its prices', () => {
+    for (const displayUnit of ['toman', 'rial'] as const) {
+      const options = configToScanOptions(config({ currency: { code: 'IRR', displayUnit } }));
+      expect(options.defaultCurrencyUnit).toBeUndefined();
+    }
+  });
+
+  it('passes the quoted unit on only when a person stated it', () => {
+    const options = configToScanOptions(config(), 'rial');
+    expect(options.defaultCurrencyUnit).toBe('rial');
+  });
+});
+
+describe('a scan with the default settings', () => {
+  /**
+   * End to end through `runScan`, because the bug was in how two correct
+   * pieces were wired together — each was right on its own, so only a test
+   * across the seam could have caught it.
+   */
+  it('leaves an unstated IRR unit unknown, so §7.8 can be asked', async () => {
+    const html = `<html><head><script type="application/ld+json">${JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: 'Walnut',
+      offers: { '@type': 'Offer', price: '920000', priceCurrency: 'IRR' },
+    })}</script></head><body></body></html>`;
+
+    const saved = new Map<string, CrawlState>();
+    const store: CrawlStore = {
+      load: (id) => Promise.resolve(saved.get(id)),
+      save: (state) => {
+        saved.set(state.id, state);
+        return Promise.resolve();
+      },
+      clear: (id) => {
+        saved.delete(id);
+        return Promise.resolve();
+      },
+    };
+
+    const url = 'https://shop.example/product/walnut/';
+    const summary = await runScan(
+      { page: { url, html }, title: 'Walnut', config: DEFAULT_CONFIG },
+      { store }
+    );
+
+    expect(summary.currencyUnits).toEqual({ unknown: 1 });
+    const products = saved.get(crawlIdFor(url))?.products ?? [];
+    expect(products[0]?.regularPrice?.unit).toBeUndefined();
   });
 });
 

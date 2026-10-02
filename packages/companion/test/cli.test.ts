@@ -156,14 +156,28 @@ describe('scanning', () => {
     expect(h.files.has(result.csvPath ?? '')).toBe(true);
   });
 
-  it('honours --unit, because reading toman as rial is a 10x error', async () => {
+  /**
+   * `--unit` is documented as how the page quotes its prices, so a price the
+   * page shows as 150000 must come out as 150000 whichever unit is named — the
+   * flag says what the number *is*, it does not change it.
+   *
+   * This test used to assert only that the two files differed, and they did,
+   * for the wrong reason: `--unit` never reached extraction, so the page was
+   * always read as toman and `--unit rial` then multiplied every price by ten.
+   * On a rial shop — the case the flag exists for — that is the error itself.
+   */
+  it('honours --unit as how the page quotes prices, never multiplying them', async () => {
     const toman = harness();
     await run([URL, '-o', 'a.csv', '--unit', 'toman', '--max-pages', '1'], toman.deps);
 
     const rial = harness();
     await run([URL, '-o', 'b.csv', '--unit', 'rial', '--max-pages', '1'], rial.deps);
 
-    expect(toman.files.get('a.csv')).not.toBe(rial.files.get('b.csv'));
+    for (const csv of [toman.files.get('a.csv') ?? '', rial.files.get('b.csv') ?? '']) {
+      expect(csv).toContain('150000');
+      expect(csv).not.toContain('1500000');
+      expect(csv).not.toContain('15000,');
+    }
     expect(said(toman)).toContain('read as toman');
     expect(said(rial)).toContain('read as rial');
   });
