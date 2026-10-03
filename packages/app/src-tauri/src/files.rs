@@ -49,11 +49,11 @@ pub async fn save_text_file(
         });
     };
 
-    let shown = write_picked(&app, picked, &contents, &suggested_name)?;
+    let shown = write_picked(&app, picked, &contents)?;
 
     Ok(SaveOutcome {
         saved: true,
-        path: Some(shown),
+        path: shown,
     })
 }
 
@@ -75,13 +75,12 @@ fn write_picked(
     _app: &tauri::AppHandle,
     picked: tauri_plugin_dialog::FilePath,
     contents: &str,
-    _suggested_name: &str,
-) -> Result<String, String> {
+) -> Result<Option<String>, String> {
     let path: std::path::PathBuf = picked
         .into_path()
         .map_err(|_| "the chosen location is not a file path".to_owned())?;
     std::fs::write(&path, contents).map_err(|error| error.to_string())?;
-    Ok(path.to_string_lossy().into_owned())
+    Ok(Some(path.to_string_lossy().into_owned()))
 }
 
 /// Write to wherever the dialog pointed, on Android: a `content://` URI.
@@ -96,16 +95,17 @@ fn write_picked(
 /// pressing Cancel. On a phone, every export reported "not saved" and wrote
 /// nothing, with no error anywhere.
 ///
-/// Returns the file's name rather than the URI: a percent-encoded document ID
-/// tells nobody where the file went, and the name is what they will look for.
+/// Returns no name. The URI is a percent-encoded document ID that tells nobody
+/// where the file went, and the name the exporter proposed is not reliable
+/// either: Android's picker lets the user rename the document, so reporting
+/// the proposal would send them looking for a file that does not exist.
 #[cfg(target_os = "android")]
 fn write_picked(
     app: &tauri::AppHandle,
     picked: tauri_plugin_dialog::FilePath,
     contents: &str,
-    suggested_name: &str,
-) -> Result<String, String> {
-    use std::io::Write;
+) -> Result<Option<String>, String> {
+    use std::io::{Read, Write};
     use tauri_plugin_fs::{FsExt, OpenOptions};
 
     // Mode `w` alone — no truncate, no create. `ACTION_CREATE_DOCUMENT` has just
@@ -118,13 +118,45 @@ fn write_picked(
     let mut options = OpenOptions::default();
     options.write(true);
 
-    let mut file = app
-        .fs()
-        .open(picked, options)
-        .map_err(|error| error.to_string())?;
-    file.write_all(contents.as_bytes())
-        .map_err(|error| error.to_string())?;
-    Ok(suggested_name.to_owned())
+    {
+        let mut file = app
+            .fs()
+            .open(picked.clone(), options)
+            .map_err(|error| error.to_string())?;
+        file.write_all(contents.as_bytes())
+            .map_err(|error| error.to_string())?;
+        file.flush().map_err(|error| error.to_string())?;
+        // Dropped here: closing the descriptor is what tells the provider the
+        // document is complete.
+    }
+
+    // Read one byte back before claiming success. Some cloud providers —
+    // Google Drive is the reported one (tauri-apps/plugins-workspace#3109) —
+    // accept every write through this path and keep none of it, so a
+    // successful `write_all` is not evidence of a saved file. An export
+    // reported as saved and found empty in the target shop is exactly the
+    // silent failure this project refuses to ship.
+    //
+    // `r` is the one mode every provider grants on a document the app was just
+    // given read-write access to, so the `unimplemented!()` hazard above does
+    // not apply to this open.
+    //
+    // Only a *confirmed* empty document is an error. If reading back is not
+    // possible at all, the write is not contradicted, so it stands.
+    let mut read = OpenOptions::default();
+    read.read(true);
+    if let Ok(mut file) = app.fs().open(picked, read) {
+        let mut first = [0_u8; 1];
+        if !contents.is_empty() && matches!(file.read(&mut first), Ok(0)) {
+            return Err(
+                "The chosen location accepted the file but kept none of it. Some cloud \
+                 storage apps do this; save to the phone instead and upload from there."
+                    .to_owned(),
+            );
+        }
+    }
+
+    Ok(None)
 }
 
 #[cfg(test)]
