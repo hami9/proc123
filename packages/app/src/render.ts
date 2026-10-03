@@ -38,13 +38,41 @@ function invoker(): <T>(command: string, args?: Record<string, unknown>) => Prom
         'Open the app itself rather than the front end in a browser.'
     );
   }
+  // Both entry points come through here, so neither can reach a command the
+  // host never compiled in — on Android, a plain "command not found" would
+  // otherwise surface as if the page itself had failed.
+  if (renderSupported !== true) {
+    throw new Error('This build cannot render pages in a browser window.');
+  }
   return invoke;
 }
 
-/** True when rendering is possible at all — the extension and a plain browser cannot. */
+/**
+ * Whether the native side compiled the renderer in, as `host_info` reported.
+ *
+ * `undefined` until the host has answered. Android builds leave `render.rs`
+ * out (Tauri mobile allows one window), and the native side is the one that
+ * knows — so the front end asks rather than guessing from a user agent.
+ */
+let renderSupported: boolean | undefined;
+
+/** Record what `host_info` said. Called once, at boot, before any scan. */
+export function setRenderSupported(supported: boolean): void {
+  renderSupported = supported;
+}
+
+/**
+ * True when rendering is possible at all — the extension and a plain browser
+ * cannot, and neither can Android.
+ *
+ * Asking a host that lacks the command would fail, be caught, and fall back to
+ * the static answer — but only after telling the user "opening the page in a
+ * browser…", which would be untrue. Answering here keeps that message honest.
+ * Before the host has answered, `false` is the safe reading.
+ */
 export function canRender(): boolean {
   const tauri = (globalThis as { __TAURI__?: TauriGlobal }).__TAURI__;
-  return typeof tauri?.core?.invoke === 'function';
+  return typeof tauri?.core?.invoke === 'function' && renderSupported === true;
 }
 
 /**

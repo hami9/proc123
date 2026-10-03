@@ -42,6 +42,12 @@ tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# Android only (phase 18). The save dialog there returns a `content://` URI, not
+# a path, and the fs plugin is what can open one for writing — `std::fs` cannot.
+# Scoped to Android rather than mobile because iOS is out of scope (§15).
+[target.'cfg(target_os = "android")'.dependencies]
+tauri-plugin-fs = "2"
+
 [features]
 # Tauri's custom protocol on the desktop side. Enabled by `tauri build`.
 custom-protocol = ["tauri/custom-protocol"]

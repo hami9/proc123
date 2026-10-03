@@ -8,8 +8,6 @@
 //! The front end decides *what* to write — the exporter is `packages/exporters`,
 //! shared with the other two surfaces. This decides nothing about the content.
 
-use std::path::PathBuf;
-
 use tauri_plugin_dialog::DialogExt;
 
 /// Where a file ended up, or that the user changed their mind.
@@ -35,24 +33,141 @@ pub async fn save_text_file(
     suggested_name: String,
     contents: String,
 ) -> Result<SaveOutcome, String> {
-    let picked: Option<PathBuf> = app
-        .dialog()
-        .file()
-        .set_file_name(&suggested_name)
-        .blocking_save_file()
-        .and_then(|path| path.into_path().ok());
+    let mut dialog = app.dialog().file().set_file_name(&suggested_name);
+    // A filter gives the dialog a real type. Without one, Android's document
+    // picker is asked for `*/*`, and a provider may then store the file with no
+    // usable MIME type or rewrite its extension — a CSV that no longer opens as
+    // a spreadsheet.
+    if let Some((label, extension)) = filter_for(&suggested_name) {
+        dialog = dialog.add_filter(label, &[extension]);
+    }
 
-    let Some(path) = picked else {
+    let Some(picked) = dialog.blocking_save_file() else {
         return Ok(SaveOutcome {
             saved: false,
             path: None,
         });
     };
 
-    std::fs::write(&path, contents).map_err(|error| error.to_string())?;
+    let shown = write_picked(&app, picked, &contents)?;
 
     Ok(SaveOutcome {
         saved: true,
-        path: Some(path.to_string_lossy().into_owned()),
+        path: shown,
     })
+}
+
+/// The dialog filter for a file the exporter named.
+fn filter_for(name: &str) -> Option<(&'static str, &'static str)> {
+    let extension = name.rsplit_once('.')?.1.to_ascii_lowercase();
+    match extension.as_str() {
+        "csv" => Some(("CSV", "csv")),
+        "json" => Some(("JSON", "json")),
+        _ => None,
+    }
+}
+
+/// Write to wherever the dialog pointed, on the desktop: a plain path.
+///
+/// Returns what to show the user — the path itself, which they can find again.
+#[cfg(not(target_os = "android"))]
+fn write_picked(
+    _app: &tauri::AppHandle,
+    picked: tauri_plugin_dialog::FilePath,
+    contents: &str,
+) -> Result<Option<String>, String> {
+    let path: std::path::PathBuf = picked
+        .into_path()
+        .map_err(|_| "the chosen location is not a file path".to_owned())?;
+    std::fs::write(&path, contents).map_err(|error| error.to_string())?;
+    Ok(Some(path.to_string_lossy().into_owned()))
+}
+
+/// Write to wherever the dialog pointed, on Android: a `content://` URI.
+///
+/// Android's save dialog is the Storage Access Framework, and it hands back a
+/// document URI rather than a path — the app is granted that one document and
+/// nothing else, which is exactly the right amount of access for an export.
+///
+/// The desktop branch cannot be reused here, and the way it fails is the reason
+/// this is spelled out. `into_path()` on a `content://` URI is an error, and the
+/// old code turned that error into `None` — which then read as the user
+/// pressing Cancel. On a phone, every export reported "not saved" and wrote
+/// nothing, with no error anywhere.
+///
+/// Returns no name. The URI is a percent-encoded document ID that tells nobody
+/// where the file went, and the name the exporter proposed is not reliable
+/// either: Android's picker lets the user rename the document, so reporting
+/// the proposal would send them looking for a file that does not exist.
+#[cfg(target_os = "android")]
+fn write_picked(
+    app: &tauri::AppHandle,
+    picked: tauri_plugin_dialog::FilePath,
+    contents: &str,
+) -> Result<Option<String>, String> {
+    use std::io::{Read, Write};
+    use tauri_plugin_fs::{FsExt, OpenOptions};
+
+    // Mode `w` alone — no truncate, no create. `ACTION_CREATE_DOCUMENT` has just
+    // made an empty document, so there is nothing to truncate, and plain `w` is
+    // the mode every document provider supports. That matters more than it
+    // looks: tauri-plugin-fs 2.5 hits `unimplemented!()` when a provider returns
+    // no descriptor for the requested mode, and with `panic = "abort"` in the
+    // release profile that would kill the app mid-export. `wt` is the mode some
+    // cloud providers refuse.
+    let mut options = OpenOptions::default();
+    options.write(true);
+
+    {
+        let mut file = app
+            .fs()
+            .open(picked.clone(), options)
+            .map_err(|error| error.to_string())?;
+        file.write_all(contents.as_bytes())
+            .map_err(|error| error.to_string())?;
+        file.flush().map_err(|error| error.to_string())?;
+        // Dropped here: closing the descriptor is what tells the provider the
+        // document is complete.
+    }
+
+    // Read one byte back before claiming success. Some cloud providers —
+    // Google Drive is the reported one (tauri-apps/plugins-workspace#3109) —
+    // accept every write through this path and keep none of it, so a
+    // successful `write_all` is not evidence of a saved file. An export
+    // reported as saved and found empty in the target shop is exactly the
+    // silent failure this project refuses to ship.
+    //
+    // `r` is the one mode every provider grants on a document the app was just
+    // given read-write access to, so the `unimplemented!()` hazard above does
+    // not apply to this open.
+    //
+    // Only a *confirmed* empty document is an error. If reading back is not
+    // possible at all, the write is not contradicted, so it stands.
+    let mut read = OpenOptions::default();
+    read.read(true);
+    if let Ok(mut file) = app.fs().open(picked, read) {
+        let mut first = [0_u8; 1];
+        if !contents.is_empty() && matches!(file.read(&mut first), Ok(0)) {
+            return Err(
+                "The chosen location accepted the file but kept none of it. Some cloud \
+                 storage apps do this; save to the phone instead and upload from there."
+                    .to_owned(),
+            );
+        }
+    }
+
+    Ok(None)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_export_gets_a_filter_for_its_own_type() {
+        assert_eq!(filter_for("proc123-shop.csv"), Some(("CSV", "csv")));
+        assert_eq!(filter_for("proc123-shop.JSON"), Some(("JSON", "json")));
+        assert_eq!(filter_for("report.txt"), None);
+        assert_eq!(filter_for("no-extension"), None);
+    }
 }

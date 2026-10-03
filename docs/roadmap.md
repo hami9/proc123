@@ -208,6 +208,13 @@ for this in §18 rather than patched for it now.
 
 **Done when** a debug APK scans a shop on a real device and exports to storage.
 
+**Under way — 18a landed, 18b next.** CI builds an arm64 debug APK on every pull
+request; export on Android writes through the Storage Access Framework; the
+desktop-only render and bridge are compiled out rather than faked. What is
+left is share-sheet entry and a run on a real phone. The split, and why the
+APK is built in CI rather than in a session, are in
+[`prompts/phase-18.md`](prompts/phase-18.md).
+
 > **Sequencing, decided after phase 15 shipped.** Windows and Linux get finished
 > first — 16, 17 and 20 — and Android starts after them. Two reasons, and the
 > second is the real one.
