@@ -2,6 +2,38 @@
 
 Every release, newest first. Generated from Conventional Commits — see CONTRIBUTING.md.
 
+# [1.12.0](https://github.com/hami9/proc123/compare/v1.11.1...v1.12.0) (2026-10-02)
+
+
+### Features
+
+* **app:** give the desktop app its designed look (phase 16.5) ([92d963b](https://github.com/hami9/proc123/commit/92d963bd3dd6a2fbb33083f0308bc32302791c77))
+
+
+---
+
+## Installing
+
+**Desktop app — Windows** — download `proc123_1.12.0_x64_en-US.msi` and run it. Nothing else is needed: WebView2 ships with Windows 11 and with any current Windows 10.
+
+> The installer is **unsigned**, so Windows opens a SmartScreen panel with the Run button hidden behind **More info → Run anyway**. Signing needs a certificate issued to a named person and costs money, so until that decision is made the warning is expected and is not a sign anything is wrong.
+
+**Desktop app — Linux** — on Debian or Ubuntu, `sudo apt install ./proc123_1.12.0_amd64.deb`. On anything else take `proc123_1.12.0_amd64.AppImage`, `chmod +x` it and run it. The `.deb` is the small one because it links the system WebKitGTK; the AppImage carries its own, which is the whole size difference.
+
+**Chrome · Edge · Brave** — unzip `proc123-chrome-1.12.0.zip`, open `chrome://extensions`, turn on **Developer mode**, then **Load unpacked** and pick the unzipped folder.
+
+**Firefox** — open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…**, and select `proc123-firefox-1.12.0.zip` directly. No need to unzip.
+
+> Do **not** use `about:addons` → Install Add-on From File. That screen only accepts a Mozilla-signed file and rejects the zip as "not verified". Firefox has required signatures since version 48, and `xpinstall.signatures.required` is ignored on release builds, so no setting changes it. A temporary add-on lasts until you close the browser.
+
+**A terminal, no browser** — download `proc123-win32-x64.exe` or `proc123-linux-x64`, then `proc123 <category-url> -o products.csv`.
+
+### Which one do you want?
+
+The **app** is the least work: it fetches any shop directly, renders JavaScript-built stores itself, and writes the CSV straight to disk. The **extension** is the only one that can read a shop you are already **logged in to**, because it runs inside your own browser session — nothing else can substitute for that. They are not alternatives, and installing both is the ordinary setup.
+
+proc123 is not in the Chrome Web Store or listed on addons.mozilla.org yet, which is why the extension install is a folder rather than a button — [publishing.md](https://github.com/hami9/proc123/blob/main/docs/publishing.md) covers what that takes.
+
 ## [1.11.1](https://github.com/hami9/proc123/compare/v1.11.0...v1.11.1) (2026-10-02)
 
 
