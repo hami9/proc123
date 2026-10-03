@@ -18,9 +18,9 @@
 //! **Phase 18: two modules are desktop-only, and both for a reason that is not
 //! "Android is far away".**
 //!
-//! - `render.rs` opens a hidden second WebView window. Tauri's mobile runtime has
-//!   one window and no `WebviewWindowBuilder` at all, so this is an API that
-//!   does not exist there rather than a feature skipped. On Android the front
+//! - `render.rs` opens a hidden second WebView window. Tauri's mobile runtime
+//!   supports exactly one window, so the extra one this needs cannot be opened
+//!   there — a platform limit rather than a feature skipped. On Android the front
 //!   end's `canRender()` answers false and a scan that finds nothing says so,
 //!   which is the same honest answer the CLI gives.
 //! - `bridge.rs` listens for the browser extension on loopback (§17), and §17
@@ -53,6 +53,14 @@ pub struct HostInfo {
     pub platform: &'static str,
     /// The app's version, from `Cargo.toml`, so one number governs.
     pub version: &'static str,
+    /// Whether this build can render a page in a hidden WebView (`render.rs`).
+    ///
+    /// Reported rather than inferred by the front end: the native side is the
+    /// one that knows which commands it compiled in, and a guess made from the
+    /// user agent would be wrong the day anyone sets one.
+    pub render: bool,
+    /// Whether this build runs the extension bridge (§17).
+    pub bridge: bool,
 }
 
 #[tauri::command]
@@ -60,6 +68,8 @@ fn host_info() -> HostInfo {
     HostInfo {
         platform: std::env::consts::OS,
         version: env!("CARGO_PKG_VERSION"),
+        render: cfg!(desktop),
+        bridge: cfg!(desktop),
     }
 }
 
@@ -133,7 +143,9 @@ pub fn run() {
 
     // On Android the save dialog hands back a `content://` URI rather than a
     // path, and only the fs plugin can open one for writing (`files.rs`).
-    #[cfg(mobile)]
+    // Gated on Android exactly as the dependency and `files.rs` are. `mobile`
+    // would also match iOS, where the crate is not a dependency at all.
+    #[cfg(target_os = "android")]
     let builder = builder.plugin(tauri_plugin_fs::init());
 
     #[cfg(desktop)]
@@ -157,9 +169,10 @@ pub fn run() {
             render::evaluate
         ]);
 
-    // The same commands minus the two that have no mobile meaning. A front end
-    // that calls `bridge_info` or `rendered_html` here gets "command not found",
-    // which `bridge.ts` and `render.ts` already treat as "not available".
+    // The same commands minus the three that have no mobile meaning:
+    // `bridge_info`, `rendered_html` and `evaluate`. The front end does not call
+    // them here, because `host_info` says which exist (`HostInfo::render`,
+    // `HostInfo::bridge`) — it does not find out by being refused.
     #[cfg(mobile)]
     let builder = builder.invoke_handler(tauri::generate_handler![
         host_info,

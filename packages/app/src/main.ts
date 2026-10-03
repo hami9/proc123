@@ -29,6 +29,7 @@ import { type BridgeInfo, bridgeInfo, formatToken, onHandoff } from './bridge.js
 import { canExport, currencyQuestion, readingsOf } from './currency.js';
 import { type IconName, icon, isIconName } from './icons.js';
 import { saveTextFile } from './save.js';
+import { setRenderSupported } from './render.js';
 import { scanCategory, scanHandedPage } from './scan.js';
 import {
   type Language,
@@ -833,8 +834,8 @@ function renderAbout(): void {
   // need the extension and says so in both states — a pairing panel that reads
   // like a setup step would make an enhancement look like a requirement.
   // Desktop only: Android browsers do not run the extension, so there is
-  // nothing to pair with, and the Rust side does not start the bridge there.
-  if (hostLabel !== 'android') {
+  // nothing to pair with, and the Rust side does not compile the bridge there.
+  if (hostHasBridge) {
     const bridge = el('section', 'card stack');
     const bridgeTitle = el('h2', 'section-title');
     bridgeTitle.append(icon('plug'), el('span', undefined, t('bridgeTitle')));
@@ -890,6 +891,8 @@ function renderAbout(): void {
 let hostLabel = '—';
 /** From the native side, so one number governs — `Cargo.toml`'s. */
 let appVersion = '—';
+/** Whether this build runs the extension bridge (§17). Desktop only. */
+let hostHasBridge = false;
 
 interface TauriGlobal {
   core?: { invoke?: (command: string) => Promise<unknown> };
@@ -903,9 +906,17 @@ async function readHost(): Promise<void> {
     return;
   }
   try {
-    const info = (await invoke('host_info')) as { platform?: string; version?: string };
+    const info = (await invoke('host_info')) as {
+      platform?: string;
+      version?: string;
+      render?: boolean;
+      bridge?: boolean;
+    };
     hostLabel = info.platform ?? '?';
     appVersion = info.version ?? '?';
+    // What this build compiled in, from the side that knows (`lib.rs`).
+    setRenderSupported(info.render === true);
+    hostHasBridge = info.bridge === true;
   } catch {
     hostLabel = 'unavailable';
   }
@@ -998,7 +1009,9 @@ function fillIcons(): void {
 void (async (): Promise<void> => {
   fillIcons();
   await readHost();
-  state.bridge = await bridgeInfo();
+  // Not asked at all where the bridge is not compiled in, rather than asked and
+  // refused: a refusal there would look the same as a real IPC failure.
+  state.bridge = hostHasBridge ? await bridgeInfo() : undefined;
   element('sidebar-foot').textContent = `v${appVersion}`;
   renderAll();
 

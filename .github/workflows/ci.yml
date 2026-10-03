@@ -166,6 +166,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
+          components: clippy
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -175,9 +176,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Before the lint step, which compiles: `tauri-build` refuses to run
+      # without `frontendDist` on disk.
+      - name: Build the front end
+        run: npm run build -w @proc123/app
+
       - name: Generate the Android project
         working-directory: packages/app
         run: npx tauri android init --ci
+
+      # The desktop lint job cannot see `#[cfg(target_os = "android")]` code, so
+      # without this the only Android-specific Rust in the repository would be
+      # the only Rust with no lint gate. The NDK's clang is the C compiler `ring`
+      # needs for the Android target.
+      - name: Rust lint (Android)
+        working-directory: packages/app/src-tauri
+        run: |
+          BIN="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          CC_aarch64_linux_android="$BIN/aarch64-linux-android24-clang" \
+          AR_aarch64_linux_android="$BIN/llvm-ar" \
+          cargo clippy --target aarch64-linux-android -- -D warnings
 
       # Launcher icons for the generated project, from the same logo the desktop
       # icons came from. Only the Android set is new; anything else this
