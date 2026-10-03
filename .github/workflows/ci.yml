@@ -129,3 +129,72 @@ jobs:
 
       - name: Rust tests
         run: npm run rust:test -w @proc123/app
+
+  # Phase 18. The APK is built here rather than on a contributor's machine,
+  # and not only for convenience: the Android SDK and NDK are a second
+  # toolchain of several gigabytes that most changes never touch, and the
+  # GitHub runner already carries both. `gen/android` is generated fresh each
+  # run rather than committed (the root .gitignore covers gen/) until there is
+  # something in it worth keeping by hand.
+  #
+  # The artefact is a *debug* APK, signed with the throwaway debug key. It
+  # installs on a device with "install unknown apps" allowed, which is what
+  # testing on a real phone needs; a release signing key is phase 20's
+  # decision and belongs to a person, not to CI.
+  android:
+    name: App (Android APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # The Android Gradle plugin needs 17; the runner's default may differ.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # The runner ships the SDK and several NDKs; Tauri finds the NDK through
+      # NDK_HOME and nothing sets it by default.
+      - name: Point Tauri at the NDK
+        run: echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/app/src-tauri
+          key: android
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate the Android project
+        working-directory: packages/app
+        run: npx tauri android init --ci
+
+      # Launcher icons for the generated project, from the same logo the desktop
+      # icons came from. Only the Android set is new; anything else this
+      # rewrites lives and dies in this runner.
+      - name: Android launcher icons
+        working-directory: packages/app
+        run: npx tauri icon ../../docs/logo.png
+
+      # One ABI, arm64, because it is what essentially every phone sold in the
+      # last several years runs. A universal APK would quadruple the build for
+      # emulators and devices nobody is testing on.
+      - name: Build a debug APK
+        working-directory: packages/app
+        run: npx tauri android build --debug --apk --target aarch64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proc123-android-debug
+          path: packages/app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error

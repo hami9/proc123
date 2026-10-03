@@ -14,12 +14,31 @@
 //! Phase 16 adds HTTP (`http.rs`) — a transport and nothing more. Phase 17 adds
 //! `bridge.rs`, which is a socket and nothing more: it carries a page from the
 //! extension and emits it, and `core` decides what the page means.
+//!
+//! **Phase 18: two modules are desktop-only, and both for a reason that is not
+//! "Android is far away".**
+//!
+//! - `render.rs` opens a hidden second WebView window. Tauri's mobile runtime has
+//!   one window and no `WebviewWindowBuilder` at all, so this is an API that
+//!   does not exist there rather than a feature skipped. On Android the front
+//!   end's `canRender()` answers false and a scan that finds nothing says so,
+//!   which is the same honest answer the CLI gives.
+//! - `bridge.rs` listens for the browser extension on loopback (§17), and §17
+//!   is written about a desktop: Android browsers do not run the extension, so
+//!   there is nothing to listen for. Opening a socket nobody can use would be
+//!   attack surface bought for no feature.
+//!
+//! Everything else — HTTP, the files, the scan itself in `core` — is the same
+//! code on every platform, which is the whole argument for one codebase (§15).
 
+#[cfg(desktop)]
 mod bridge;
 mod files;
 mod http;
+#[cfg(desktop)]
 mod render;
 
+#[cfg(desktop)]
 use tauri::{Emitter, Manager};
 
 /// What the front end is told about the machine it is running on.
@@ -52,6 +71,7 @@ fn host_info() -> HostInfo {
 /// else. `None` means the listener could not bind, which is not fatal: the app
 /// is required to work with no extension at all, so a bridge that failed to
 /// start costs the handoff and nothing more.
+#[cfg(desktop)]
 struct BridgeHandle(std::sync::Mutex<Option<bridge::BridgeInfo>>);
 
 /// The pairing details, for the UI to display.
@@ -59,6 +79,7 @@ struct BridgeHandle(std::sync::Mutex<Option<bridge::BridgeInfo>>);
 /// The token leaves this process exactly twice: into the app's own window, and
 /// back in on a request that proves the user typed it. It is never written to
 /// disk and never sent anywhere.
+#[cfg(desktop)]
 #[tauri::command]
 fn bridge_info(state: tauri::State<'_, BridgeHandle>) -> Option<bridge::BridgeInfo> {
     state.0.lock().ok()?.clone()
@@ -70,6 +91,7 @@ fn bridge_info(state: tauri::State<'_, BridgeHandle>) -> Option<bridge::BridgeIn
 /// usable with the extension uninstalled, and a machine where every port in the
 /// range is taken is indistinguishable, from the app's point of view, from a
 /// machine with no extension on it.
+#[cfg(desktop)]
 async fn start_bridge(app: tauri::AppHandle) {
     let Ok((listener, port)) = bridge::bind().await else {
         return;
@@ -107,8 +129,15 @@ async fn start_bridge(app: tauri::AppHandle) {
 /// into two different applications.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_dialog::init())
+    let builder = tauri::Builder::default().plugin(tauri_plugin_dialog::init());
+
+    // On Android the save dialog hands back a `content://` URI rather than a
+    // path, and only the fs plugin can open one for writing (`files.rs`).
+    #[cfg(mobile)]
+    let builder = builder.plugin(tauri_plugin_fs::init());
+
+    #[cfg(desktop)]
+    let builder = builder
         .manage(BridgeHandle(std::sync::Mutex::new(None)))
         .setup(|app| {
             let _ = app.get_webview_window("main");
@@ -126,7 +155,19 @@ pub fn run() {
             files::save_text_file,
             render::rendered_html,
             render::evaluate
-        ])
+        ]);
+
+    // The same commands minus the two that have no mobile meaning. A front end
+    // that calls `bridge_info` or `rendered_html` here gets "command not found",
+    // which `bridge.ts` and `render.ts` already treat as "not available".
+    #[cfg(mobile)]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        host_info,
+        http::http_fetch,
+        files::save_text_file
+    ]);
+
+    builder
         .run(tauri::generate_context!())
         .expect("the proc123 window could not be created");
 }

@@ -41,10 +41,24 @@ function invoker(): <T>(command: string, args?: Record<string, unknown>) => Prom
   return invoke;
 }
 
-/** True when rendering is possible at all — the extension and a plain browser cannot. */
+/**
+ * True when rendering is possible at all — the extension and a plain browser
+ * cannot, and neither can Android.
+ *
+ * On Android the Rust side does not register `rendered_html` at all: Tauri's
+ * mobile runtime has one window and no API to open a hidden second one
+ * (`lib.rs`). Asking anyway would fail, be caught, and fall back to the static
+ * answer — but only after telling the user "opening the page in a browser…",
+ * which would be untrue. Answering here keeps that message honest.
+ *
+ * The user agent rather than `host_info` because this has to be synchronous,
+ * and every Android System WebView says `Android` in it.
+ */
 export function canRender(): boolean {
   const tauri = (globalThis as { __TAURI__?: TauriGlobal }).__TAURI__;
-  return typeof tauri?.core?.invoke === 'function';
+  if (typeof tauri?.core?.invoke !== 'function') return false;
+  const agent = (globalThis as { navigator?: { userAgent?: string } }).navigator?.userAgent ?? '';
+  return !/\bAndroid\b/.test(agent);
 }
 
 /**

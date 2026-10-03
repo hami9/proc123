@@ -8,8 +8,6 @@
 //! The front end decides *what* to write — the exporter is `packages/exporters`,
 //! shared with the other two surfaces. This decides nothing about the content.
 
-use std::path::PathBuf;
-
 use tauri_plugin_dialog::DialogExt;
 
 /// Where a file ended up, or that the user changed their mind.
@@ -35,24 +33,71 @@ pub async fn save_text_file(
     suggested_name: String,
     contents: String,
 ) -> Result<SaveOutcome, String> {
-    let picked: Option<PathBuf> = app
+    let picked = app
         .dialog()
         .file()
         .set_file_name(&suggested_name)
-        .blocking_save_file()
-        .and_then(|path| path.into_path().ok());
+        .blocking_save_file();
 
-    let Some(path) = picked else {
+    let Some(picked) = picked else {
         return Ok(SaveOutcome {
             saved: false,
             path: None,
         });
     };
 
-    std::fs::write(&path, contents).map_err(|error| error.to_string())?;
+    let shown = picked.to_string();
+    write_picked(&app, picked, &contents)?;
 
     Ok(SaveOutcome {
         saved: true,
-        path: Some(path.to_string_lossy().into_owned()),
+        path: Some(shown),
     })
+}
+
+/// Write to wherever the dialog pointed, on the desktop: a plain path.
+#[cfg(not(target_os = "android"))]
+fn write_picked(
+    _app: &tauri::AppHandle,
+    picked: tauri_plugin_dialog::FilePath,
+    contents: &str,
+) -> Result<(), String> {
+    let path: std::path::PathBuf = picked
+        .into_path()
+        .map_err(|_| "the chosen location is not a file path".to_owned())?;
+    std::fs::write(&path, contents).map_err(|error| error.to_string())
+}
+
+/// Write to wherever the dialog pointed, on Android: a `content://` URI.
+///
+/// Android's save dialog is the Storage Access Framework, and it hands back a
+/// document URI rather than a path — the app is granted that one document and
+/// nothing else, which is exactly the right amount of access for an export.
+///
+/// The desktop branch cannot be reused here, and the way it fails is the reason
+/// this is spelled out. `into_path()` on a `content://` URI is an error, and the
+/// old code turned that error into `None` — which then read as the user
+/// pressing Cancel. On a phone, every export reported "not saved" and wrote
+/// nothing, with no error anywhere.
+#[cfg(target_os = "android")]
+fn write_picked(
+    app: &tauri::AppHandle,
+    picked: tauri_plugin_dialog::FilePath,
+    contents: &str,
+) -> Result<(), String> {
+    use std::io::Write;
+    use tauri_plugin_fs::{FsExt, OpenOptions};
+
+    let mut options = OpenOptions::default();
+    // `truncate` because a document the user picked to overwrite must not keep
+    // the tail of a longer file it replaced — a CSV with a stale last row is a
+    // corrupt import that looks fine.
+    options.write(true).truncate(true).create(true);
+
+    let mut file = app
+        .fs()
+        .open(picked, options)
+        .map_err(|error| error.to_string())?;
+    file.write_all(contents.as_bytes())
+        .map_err(|error| error.to_string())
 }

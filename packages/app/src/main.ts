@@ -832,22 +832,26 @@ function renderAbout(): void {
   // §17, where the person who has to type the code can see it. The app does not
   // need the extension and says so in both states — a pairing panel that reads
   // like a setup step would make an enhancement look like a requirement.
-  const bridge = el('section', 'card stack');
-  const bridgeTitle = el('h2', 'section-title');
-  bridgeTitle.append(icon('plug'), el('span', undefined, t('bridgeTitle')));
-  bridge.append(bridgeTitle);
-  bridge.append(el('p', 'muted', t('bridgeWhat')));
-  if (state.bridge === undefined) {
-    bridge.append(el('p', 'small muted', t('bridgeOff')));
-  } else {
-    const code = el('div', 'row');
-    code.append(el('span', 'small muted', t('bridgePairing')));
-    code.append(el('span', 'code', formatToken(state.bridge.token)));
-    code.append(el('span', 'chip', `127.0.0.1:${String(state.bridge.port)}`));
-    bridge.append(code);
-    bridge.append(el('p', 'small muted', t('bridgeHow')));
+  // Desktop only: Android browsers do not run the extension, so there is
+  // nothing to pair with, and the Rust side does not start the bridge there.
+  if (hostLabel !== 'android') {
+    const bridge = el('section', 'card stack');
+    const bridgeTitle = el('h2', 'section-title');
+    bridgeTitle.append(icon('plug'), el('span', undefined, t('bridgeTitle')));
+    bridge.append(bridgeTitle);
+    bridge.append(el('p', 'muted', t('bridgeWhat')));
+    if (state.bridge === undefined) {
+      bridge.append(el('p', 'small muted', t('bridgeOff')));
+    } else {
+      const code = el('div', 'row');
+      code.append(el('span', 'small muted', t('bridgePairing')));
+      code.append(el('span', 'code', formatToken(state.bridge.token)));
+      code.append(el('span', 'chip', `127.0.0.1:${String(state.bridge.port)}`));
+      bridge.append(code);
+      bridge.append(el('p', 'small muted', t('bridgeHow')));
+    }
+    view.append(bridge);
   }
-  view.append(bridge);
 
   // §15's promise, stated where a user can read it rather than only in a
   // repository nobody opens.
