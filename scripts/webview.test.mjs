@@ -1,12 +1,29 @@
 import { build } from 'esbuild';
 import { parse } from 'acorn';
 import { createContext, runInContext } from 'node:vm';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
 import { TextEncoder } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import { buildOptions } from '../packages/app/scripts/build.mjs';
 
 describe('older Android WebViews', () => {
+  it('allows native IPC responses without opening browser network access', () => {
+    const config = JSON.parse(
+      readFileSync(new URL('../packages/app/src-tauri/tauri.conf.json', import.meta.url), 'utf8')
+    );
+    const directives = Object.fromEntries(
+      config.app.security.csp.split(';').map((directive) => {
+        const [name, ...sources] = directive.trim().split(/\s+/);
+        return [name, sources];
+      })
+    );
+    // Large native responses use Tauri's IPC fetch channel. Shop requests still
+    // go through Rust; no arbitrary HTTP(S) origin belongs in connect-src.
+    expect(directives['connect-src']).toEqual(["'self'", 'ipc:', 'http://ipc.localhost']);
+    expect(directives['default-src']).toEqual(["'self'"]);
+  });
+
   it('ships a full app bundle that parses as ES2020', async () => {
     expect(buildOptions.target).toContain('chrome81');
     const result = await build({
