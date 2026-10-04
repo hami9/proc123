@@ -8,7 +8,7 @@
 
 <!-- version-badge:start -->
 
-[![version](https://img.shields.io/badge/version-1.13.0-7a3e1d)](https://github.com/hami9/proc123/releases/tag/v1.13.0)
+[![version](https://img.shields.io/badge/version-1.14.0-7a3e1d)](https://github.com/hami9/proc123/releases/tag/v1.14.0)
 <!-- version-badge:end -->
 
 [![CI](https://github.com/hami9/proc123/actions/workflows/ci.yml/badge.svg)](https://github.com/hami9/proc123/actions/workflows/ci.yml)
