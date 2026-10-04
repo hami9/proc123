@@ -25,9 +25,9 @@ class SharePlugin(private val activity: Activity) : Plugin(activity) {
 
     @Synchronized
     private fun accept(intent: Intent?) {
-        if (intent?.action != Intent.ACTION_SEND || intent.type != "text/plain") return
+        if (intent?.action != Intent.ACTION_SEND || Intent.normalizeMimeType(intent.type) != "text/plain") return
         val text = try {
-            intent.getStringExtra(Intent.EXTRA_TEXT)
+            intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
         } catch (_: Exception) {
             null
         }
@@ -38,10 +38,12 @@ class SharePlugin(private val activity: Activity) : Plugin(activity) {
     }
 
     @Command
-    @Synchronized
     fun take(invoke: Invoke) {
         val result = JSObject()
-        result.put("text", pending.pollFirst())
+        result.put("text", takeText())
         invoke.resolve(result)
     }
+
+    @Synchronized
+    internal fun takeText(): String? = pending.pollFirst()
 }

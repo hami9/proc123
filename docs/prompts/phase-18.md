@@ -43,6 +43,12 @@ after `tauri android init`; CI runs the same step and fails if the generated
 template or identifier changes. This keeps the edits reproducible without
 committing the SDK-generated project.
 
+CI also runs native Kotlin regression tests with Robolectric after building the
+APK. They cover cold/warm delivery, styled `CharSequence` text, normalized MIME
+types, replay prevention, invalid extras and inbox limits. Test dependencies
+are JVM-only and are not bundled in the app. These tests do not prove browser
+share-sheet routing or scan/export on a physical phone.
+
 From the repository root, with the Android toolchain installed:
 
 ```powershell

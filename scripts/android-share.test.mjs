@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { prepareShare, shareManifest } from '../packages/app/scripts/android-share.mjs';
+import { prepareShare, shareManifest, shareTests } from '../packages/app/scripts/android-share.mjs';
 
 const MANIFEST = `<manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.INTERNET" />
@@ -29,6 +29,16 @@ describe('the Android source overlay', () => {
     );
   });
 
+  it('keeps existing Gradle settings and adds test dependencies only once', async () => {
+    const tests = await readFile('packages/app/android/share-tests.gradle.kts', 'utf8');
+    const existing = 'android { compileSdk = 36 }\n';
+    const configured = shareTests(existing, tests);
+    expect(configured).toContain(existing.trim());
+    expect(configured).toContain('testImplementation("org.robolectric:robolectric:4.17")');
+    expect(shareTests(configured, tests)).toBe(configured);
+    expect(() => shareTests(configured.replace('4.17', '4.16'), tests)).toThrow('drifted');
+  });
+
   it('applies the real Kotlin source reproducibly to a generated project', async () => {
     const project = await mkdtemp(join(tmpdir(), 'proc123-android-'));
     try {
@@ -36,6 +46,7 @@ describe('the Android source overlay', () => {
       const kotlin = join(main, 'java/com/github/hami9/proc123');
       await mkdir(kotlin, { recursive: true });
       await writeFile(join(main, 'AndroidManifest.xml'), MANIFEST);
+      await writeFile(join(project, 'app/build.gradle.kts'), 'android { compileSdk = 36 }\n');
       await writeFile(
         join(kotlin, 'MainActivity.kt'),
         'package com.github.hami9.proc123\nclass MainActivity'
@@ -48,6 +59,13 @@ describe('the Android source overlay', () => {
       expect(source).toContain('override fun onNewIntent');
       expect(source).toContain('accept(activity.intent)');
       expect(source).not.toContain('evaluateJavascript');
+      const tests = await readFile(
+        join(project, 'app/src/test/java/com/github/hami9/proc123/SharePluginTest.kt'),
+        'utf8'
+      );
+      expect(tests).toBe(await readFile('packages/app/android/SharePluginTest.kt', 'utf8'));
+      const gradle = await readFile(join(project, 'app/build.gradle.kts'), 'utf8');
+      expect(gradle.match(/org.robolectric:robolectric/g)).toHaveLength(1);
     } finally {
       // This test owns this exact mkdtemp directory, never a workspace path.
       await rm(project, { recursive: true, force: true });
