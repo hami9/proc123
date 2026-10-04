@@ -19,6 +19,12 @@ describe('the Android source overlay', () => {
     expect(result).toContain('androidx.core.content.FileProvider');
     expect(result).toContain('android.intent.action.SEND');
     expect(result).toContain('android:mimeType="text/plain"');
+    const main = result.match(
+      /<activity\b[^>]*android:name="\.MainActivity"[^>]*>[\s\S]*?<\/activity>/
+    )?.[0];
+    expect(main).not.toContain('android.intent.action.SEND');
+    expect(result).toContain('android:name=".ShareActivity"');
+    expect(result).toContain('android:theme="@android:style/Theme.NoDisplay"');
     expect(shareManifest(result)).toBe(result);
   });
 
@@ -26,6 +32,21 @@ describe('the Android source overlay', () => {
     expect(() => shareManifest(MANIFEST.replace('singleTask', 'standard'))).toThrow('singleTask');
     expect(() => shareManifest(MANIFEST.replace('.MainActivity', '.OtherActivity'))).toThrow(
       'MainActivity'
+    );
+  });
+
+  it('rejects old host filters and changed share receivers', () => {
+    const old = MANIFEST.replace(
+      '</activity>',
+      '<intent-filter><action android:name="android.intent.action.SEND" /></intent-filter></activity>'
+    );
+    expect(() => shareManifest(old)).toThrow('Regenerate Android');
+    const configured = shareManifest(MANIFEST);
+    expect(() => shareManifest(configured.replace('Theme.NoDisplay', 'Theme.Dialog'))).toThrow(
+      'drifted'
+    );
+    expect(() => shareManifest(configured.replace('<!-- proc123 share receiver -->', ''))).toThrow(
+      'drifted'
     );
   });
 
@@ -59,6 +80,15 @@ describe('the Android source overlay', () => {
       expect(source).toContain('override fun onNewIntent');
       expect(source).toContain('accept(activity.intent)');
       expect(source).not.toContain('evaluateJavascript');
+      expect(await readFile(join(kotlin, 'ShareActivity.kt'), 'utf8')).toBe(
+        await readFile('packages/app/android/ShareActivity.kt', 'utf8')
+      );
+      expect(
+        await readFile(
+          join(project, 'app/src/test/java/com/github/hami9/proc123/ShareActivityTest.kt'),
+          'utf8'
+        )
+      ).toBe(await readFile('packages/app/android/ShareActivityTest.kt', 'utf8'));
       const tests = await readFile(
         join(project, 'app/src/test/java/com/github/hami9/proc123/SharePluginTest.kt'),
         'utf8'

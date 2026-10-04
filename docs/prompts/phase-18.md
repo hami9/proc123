@@ -31,8 +31,12 @@ about.
 
 ### 18b — share-sheet entry
 
-A URL shared from a browser opens the ordinary scan path. The `ACTION_SEND`
-filter accepts `text/plain`. A small Kotlin plugin handles the launch intent
+A URL shared from a browser opens the ordinary scan path. A small native
+`ShareActivity` accepts `ACTION_SEND` with `text/plain`, forwards bounded text
+to the existing app task, then finishes. It drops browser result flags and URI
+grants: a physical S9 showed that sharing directly to the Tauri host can create
+a second, blank host inside Chrome's task, even with `singleTask`.
+A Kotlin plugin handles the launch intent
 and `onNewIntent`, keeping shares in memory until the UI is ready and idle.
 Only one HTTP(S) URL is accepted; credentials and ambiguous shares are rejected.
 The normal currency confirmation still applies before export.
@@ -45,7 +49,8 @@ committing the SDK-generated project.
 
 CI also runs native Kotlin regression tests with Robolectric after building the
 APK. They cover cold/warm delivery, styled `CharSequence` text, normalized MIME
-types, replay prevention, invalid extras and inbox limits. Test dependencies
+types, replay prevention, invalid extras and inbox limits. Receiver tests also
+check task flags, text-only forwarding and no replay on restoration. Test dependencies
 are JVM-only and are not bundled in the app. These tests do not prove browser
 share-sheet routing or scan/export on a physical phone.
 
@@ -102,8 +107,9 @@ npm exec -w @proc123/app -- tauri android build --debug --apk --target aarch64
 
 - [x] CI builds an installable debug APK on every pull request.
 - [x] Export on Android writes the file the user chose.
-- [ ] A URL shared from a browser opens a scan.
-- [ ] Scanned and exported on a real device (needs a person and a phone).
+- [x] A cold URL shared from Chrome opens a scan (Galaxy S9, Android 10, WebView 81).
+- [x] Scanned a Persian fixture and saved a verified CSV to Downloads on that phone.
+- [ ] Warm and queued browser shares pass the physical-device checks below.
 - [ ] `scripts/release/phases.json` says `done` for phase 18.
 
 ## Device checks

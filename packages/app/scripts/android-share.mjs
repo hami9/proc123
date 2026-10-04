@@ -4,13 +4,16 @@ import { fileURLToPath, URL } from 'node:url';
 import { resolve } from 'node:path';
 
 const app = fileURLToPath(new URL('../', import.meta.url));
-const marker = '<!-- proc123 share entry -->';
-const filter = `${marker}
+const marker = '<!-- proc123 share receiver -->';
+const receiver = `${marker}
+        <activity android:name=".ShareActivity" android:exported="true"
+            android:excludeFromRecents="true" android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
-            </intent-filter>`;
+            </intent-filter>
+        </activity>`;
 
 export function shareManifest(source) {
   const activity = /<activity\b[^>]*android:name="\.MainActivity"[^>]*>[\s\S]*?<\/activity>/;
@@ -18,14 +21,18 @@ export function shareManifest(source) {
   if (!match || !match[0].includes('android:launchMode="singleTask"')) {
     throw new Error('Expected the generated singleTask MainActivity. Check the Tauri template.');
   }
-  if (match[0].includes(marker)) {
-    if (!match[0].includes(filter)) throw new Error('The Android share filter has drifted.');
+  if (match[0].includes('android.intent.action.SEND')) {
+    throw new Error('Regenerate Android: shares must not target the Tauri host directly.');
+  }
+  if (source.includes(marker)) {
+    if (!source.includes(receiver)) throw new Error('The Android share filter has drifted.');
     return source;
   }
-  return source.replace(
-    activity,
-    match[0].replace('</activity>', `${filter}\n        </activity>`)
-  );
+  if (source.includes('android:name=".ShareActivity"')) {
+    throw new Error('The Android share receiver has drifted.');
+  }
+  if (!source.includes('</application>')) throw new Error('Missing Android application.');
+  return source.replace('</application>', `${receiver}\n    </application>`);
 }
 
 export async function prepareShare(project = resolve(app, 'src-tauri/gen/android')) {
@@ -46,11 +53,19 @@ export async function prepareShare(project = resolve(app, 'src-tauri/gen/android
     resolve(kotlin, 'SharePlugin.kt'),
     await readFile(resolve(app, 'android/SharePlugin.kt'))
   );
+  await writeFile(
+    resolve(kotlin, 'ShareActivity.kt'),
+    await readFile(resolve(app, 'android/ShareActivity.kt'))
+  );
   const testDirectory = resolve(project, 'app/src/test/java/com/github/hami9/proc123');
   await mkdir(testDirectory, { recursive: true });
   await writeFile(
     resolve(testDirectory, 'SharePluginTest.kt'),
     await readFile(resolve(app, 'android/SharePluginTest.kt'))
+  );
+  await writeFile(
+    resolve(testDirectory, 'ShareActivityTest.kt'),
+    await readFile(resolve(app, 'android/ShareActivityTest.kt'))
   );
 }
 
