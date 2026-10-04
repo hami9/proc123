@@ -10,14 +10,16 @@
  * `fetch` is injected throughout, so none of this touches a socket (§12).
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   PORT_RANGE,
   PROTOCOL_VERSION,
   discoverBridge,
   handOffToApp,
+  loadBridgeToken,
   normalizeToken,
+  saveBridgeToken,
   sendPageToApp,
 } from '../src/bridge.js';
 import type { FetchLike } from '../src/bridge.js';
@@ -59,27 +61,69 @@ function appOn(port: number, token: string, protocol = PROTOCOL_VERSION): FetchL
   };
 }
 
-beforeEach(() => {
-  // A fresh storage per test: the token is stored, and a leak between tests
-  // would make the "not paired" cases pass for the wrong reason.
-  globalThis.chrome = {
-    storage: {
-      local: (() => {
-        let held: Record<string, unknown> = {};
-        return {
-          get: (key: string) => Promise.resolve(key in held ? { [key]: held[key] } : {}),
-          set: (values: Record<string, unknown>) => {
-            held = { ...held, ...values };
-            return Promise.resolve();
-          },
-          remove: (keys: string[]) => {
-            for (const key of keys) delete held[key];
-            return Promise.resolve();
-          },
-        };
-      })(),
+function storageArea(): chrome.storage.StorageArea {
+  const held: Record<string, unknown> = {};
+  return {
+    get: (keys) => {
+      const wanted = keys === null ? Object.keys(held) : [keys].flat();
+      return Promise.resolve(
+        Object.fromEntries(wanted.filter((key) => key in held).map((key) => [key, held[key]]))
+      );
     },
-  } as unknown as typeof chrome;
+    set: (values) => {
+      Object.assign(held, values);
+      return Promise.resolve();
+    },
+    remove: (keys) => {
+      for (const key of [keys].flat()) delete held[key];
+      return Promise.resolve();
+    },
+  };
+}
+
+beforeEach(() => {
+  vi.stubGlobal('chrome', { storage: { local: storageArea(), session: storageArea() } });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('session-only pairing', () => {
+  it('keeps the code across worker reloads without writing it to disk', async () => {
+    await saveBridgeToken('abcd-1234', 8787);
+    expect(await chrome.storage.local.get(null)).toEqual({});
+    vi.resetModules();
+    const reloaded = await import('../src/bridge.js');
+    await expect(reloaded.loadBridgeToken()).resolves.toBe('ABCD1234');
+  });
+
+  it('forgets pairing when the browser session ends', async () => {
+    await saveBridgeToken('ABCD1234', 8787);
+    vi.stubGlobal('chrome', { storage: { local: chrome.storage.local, session: storageArea() } });
+    await expect(loadBridgeToken()).resolves.toBeUndefined();
+  });
+
+  it('deletes legacy persistent codes instead of restoring them', async () => {
+    await chrome.storage.local.set({
+      'proc123.bridge.token': 'OLD12345',
+      'proc123.bridge.port': 8787,
+      config: 'keep',
+    });
+    await expect(loadBridgeToken()).resolves.toBeUndefined();
+    expect(await chrome.storage.local.get(null)).toEqual({ config: 'keep' });
+  });
+
+  it('never falls back to disk when session storage is unavailable', async () => {
+    vi.stubGlobal('chrome', { storage: { local: storageArea() } });
+    await expect(loadBridgeToken()).resolves.toBeUndefined();
+    await expect(saveBridgeToken('ABCD1234', 8787)).rejects.toThrow('in memory');
+    expect(await chrome.storage.local.get(null)).toEqual({});
+    await expect(sendPageToApp(nothingListening, PAGE, undefined)).resolves.toEqual({
+      ok: false,
+      reason: 'unreachable',
+    });
+  });
 });
 
 describe('working with no app installed', () => {

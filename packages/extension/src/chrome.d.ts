@@ -58,6 +58,8 @@ declare namespace chrome {
       remove(keys: string | string[]): Promise<void>;
     }
     const local: StorageArea;
+    /** In-memory only; absent on browsers that do not support session storage. */
+    const session: StorageArea | undefined;
   }
 
   namespace permissions {

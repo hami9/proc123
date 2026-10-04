@@ -137,27 +137,34 @@ export async function discoverBridge(fetchImpl: FetchLike): Promise<BridgeFound 
 
 /** The pairing code the user copied out of the app, if they have done that. */
 export async function loadBridgeToken(): Promise<string | undefined> {
-  const stored = await storage.local.get(TOKEN_KEY);
+  // Remove older builds' disk-backed pairing codes. Never migrate the secret.
+  await storage.local.remove([TOKEN_KEY, PORT_KEY]);
+  const session = storage.session;
+  if (session === undefined) return undefined;
+  const stored = await session.get(TOKEN_KEY);
   const raw = stored[TOKEN_KEY];
   return typeof raw === 'string' && raw !== '' ? raw : undefined;
 }
 
 /**
- * Keep the code the user typed.
- *
- * The app never persists the token; this side does, and the asymmetry is
- * deliberate rather than an oversight. The app's copy is the secret — it is
- * what proves the socket belongs to this run — and a stored copy of it would
- * outlive the run it authorises. The extension's copy is only the user's
- * typing, saved so they do not re-enter it every time the popup closes, and it
- * is discarded the moment the app says it no longer matches.
+ * Keep the code in memory across popup closes and worker restarts, not across
+ * browser sessions. Both copies authorise the same run and are secrets (§17).
+ * Browsers without session storage can still scan without the bridge.
  */
 export async function saveBridgeToken(token: string, port: number): Promise<void> {
-  await storage.local.set({ [TOKEN_KEY]: normalizeToken(token), [PORT_KEY]: port });
+  await storage.local.remove([TOKEN_KEY, PORT_KEY]);
+  const session = storage.session;
+  if (session === undefined) {
+    throw new Error(
+      'This browser cannot keep pairing codes in memory. Update it to use the bridge.'
+    );
+  }
+  await session.set({ [TOKEN_KEY]: normalizeToken(token), [PORT_KEY]: port });
 }
 
 export async function forgetBridgeToken(): Promise<void> {
   await storage.local.remove([TOKEN_KEY, PORT_KEY]);
+  await storage.session?.remove([TOKEN_KEY, PORT_KEY]);
 }
 
 /** Mirrors `normalize_token` in the app: the dash is presentation. */

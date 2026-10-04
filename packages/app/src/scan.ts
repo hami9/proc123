@@ -196,7 +196,7 @@ export async function scanCategory(options: AppScanOptions): Promise<AppScanResu
   // `runScan` reports counts; the rows themselves are in the crawl record it
   // just wrote. Reading them back rather than having `runScan` return them
   // keeps its shape the same for both surfaces.
-  const state = await store.load(crawlIdFor(options.url));
+  const state = await store.load(crawlIdFor(staticUrl));
   const products = state?.products ?? [];
 
   const staticBytes = first.body.length;
@@ -233,7 +233,7 @@ export async function scanCategory(options: AppScanOptions): Promise<AppScanResu
     { page: { url: rendered.url, html: rendered.html }, title: options.url, config },
     { ...deps, store: renderedStore }
   );
-  const renderedState = await renderedStore.load(crawlIdFor(options.url));
+  const renderedState = await renderedStore.load(crawlIdFor(rendered.url));
 
   return {
     summary: renderedSummary,

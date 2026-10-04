@@ -75,6 +75,9 @@ export const storage = {
   get local(): chrome.storage.StorageArea {
     return api().storage.local;
   },
+  get session(): chrome.storage.StorageArea | undefined {
+    return api().storage.session;
+  },
 };
 
 export const permissions = {
