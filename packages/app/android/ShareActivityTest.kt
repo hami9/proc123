@@ -25,6 +25,12 @@ class ShareActivityTest {
             .putExtra(Intent.EXTRA_TEXT, SpannableString("فروشگاه https://shop.example/c/"))
             .putExtra(Intent.EXTRA_STREAM, Uri.parse("content://browser/private"))
             .addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT or Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val context = Robolectric.buildActivity(Activity::class.java).setup().get()
+        val taskFlags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        val prepared = shareLaunch(context, incoming)!!
+        assertEquals(taskFlags, prepared.flags)
+        assertNull(prepared.clipData)
+        assertNull(prepared.data)
         val activity = Robolectric.buildActivity(ShareActivity::class.java, incoming).create().get()
         val outgoing = shadowOf(activity).nextStartedActivity
         assertEquals("com.github.hami9.proc123.MainActivity", outgoing.component?.className)
@@ -32,8 +38,15 @@ class ShareActivityTest {
         assertEquals("text/plain", outgoing.type)
         assertEquals("فروشگاه https://shop.example/c/", outgoing.getStringExtra(Intent.EXTRA_TEXT))
         assertEquals(setOf(Intent.EXTRA_TEXT), outgoing.extras?.keySet())
-        assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP, outgoing.flags)
-        assertNull(outgoing.clipData)
+        // Android migrates EXTRA_TEXT to a plain-text ClipData during launch,
+        // adding GRANT_READ. It must not contain the browser's stream or URI.
+        assertEquals(taskFlags, outgoing.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION.inv())
+        outgoing.clipData?.let { clip ->
+            assertEquals(1, clip.itemCount)
+            assertEquals("فروشگاه https://shop.example/c/", clip.getItemAt(0).text.toString())
+            assertNull(clip.getItemAt(0).uri)
+            assertNull(clip.getItemAt(0).intent)
+        }
         assertNull(outgoing.data)
         assertFalse(incoming.hasExtra(Intent.EXTRA_TEXT))
         assertTrue(activity.isFinishing)
