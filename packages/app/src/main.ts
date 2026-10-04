@@ -591,7 +591,7 @@ function emptyState(name: IconName, title: string, body: string): HTMLElement {
 
 function renderScan(): void {
   const view = element('view-scan');
-  view.replaceChildren();
+  view.textContent = '';
 
   view.append(scanForm());
 
@@ -615,7 +615,7 @@ function renderScan(): void {
 
 function renderInspect(): void {
   const view = element('view-inspect');
-  view.replaceChildren();
+  view.textContent = '';
 
   const head = el('header', 'page-head');
   head.append(el('h1', undefined, t('inspectTitle')));
@@ -686,7 +686,7 @@ function numberRow(
 
 function renderSettings(): void {
   const view = element('view-settings');
-  view.replaceChildren();
+  view.textContent = '';
 
   const head = el('header', 'page-head');
   head.append(el('h1', undefined, t('settingsTitle')));
@@ -820,7 +820,7 @@ function renderSettings(): void {
 
 function renderAbout(): void {
   const view = element('view-about');
-  view.replaceChildren();
+  view.textContent = '';
 
   const head = el('header', 'page-head');
   head.append(el('h1', undefined, t('aboutTitle')));

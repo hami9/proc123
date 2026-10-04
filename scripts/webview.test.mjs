@@ -20,6 +20,8 @@ describe('older Android WebViews', () => {
     );
     expect(script).toBeDefined();
     expect(() => parse(script.text, { ecmaVersion: 2020, sourceType: 'module' })).not.toThrow();
+    // Syntax lowering does not supply DOM APIs introduced after WebView 81.
+    expect(script.text).not.toMatch(/\.replaceChildren\s*\(/);
     // Prove the parser rejects the exact syntax that broke the physical S9.
     expect(() => parse('value ??= 1', { ecmaVersion: 2020 })).toThrow();
   });
