@@ -109,8 +109,16 @@ npm exec -w @proc123/app -- tauri android build --debug --apk --target aarch64
 - [x] Export on Android writes the file the user chose.
 - [x] A cold URL shared from Chrome opens a scan (Galaxy S9, Android 10, WebView 81).
 - [x] Scanned a Persian fixture and saved a verified CSV to Downloads on that phone.
-- [ ] Warm and queued browser shares pass the physical-device checks below.
+- [x] Warm and queued browser shares pass on the Galaxy S9 (`8847404`).
+- [x] Rotation keeps the result without replay (`8847404`).
+- [x] Both source-unit choices match the saved CSV (`7f442f8`).
+- [ ] Plain-text/no-URL sharing passes on the physical phone.
+- [ ] Mobile layout avoids the system status/navigation bars and passes visual QA.
 - [ ] `scripts/release/phases.json` says `done` for phase 18.
+
+The [Android test report](../android-tests.md) records each tested build, CI results,
+phone checks, saved-file hashes, failures found and remaining limits. Rust ran in
+CI, not locally. The test APK is not a public owner-signed release.
 
 ## Device checks
 
