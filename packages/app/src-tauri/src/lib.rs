@@ -148,7 +148,9 @@ pub fn run() {
     // Gated on Android exactly as the dependency and `files.rs` are. `mobile`
     // would also match iOS, where the crate is not a dependency at all.
     #[cfg(target_os = "android")]
-    let builder = builder.plugin(tauri_plugin_fs::init()).plugin(share::init());
+    let builder = builder
+        .plugin(tauri_plugin_fs::init())
+        .plugin(share::init());
 
     #[cfg(desktop)]
     let builder = builder
