@@ -124,7 +124,9 @@ debug APK, not a signed public release. Install it on a test phone, then:
    the next starts, with no lost link or overlapping crawl.
 4. Share text without a URL. Check that it reports the problem without fetching.
 5. Scan a Persian shop. Confirm toman/rial explicitly, export to Downloads, then
-   open the CSV and verify its prices and UTF-8 text.
+   open the CSV and verify its prices and UTF-8 text. The source-unit answer
+   must not replace the destination unit: `240000` rial exported as toman must
+   become `24000` in both the preview and the actual CSV. Check both choices.
 6. Rotate or background the app. Check that the consumed launch share does not
    start the scan again.
 

@@ -92,9 +92,9 @@ const en = {
   maxConcurrent: 'Requests at once',
   politeWarning: 'A short delay puts more load on the shop you are reading.',
   contentWarning: 'Descriptions are the shop’s content, not yours.',
-  displayUnit: 'IRR prices are usually in',
+  displayUnit: 'Export price unit',
   displayUnitNote:
-    'A starting point only. Every export still asks, because the shop is what decides.',
+    'Match the destination shop. The source price unit is confirmed separately before export.',
 
   navAbout: 'About',
   aboutTitle: 'About proc123',
@@ -212,8 +212,9 @@ const fa: Catalogue = {
   maxConcurrent: 'درخواست هم‌زمان',
   politeWarning: 'فاصلهٔ کم، بار بیشتری روی فروشگاهی می‌گذارد که می‌خوانید.',
   contentWarning: 'توضیحات محتوای فروشگاه است، نه شما.',
-  displayUnit: 'قیمت‌های ریالی معمولاً به',
-  displayUnitNote: 'فقط نقطهٔ شروع. هر خروجی باز هم می‌پرسد، چون فروشگاه است که تعیین می‌کند.',
+  displayUnit: 'واحد قیمت در خروجی',
+  displayUnitNote:
+    'مطابق فروشگاه مقصد انتخاب کنید. واحد قیمت منبع، جداگانه پیش از خروجی تأیید می‌شود.',
 
   navAbout: 'درباره',
   aboutTitle: 'دربارهٔ proc123',

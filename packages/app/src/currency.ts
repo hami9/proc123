@@ -21,8 +21,8 @@
  *    working.
  */
 
-import type { CanonicalProduct, CurrencyUnit } from '@proc123/core';
-import { isIranianCurrency } from '@proc123/core';
+import type { CanonicalProduct, CurrencyUnit, Money } from '@proc123/core';
+import { convertCurrencyUnit, hasUnit, isIranianCurrency } from '@proc123/core';
 
 export interface CurrencyQuestion {
   /** True when at least one price is IRR with no unit stated. */
@@ -74,13 +74,48 @@ export function currencyQuestion(products: readonly CanonicalProduct[]): Currenc
  * difference visible. A label saying only "toman" or "rial" asks the user to do
  * that arithmetic in their head, and they will not.
  */
-export function readingsOf(amount: number): Record<CurrencyUnit, number> {
+export function readingsOf(
+  amount: number,
+  outputUnit: CurrencyUnit = 'toman'
+): Record<CurrencyUnit, number> {
   return {
-    toman: amount,
-    // Rial prices divide by ten to reach toman, which is how the shop's own
-    // customers read them.
-    rial: Math.round(amount / 10),
+    toman: convertCurrencyUnit({ amount, currency: 'IRR', unit: 'toman' }, outputUnit).amount,
+    rial: convertCurrencyUnit({ amount, currency: 'IRR', unit: 'rial' }, outputUnit).amount,
   };
+}
+
+/** Annotate unstated source units, never replace a unit the page supplied. */
+function confirmedPrice(price: Money, answer: CurrencyUnit | undefined): Money {
+  return answer !== undefined && price.unit === undefined && isIranianCurrency(price.currency)
+    ? { ...price, unit: answer }
+    : price;
+}
+
+/** The table and exporter must show the same converted price after confirmation. */
+export function priceForDisplay(
+  price: Money,
+  answer: CurrencyUnit | undefined,
+  outputUnit: CurrencyUnit
+): Money {
+  const confirmed = confirmedPrice(price, answer);
+  return isIranianCurrency(confirmed.currency) && hasUnit(confirmed)
+    ? convertCurrencyUnit(confirmed, outputUnit)
+    : confirmed;
+}
+
+export function confirmedProducts(
+  products: readonly CanonicalProduct[],
+  answer: CurrencyUnit | undefined
+): CanonicalProduct[] {
+  return products.map((product) => ({
+    ...product,
+    ...(product.regularPrice === undefined
+      ? {}
+      : { regularPrice: confirmedPrice(product.regularPrice, answer) }),
+    ...(product.salePrice === undefined
+      ? {}
+      : { salePrice: confirmedPrice(product.salePrice, answer) }),
+  }));
 }
 
 /**
