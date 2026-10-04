@@ -29,13 +29,27 @@ about.
 - `canRender()` answers false on Android, so the UI never promises a render.
 - CI builds an arm64 debug APK on every pull request and uploads it.
 
-### 18b — share-sheet entry (next)
+### 18b — share-sheet entry
 
-A URL shared from a browser opens a scan. This needs an `ACTION_SEND` intent
-filter in `AndroidManifest.xml` and a few lines of Kotlin in `MainActivity` to
-pass the shared text into the WebView — which means **committing
-`src-tauri/gen/android`** (and taking it out of `.gitignore`), because those
-edits are hand-made and cannot be regenerated.
+A URL shared from a browser opens the ordinary scan path. The `ACTION_SEND`
+filter accepts `text/plain`. A small Kotlin plugin handles the launch intent
+and `onNewIntent`, keeping shares in memory until the UI is ready and idle.
+Only one HTTP(S) URL is accepted; credentials and ambiguous shares are rejected.
+The normal currency confirmation still applies before export.
+
+Hand-written Android sources live in `packages/app/android`, not in ignored
+generated files. `scripts/android-share.mjs` applies this versioned overlay
+after `tauri android init`; CI runs the same step and fails if the generated
+template or identifier changes. This keeps the edits reproducible without
+committing the SDK-generated project.
+
+From the repository root, with the Android toolchain installed:
+
+```powershell
+npm exec -w @proc123/app -- tauri android init --ci
+npm run android:prepare -w @proc123/app
+npm exec -w @proc123/app -- tauri android build --debug --apk --target aarch64
+```
 
 ## What 18a learned
 
@@ -79,3 +93,22 @@ edits are hand-made and cannot be regenerated.
 - [ ] A URL shared from a browser opens a scan.
 - [ ] Scanned and exported on a real device (needs a person and a phone).
 - [ ] `scripts/release/phases.json` says `done` for phase 18.
+
+## Device checks
+
+Download `proc123-android-debug` from the PR's successful CI run. It is an arm64
+debug APK, not a signed public release. Install it on a test phone, then:
+
+1. Close the app. Share a category URL from the browser to proc123. Check that
+   the app opens that URL and scans it.
+2. Keep the app open. Share a second category URL. Check that one new scan runs.
+3. Share while a scan is running. Check that the current scan finishes before
+   the next starts, with no lost link or overlapping crawl.
+4. Share text without a URL. Check that it reports the problem without fetching.
+5. Scan a Persian shop. Confirm toman/rial explicitly, export to Downloads, then
+   open the CSV and verify its prices and UTF-8 text.
+6. Rotate or background the app. Check that the consumed launch share does not
+   start the scan again.
+
+An APK build does not prove these device checks. Keep phase 18 `partial` until
+scan, share and export have been verified on a real phone.

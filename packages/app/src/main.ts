@@ -31,6 +31,7 @@ import { type IconName, icon, isIconName } from './icons.js';
 import { saveTextFile } from './save.js';
 import { setRenderSupported } from './render.js';
 import { scanCategory, scanHandedPage } from './scan.js';
+import { watchSharedUrls } from './share.js';
 import {
   type Language,
   type MessageKey,
@@ -1014,6 +1015,28 @@ void (async (): Promise<void> => {
   state.bridge = hostHasBridge ? await bridgeInfo() : undefined;
   element('sidebar-foot').textContent = `v${appVersion}`;
   renderAll();
+
+  if (hostLabel === 'android') {
+    watchSharedUrls({
+      ready: () => !state.busy && document.visibilityState !== 'hidden',
+      receive: async (url) => {
+        state.url = url;
+        state.route = 'scan';
+        showRoute();
+        await startScan();
+      },
+      invalid: () => {
+        state.message = t('shareInvalid');
+        state.route = 'scan';
+        showRoute();
+        renderScan();
+      },
+      failed: () => {
+        state.message = t('shareFailed');
+        renderScan();
+      },
+    });
+  }
 
   // Subscribed for the life of the window. There is nothing to unsubscribe
   // from on a page that never navigates, and in a plain browser this is a

@@ -11,6 +11,7 @@
     "tauri": "tauri",
     "dev": "tauri dev",
     "app:build": "tauri build",
+    "android:prepare": "node scripts/android-share.mjs",
     "rust:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check",
     "rust:lint": "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings",
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml"

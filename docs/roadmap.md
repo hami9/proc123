@@ -200,7 +200,7 @@ rather than promises, because that property rots silently.
 >   extension stored. The extension drops it on the first 401 and shows the
 >   field again; anything that treats this as a failure will be wrong daily.
 
-### 18 · Android — **deferred until the desktop targets are finished**
+### 18 · Android — **partial**
 
 Same codebase, same UI. WebView-based scanning, share-sheet entry so a URL
 shared from a browser opens a scan. Touch targets and layout that were designed
@@ -208,10 +208,10 @@ for this in §18 rather than patched for it now.
 
 **Done when** a debug APK scans a shop on a real device and exports to storage.
 
-**Under way — 18a landed, 18b next.** CI builds an arm64 debug APK on every pull
+**Under way — 18a landed; 18b adds share entry.** CI builds an arm64 debug APK on every pull
 request; export on Android writes through the Storage Access Framework; the
 desktop-only render and bridge are compiled out rather than faked. What is
-left is share-sheet entry and a run on a real phone. The split, and why the
+left is verifying share, scan and export on a real phone. The split, and why the
 APK is built in CI rather than in a session, are in
 [`prompts/phase-18.md`](prompts/phase-18.md).
 
@@ -305,8 +305,8 @@ expect:
 
 Still open, and none of it is a matter of writing more YAML:
 
-- **APK** waits on phase 18. Android is not started, so there is nothing to
-  package.
+- **APK** exists as a CI debug artifact. A public, signed Android release still
+  needs phase 18's device checks and an owner-held signing key.
 - **Signing** needs a certificate that costs money and is issued to a person.
   Until then both installers are unsigned, and Windows will show SmartScreen on
   first run. That is the project owner's call, not CI's.

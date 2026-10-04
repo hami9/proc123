@@ -185,6 +185,10 @@ jobs:
         working-directory: packages/app
         run: npx tauri android init --ci
 
+      - name: Prepare Android share entry
+        working-directory: packages/app
+        run: node scripts/android-share.mjs
+
       # The desktop lint job cannot see `#[cfg(target_os = "android")]` code, so
       # without this the only Android-specific Rust in the repository would be
       # the only Rust with no lint gate. The NDK's clang is the C compiler `ring`
