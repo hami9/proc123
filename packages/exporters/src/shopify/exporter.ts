@@ -431,7 +431,7 @@ export function exportShopifyCsv(
       // path is not in it. Guessing a taxonomy value is worse than leaving it
       // blank — Shopify uses it for tax and marketplace rules.
       productCategory: '',
-      type: group.parent.categoryPath.at(-1) ?? '',
+      type: group.parent.categoryPath[group.parent.categoryPath.length - 1] ?? '',
       tags: [...group.parent.categoryPath, ...(group.parent.tags ?? [])].join(', '),
       published: yesNo(resolved.published),
       status: resolved.status,

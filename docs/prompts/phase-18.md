@@ -49,6 +49,12 @@ types, replay prevention, invalid extras and inbox limits. Test dependencies
 are JVM-only and are not bundled in the app. These tests do not prove browser
 share-sheet routing or scan/export on a physical phone.
 
+The front end targets ES2020 and Chromium/WebView 81. Android's WebView is a
+device component, not a runtime bundled by Tauri. A Galaxy S9 on Android 10
+exposed an ES2022 parse failure; bundle syntax and CSV APIs without `replaceAll`
+or `Array.at` now have regression coverage. Physical-device validation remains
+separate from these build checks.
+
 From the repository root, with the Android toolchain installed:
 
 ```powershell
