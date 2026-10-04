@@ -29,13 +29,44 @@ about.
 - `canRender()` answers false on Android, so the UI never promises a render.
 - CI builds an arm64 debug APK on every pull request and uploads it.
 
-### 18b — share-sheet entry (next)
+### 18b — share-sheet entry
 
-A URL shared from a browser opens a scan. This needs an `ACTION_SEND` intent
-filter in `AndroidManifest.xml` and a few lines of Kotlin in `MainActivity` to
-pass the shared text into the WebView — which means **committing
-`src-tauri/gen/android`** (and taking it out of `.gitignore`), because those
-edits are hand-made and cannot be regenerated.
+A URL shared from a browser opens the ordinary scan path. A small native
+`ShareActivity` accepts `ACTION_SEND` with `text/plain`, forwards bounded text
+to the existing app task, then finishes. It drops browser result flags and URI
+grants: a physical S9 showed that sharing directly to the Tauri host can create
+a second, blank host inside Chrome's task, even with `singleTask`.
+A Kotlin plugin handles the launch intent
+and `onNewIntent`, keeping shares in memory until the UI is ready and idle.
+Only one HTTP(S) URL is accepted; credentials and ambiguous shares are rejected.
+The normal currency confirmation still applies before export.
+
+Hand-written Android sources live in `packages/app/android`, not in ignored
+generated files. `scripts/android-share.mjs` applies this versioned overlay
+after `tauri android init`; CI runs the same step and fails if the generated
+template or identifier changes. This keeps the edits reproducible without
+committing the SDK-generated project.
+
+CI also runs native Kotlin regression tests with Robolectric after building the
+APK. They cover cold/warm delivery, styled `CharSequence` text, normalized MIME
+types, replay prevention, invalid extras and inbox limits. Receiver tests also
+check task flags, text-only forwarding and no replay on restoration. Test dependencies
+are JVM-only and are not bundled in the app. These tests do not prove browser
+share-sheet routing or scan/export on a physical phone.
+
+The front end targets ES2020 and Chromium/WebView 81. Android's WebView is a
+device component, not a runtime bundled by Tauri. A Galaxy S9 on Android 10
+exposed an ES2022 parse failure; bundle syntax and CSV APIs without `replaceAll`
+or `Array.at`, and DOM updates without `replaceChildren`, have regression coverage. Physical-device validation remains
+separate from these build checks.
+
+From the repository root, with the Android toolchain installed:
+
+```powershell
+npm exec -w @proc123/app -- tauri android init --ci
+npm run android:prepare -w @proc123/app
+npm exec -w @proc123/app -- tauri android build --debug --apk --target aarch64
+```
 
 ## What 18a learned
 
@@ -76,6 +107,36 @@ edits are hand-made and cannot be regenerated.
 
 - [x] CI builds an installable debug APK on every pull request.
 - [x] Export on Android writes the file the user chose.
-- [ ] A URL shared from a browser opens a scan.
-- [ ] Scanned and exported on a real device (needs a person and a phone).
+- [x] A cold URL shared from Chrome opens a scan (Galaxy S9, Android 10, WebView 81).
+- [x] Scanned a Persian fixture and saved a verified CSV to Downloads on that phone.
+- [x] Warm and queued browser shares pass on the Galaxy S9 (`8847404`).
+- [x] Rotation keeps the result without replay (`8847404`).
+- [x] Both source-unit choices match the saved CSV (`7f442f8`).
+- [ ] Plain-text/no-URL sharing passes on the physical phone.
+- [ ] Mobile layout avoids the system status/navigation bars and passes visual QA.
 - [ ] `scripts/release/phases.json` says `done` for phase 18.
+
+The [Android test report](../android-tests.md) records each tested build, CI results,
+phone checks, saved-file hashes, failures found and remaining limits. Rust ran in
+CI, not locally. The test APK is not a public owner-signed release.
+
+## Device checks
+
+Download `proc123-android-debug` from the PR's successful CI run. It is an arm64
+debug APK, not a signed public release. Install it on a test phone, then:
+
+1. Close the app. Share a category URL from the browser to proc123. Check that
+   the app opens that URL and scans it.
+2. Keep the app open. Share a second category URL. Check that one new scan runs.
+3. Share while a scan is running. Check that the current scan finishes before
+   the next starts, with no lost link or overlapping crawl.
+4. Share text without a URL. Check that it reports the problem without fetching.
+5. Scan a Persian shop. Confirm toman/rial explicitly, export to Downloads, then
+   open the CSV and verify its prices and UTF-8 text. The source-unit answer
+   must not replace the destination unit: `240000` rial exported as toman must
+   become `24000` in both the preview and the actual CSV. Check both choices.
+6. Rotate or background the app. Check that the consumed launch share does not
+   start the scan again.
+
+An APK build does not prove these device checks. Keep phase 18 `partial` until
+scan, share and export have been verified on a real phone.

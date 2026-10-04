@@ -19,7 +19,7 @@ export const CATEGORY_SEPARATOR = ' > ';
  * written `\,` and leading/trailing spaces are lost either way.
  */
 export function escapeMultiValue(value: string): string {
-  return value.trim().replaceAll(',', '\\,');
+  return value.trim().split(',').join('\\,');
 }
 
 export function joinMultiValue(values: readonly string[]): string {
@@ -42,7 +42,7 @@ export function formatCategoryPath(path: readonly string[]): string {
  * carried by CSV quoting and arrive intact.
  */
 export function escapeDescription(html: string): string {
-  return html.replaceAll('\\n', '\\\\n');
+  return html.split('\\n').join('\\\\n');
 }
 
 /** WooCommerce boolean columns are `1` / `0`. */

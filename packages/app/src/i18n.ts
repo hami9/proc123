@@ -27,6 +27,8 @@ const en = {
   startScan: 'Scan',
   scanning: 'Scanning…',
   scanFailed: 'The scan did not finish',
+  shareInvalid: 'Share one complete HTTP or HTTPS URL without a username or password.',
+  shareFailed: 'Shared links are unavailable. Paste the URL and press Scan.',
   noResults: 'Nothing scanned yet. Paste a category URL and press Scan.',
   politeNote:
     'Requests are paced so as not to burden the shop. A large catalogue takes a few minutes.',
@@ -90,9 +92,9 @@ const en = {
   maxConcurrent: 'Requests at once',
   politeWarning: 'A short delay puts more load on the shop you are reading.',
   contentWarning: 'Descriptions are the shop’s content, not yours.',
-  displayUnit: 'IRR prices are usually in',
+  displayUnit: 'Export price unit',
   displayUnitNote:
-    'A starting point only. Every export still asks, because the shop is what decides.',
+    'Match the destination shop. The source price unit is confirmed separately before export.',
 
   navAbout: 'About',
   aboutTitle: 'About proc123',
@@ -145,6 +147,8 @@ const fa: Catalogue = {
   startScan: 'اسکن',
   scanning: 'در حال اسکن…',
   scanFailed: 'اسکن کامل نشد',
+  shareInvalid: 'یک آدرس کامل HTTP یا HTTPS، بدون نام کاربری و رمز عبور، به اشتراک بگذارید.',
+  shareFailed: 'دریافت لینک اشتراکی در دسترس نیست. آدرس را وارد کنید و اسکن را بزنید.',
   noResults: 'هنوز چیزی اسکن نشده. نشانی یک دسته‌بندی را بگذارید و اسکن را بزنید.',
   politeNote:
     'درخواست‌ها با فاصله فرستاده می‌شوند تا به فروشگاه فشار نیاید. یک فهرست بزرگ چند دقیقه طول می‌کشد.',
@@ -208,8 +212,9 @@ const fa: Catalogue = {
   maxConcurrent: 'درخواست هم‌زمان',
   politeWarning: 'فاصلهٔ کم، بار بیشتری روی فروشگاهی می‌گذارد که می‌خوانید.',
   contentWarning: 'توضیحات محتوای فروشگاه است، نه شما.',
-  displayUnit: 'قیمت‌های ریالی معمولاً به',
-  displayUnitNote: 'فقط نقطهٔ شروع. هر خروجی باز هم می‌پرسد، چون فروشگاه است که تعیین می‌کند.',
+  displayUnit: 'واحد قیمت در خروجی',
+  displayUnitNote:
+    'مطابق فروشگاه مقصد انتخاب کنید. واحد قیمت منبع، جداگانه پیش از خروجی تأیید می‌شود.',
 
   navAbout: 'درباره',
   aboutTitle: 'دربارهٔ proc123',

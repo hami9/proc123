@@ -23,14 +23,16 @@ import type {
   ScanSummary,
 } from '@proc123/core';
 import { ALL_EXPORTERS, DEFAULT_CONFIG } from '@proc123/core';
-import { EXPORTER_EXTENSIONS, EXPORTER_LABELS, exportProducts } from '@proc123/exporters';
+import { EXPORTER_EXTENSIONS, EXPORTER_LABELS } from '@proc123/exporters';
 
 import { type BridgeInfo, bridgeInfo, formatToken, onHandoff } from './bridge.js';
-import { canExport, currencyQuestion, readingsOf } from './currency.js';
+import { canExport, currencyQuestion, priceForDisplay, readingsOf } from './currency.js';
+import { exportScan } from './export.js';
 import { type IconName, icon, isIconName } from './icons.js';
 import { saveTextFile } from './save.js';
 import { setRenderSupported } from './render.js';
 import { scanCategory, scanHandedPage } from './scan.js';
+import { watchSharedUrls } from './share.js';
 import {
   type Language,
   type MessageKey,
@@ -339,15 +341,24 @@ function currencyCard(): HTMLElement | undefined {
   if (!question.needed) return undefined;
 
   const card = el('section', 'currency stack');
+  const outputUnit = state.config.currency.displayUnit;
   card.setAttribute('aria-labelledby', 'currency-title');
   const title = el('h2', 'section-title');
   title.id = 'currency-title';
   title.append(icon('warning'), el('span', undefined, t('currencyTitle')));
   card.append(title);
   card.append(el('p', 'small', t('currencyWhy')));
+  card.append(
+    el(
+      'p',
+      'small',
+      `${t('displayUnit')}: ${t(outputUnit === 'toman' ? 'currencyToman' : 'currencyRial')}`
+    )
+  );
 
   const choices = el('div', 'choices');
-  const readings = question.sample === undefined ? undefined : readingsOf(question.sample);
+  const readings =
+    question.sample === undefined ? undefined : readingsOf(question.sample, outputUnit);
 
   for (const unit of ['toman', 'rial'] as const) {
     const button = el('button', 'choice');
@@ -359,7 +370,7 @@ function currencyCard(): HTMLElement | undefined {
       const example = el('span', 'example');
       example.textContent =
         `${t('currencyExample')} ` +
-        `${formatAmount(readings[unit], state.language)} ${t('currencyToman')}`;
+        `${formatAmount(readings[unit], state.language)} ${t(outputUnit === 'toman' ? 'currencyToman' : 'currencyRial')}`;
       button.append(example);
     }
 
@@ -377,7 +388,12 @@ function currencyCard(): HTMLElement | undefined {
 function priceCell(product: CanonicalProduct, which: 'regularPrice' | 'salePrice'): string {
   const price = product[which];
   if (price === undefined) return '';
-  return formatAmount(price.amount, state.language);
+  const displayed = priceForDisplay(price, state.currencyAnswer, state.config.currency.displayUnit);
+  const unit = displayed.unit;
+  return (
+    formatAmount(displayed.amount, state.language) +
+    (unit === undefined ? '' : ` ${t(unit === 'toman' ? 'currencyToman' : 'currencyRial')}`)
+  );
 }
 
 function productTable(): HTMLElement {
@@ -448,6 +464,15 @@ function exportRow(): HTMLElement | undefined {
     void exportCsv();
   });
   bar.append(button);
+  if (question.needed || question.stated !== undefined) {
+    bar.append(
+      el(
+        'span',
+        'small',
+        `${t('displayUnit')}: ${t(state.config.currency.displayUnit === 'toman' ? 'currencyToman' : 'currencyRial')}`
+      )
+    );
+  }
 
   if (!allowed) {
     const status = el('span', 'status tone-warn');
@@ -528,7 +553,8 @@ async function startScan(): Promise<void> {
  *
  * The exporter is `packages/exporters`, shared with the other two surfaces, so
  * every §7 rule — the BOM, the headers, the parent/variation ordering — has one
- * home. The unit passed to it is the one the user confirmed, never a default.
+ * home. The user's source-unit answer annotates the scanned prices; the
+ * destination unit is a separate, visible export setting.
  */
 async function exportCsv(): Promise<void> {
   const question = currencyQuestion(state.products);
@@ -539,22 +565,8 @@ async function exportCsv(): Promise<void> {
   renderScan();
 
   try {
-    // `?? 'toman'` is reached only when the question was never real — every
-    // price already stated its unit — so it is a formality rather than a guess.
-    const displayUnit = state.currencyAnswer ?? 'toman';
     const exporter = state.config.exporter;
-    const shared = {
-      displayUnit,
-      currencyCode: state.config.currency.code,
-      contentMode: state.config.contentMode,
-      bom: true,
-    };
-
-    const outcome = exportProducts(state.products, exporter, {
-      woocommerce: shared,
-      shopify: shared,
-      json: { scannedUrl: state.url },
-    });
+    const outcome = exportScan(state.products, state.config, state.currencyAnswer, state.url);
 
     let host = 'export';
     try {
@@ -590,7 +602,7 @@ function emptyState(name: IconName, title: string, body: string): HTMLElement {
 
 function renderScan(): void {
   const view = element('view-scan');
-  view.replaceChildren();
+  view.textContent = '';
 
   view.append(scanForm());
 
@@ -614,7 +626,7 @@ function renderScan(): void {
 
 function renderInspect(): void {
   const view = element('view-inspect');
-  view.replaceChildren();
+  view.textContent = '';
 
   const head = el('header', 'page-head');
   head.append(el('h1', undefined, t('inspectTitle')));
@@ -685,7 +697,7 @@ function numberRow(
 
 function renderSettings(): void {
   const view = element('view-settings');
-  view.replaceChildren();
+  view.textContent = '';
 
   const head = el('header', 'page-head');
   head.append(el('h1', undefined, t('settingsTitle')));
@@ -810,8 +822,7 @@ function renderSettings(): void {
       }
     )
   );
-  // The one thing this setting must not become is an answer to §7.8's
-  // question. It is a starting point; the export still asks.
+  // The destination unit is not an answer about the source shop's prices.
   noteUnder(scanning, t('displayUnitNote'));
 
   view.append(scanning);
@@ -819,7 +830,7 @@ function renderSettings(): void {
 
 function renderAbout(): void {
   const view = element('view-about');
-  view.replaceChildren();
+  view.textContent = '';
 
   const head = el('header', 'page-head');
   head.append(el('h1', undefined, t('aboutTitle')));
@@ -1014,6 +1025,28 @@ void (async (): Promise<void> => {
   state.bridge = hostHasBridge ? await bridgeInfo() : undefined;
   element('sidebar-foot').textContent = `v${appVersion}`;
   renderAll();
+
+  if (hostLabel === 'android') {
+    watchSharedUrls({
+      ready: () => !state.busy && document.visibilityState !== 'hidden',
+      receive: async (url) => {
+        state.url = url;
+        state.route = 'scan';
+        showRoute();
+        await startScan();
+      },
+      invalid: () => {
+        state.message = t('shareInvalid');
+        state.route = 'scan';
+        showRoute();
+        renderScan();
+      },
+      failed: () => {
+        state.message = t('shareFailed');
+        renderScan();
+      },
+    });
+  }
 
   // Subscribed for the life of the window. There is nothing to unsubscribe
   // from on a page that never navigates, and in a plain browser this is a

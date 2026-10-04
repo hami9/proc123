@@ -185,6 +185,10 @@ jobs:
         working-directory: packages/app
         run: npx tauri android init --ci
 
+      - name: Prepare Android share entry
+        working-directory: packages/app
+        run: node scripts/android-share.mjs
+
       # The desktop lint job cannot see `#[cfg(target_os = "android")]` code, so
       # without this the only Android-specific Rust in the repository would be
       # the only Rust with no lint gate. The NDK's clang is the C compiler `ring`
@@ -210,6 +214,23 @@ jobs:
       - name: Build a debug APK
         working-directory: packages/app
         run: npx tauri android build --debug --apk --target aarch64
+
+      # These JVM tests exercise real Android Intent/CharSequence semantics.
+      # Rust was already built above; its Gradle hook needs Tauri's live CLI,
+      # which is not running during this standalone Kotlin test invocation.
+      - name: Android share tests
+        working-directory: packages/app/src-tauri/gen/android
+        run: ./gradlew :app:testUniversalDebugUnitTest -x :app:rustBuildUniversalDebug --no-daemon --stacktrace
+
+      - name: Android test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proc123-android-tests
+          path: |
+            packages/app/src-tauri/gen/android/app/build/test-results/
+            packages/app/src-tauri/gen/android/app/build/reports/tests/
+          if-no-files-found: warn
 
       - uses: actions/upload-artifact@v4
         with:

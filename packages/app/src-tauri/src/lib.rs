@@ -37,6 +37,8 @@ mod files;
 mod http;
 #[cfg(desktop)]
 mod render;
+#[cfg(target_os = "android")]
+mod share;
 
 #[cfg(desktop)]
 use tauri::{Emitter, Manager};
@@ -146,7 +148,9 @@ pub fn run() {
     // Gated on Android exactly as the dependency and `files.rs` are. `mobile`
     // would also match iOS, where the crate is not a dependency at all.
     #[cfg(target_os = "android")]
-    let builder = builder.plugin(tauri_plugin_fs::init());
+    let builder = builder
+        .plugin(tauri_plugin_fs::init())
+        .plugin(share::init());
 
     #[cfg(desktop)]
     let builder = builder
@@ -173,11 +177,12 @@ pub fn run() {
     // `bridge_info`, `rendered_html` and `evaluate`. The front end does not call
     // them here, because `host_info` says which exist (`HostInfo::render`,
     // `HostInfo::bridge`) — it does not find out by being refused.
-    #[cfg(mobile)]
+    #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![
         host_info,
         http::http_fetch,
-        files::save_text_file
+        files::save_text_file,
+        share::take_shared_text
     ]);
 
     builder

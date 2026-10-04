@@ -47,7 +47,7 @@ export function escapeCsvField(value: string, options: CsvOptions = {}): string 
     field.includes('\n') ||
     field.includes('\r');
 
-  return needsQuotes ? `"${field.replaceAll('"', '""')}"` : field;
+  return needsQuotes ? `"${field.split('"').join('""')}"` : field;
 }
 
 export function toCsv(rows: readonly (readonly string[])[], options: CsvOptions = {}): string {
